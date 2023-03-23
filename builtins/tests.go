@@ -36,7 +36,7 @@ var Tests = exec.TestSet{
 	"number":      testNumber,
 	"odd":         testOdd,
 	"sameas":      testSameas,
-	"sequence":    testIterable,
+	"sequence":    testSequence,
 	"string":      testString,
 	"undefined":   testUndefined,
 	"upper":       testUpper,
@@ -93,7 +93,11 @@ func testIn(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, erro
 }
 
 func testIterable(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return in.CanSlice(), nil
+	return in.IsDict() || in.IsList() || in.IsString(), nil
+}
+
+func testSequence(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return in.IsList(), nil
 }
 
 func testLessEqual(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
