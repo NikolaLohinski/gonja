@@ -3,6 +3,7 @@ package builtins
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/url"
@@ -49,6 +50,7 @@ var Filters = exec.FilterSet{
 	"e":              filterEscape,
 	"escape":         filterEscape,
 	"fail":           filterFail,
+	"file":           filterFile,
 	"fileset":        filterFileset,
 	"filesizeformat": filterFileSize,
 	"first":          filterFirst,
@@ -1702,6 +1704,37 @@ func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(fmt.Errorf("failed to traverse %s: %s", in.String(), err))
 	}
 	return exec.AsValue(out)
+}
+
+func filterFile(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'file' was passed a non-string type"))
+	}
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'file'"))
+	}
+
+	path := in.String()
+	if !filepath.IsAbs(path) {
+		base, err := e.Loader.Path(".")
+		if err != nil {
+			return exec.AsValue(fmt.Errorf("failed to get current path with loader: %s", err))
+		}
+		path, err = filepath.Abs(filepath.Join(base, path))
+		if err != nil {
+			return exec.AsValue(fmt.Errorf("failed to resolve path %s with loader: %s", path, err))
+		}
+	}
+
+	out, err := ioutil.ReadFile(path)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to read file at path %s: %s", path, err))
+	}
+
+	return exec.AsValue(string(out))
 }
 
 func filterBasename(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {

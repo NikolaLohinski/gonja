@@ -1,5 +1,5 @@
 
-folder: fileset
+folder: files
 file: some.txt
 folder: nested
 file: other.txt
