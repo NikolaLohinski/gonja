@@ -18,6 +18,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	json "github.com/json-iterator/go"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/pkg/errors"
 	"github.com/yargevad/filepathx"
 	"golang.org/x/exp/slices"
@@ -60,6 +61,7 @@ var Filters = exec.FilterSet{
 	"format":         filterFormat,
 	"fromjson":       filterFromJSON,
 	"fromyaml":       filterFromYAML,
+	"fromtoml":       filterFromTOML,
 	"get":            filterGet,
 	"groupby":        filterGroupBy,
 	"ifelse":         filterIfElse,
@@ -94,6 +96,7 @@ var Filters = exec.FilterSet{
 	"sum":            filterSum,
 	"title":          filterTitle,
 	"tojson":         filterToJSON,
+	"totoml":         filterToToml,
 	"toyaml":         filterToYAML,
 	"trim":           filterTrim,
 	"truncate":       filterTruncate,
@@ -1119,7 +1122,7 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'tojson'"))
 	}
 
-	casted := in.ToGoSimpleType()
+	casted := in.ToGoSimpleType(true)
 	if err, ok := casted.(error); ok {
 		return exec.AsValue(err)
 	}
@@ -1837,7 +1840,7 @@ func filterToYAML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		in = exec.AsValue(inCast)
 	}
 
-	castedType := in.ToGoSimpleType()
+	castedType := in.ToGoSimpleType(true)
 	if err, ok := castedType.(error); ok {
 		return exec.AsValue(err)
 	}
@@ -1902,4 +1905,44 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		return err
 	}
 	return exec.AsValue(out)
+}
+
+func filterToToml(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	// Done not mess around with trying to marshall error pipelines
+	if in.IsError() {
+		return in
+	}
+
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'totoml'"))
+	}
+
+	casted := in.ToGoSimpleType(false)
+	if err, ok := casted.(error); ok {
+		return exec.AsValue(err)
+	}
+
+	out, err := toml.Marshal(casted)
+	if err != nil {
+		return exec.AsValue(errors.Wrap(err, "Unable to marhsall to toml"))
+	}
+
+	return exec.AsSafeValue(string(out))
+}
+
+func filterFromTOML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fromtoml'"))
+	}
+	if !in.IsString() || in.String() == "" {
+		return exec.AsValue(errors.New("Filter 'fromtoml' was passed an empty or non-string type"))
+	}
+	object := new(interface{})
+	if err := toml.Unmarshal([]byte(in.String()), object); err != nil {
+		return exec.AsValue(fmt.Errorf("failed to unmarshal from toml %s: %s", in.String(), err))
+	}
+	return exec.AsValue(*object)
 }

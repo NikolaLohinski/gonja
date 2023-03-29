@@ -1,0 +1,7 @@
+
+['one']
+true
+'test'
+[root]
+[root.nested]
+foo = 'bar'

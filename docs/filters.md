@@ -241,6 +241,19 @@ Will render into:
 value
 ```
 
+### The `fromtoml` filter
+
+The `fromtoml` filter is meant to parse a TOML string into a useable object.
+
+```
+{%- set object = "[nested]\nfield = \"value\"" | fromtoml -%}
+{{ object.nested.field }}
+```
+Will render into:
+```
+value
+```
+
 ### The `fromyaml` filter
 
 The `fromyaml` filter is meant to parse a YAML string into a useable object.
@@ -565,6 +578,20 @@ Return a titlecased version of the value. I.e. words will start with uppercase l
 |-------------|
 
 Serialize an object to a string of JSON. It takes an `indent` parameter to do pretty printing.
+
+### The `totoml` filter
+
+The `totoml` filter is meant to render a given object as TOML.
+
+```
+{%- set object = "{ \"nested\": { \"field\": \"value\" } }" | fromjson -%}
+{{ object | totoml }}
+```
+Will render into:
+```
+[nested]
+field = "value"
+```
 
 ### The `toyaml` filter
 

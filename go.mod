@@ -7,10 +7,11 @@ require (
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127
 	github.com/goph/emperror v0.17.1
 	github.com/json-iterator/go v1.1.12
+	github.com/pelletier/go-toml/v2 v2.0.7
 	github.com/pkg/errors v0.8.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/sirupsen/logrus v1.3.0
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.8.1
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/yargevad/filepathx v1.0.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
@@ -32,5 +33,4 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
