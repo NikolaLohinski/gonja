@@ -350,6 +350,14 @@ var testCases = []struct {
 			"Attr": val{"attr"},
 		}},
 	}}},
+	{"variable item", "{{ a_var[\"item\"] }}", specs{nodes.Output{}, attrs{
+		"Expression": specs{nodes.Getitem{}, attrs{
+			"Node": specs{nodes.Name{}, attrs{
+				"Name": _token("a_var"),
+			}},
+			"Arg": val{"item"},
+		}},
+	}}},
 	{"variable and filter", "{{ a_var|safe }}", specs{nodes.Output{}, attrs{
 		"Expression": specs{nodes.FilteredExpression{}, attrs{
 			"Expression": specs{nodes.Name{}, attrs{

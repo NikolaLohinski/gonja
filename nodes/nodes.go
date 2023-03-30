@@ -314,7 +314,7 @@ func (g *Getitem) String() string {
 	} else {
 		param = strconv.Itoa(g.Index)
 	}
-	return fmt.Sprintf("%s.%s", g.Node, param)
+	return fmt.Sprintf("%s[%s]", g.Node, param)
 }
 
 type Getattr struct {

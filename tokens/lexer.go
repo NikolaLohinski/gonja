@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"fmt"
+
 	// "encoding/json"
 	"regexp"
 	// "strconv"
@@ -522,7 +523,15 @@ func unescape(str string) string {
 func (l *Lexer) lexString() lexFn {
 	quote := l.next() // should be either ' or "
 	var prev rune
+	near := make([]rune, 0)
 	for r := l.next(); r != quote || prev == '\\'; r, prev = l.next(), r {
+		// only keep near context of the current line in case of error
+		if (len(near) == 0 || near[len(near)-1] != '\n') && r != rEOF {
+			near = append(near, r)
+		}
+		if r == rEOF {
+			return l.errorf(`unclosed string near line %d near "%s"`, l.Position().Line, string(near))
+		}
 	}
 	l.processAndEmit(String, unescape)
 	return l.lexExpression

@@ -51,22 +51,10 @@ func main() {
 * `tests`: please see [`docs/tests.md`](docs/tests.md) ;
 * `globals`: please browse through [`docs/globals.md`](docs/globals.md).
 
-## Known caveats 
-
-**NOTE**: Pull requests are welcomed to fix any of the following issues. Any help will be very much appreciated 🙏
-
-### Filters
+## Limitations 
 
 * **format**: `format` does **not** take Python's string format syntax as a parameter, instead it takes Go's. Essentially `{{ 3.14|stringformat:"pi is %.2f" }}` is `fmt.Sprintf("pi is %.2f", 3.14)`.
 * **escape** / **force_escape**: Unlike Jinja's behavior, the `escape`-filter is applied immediately. Therefore there is no need for a `force_escape`-filter yet.
-
-### Code hanging
-
-Leaving a string open as such:
-```
-{{ "test }}
-```
-Can lead the library to hang forever.
 
 ## Tribute
 
