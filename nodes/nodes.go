@@ -302,19 +302,12 @@ func (c *Call) String() string {
 type Getitem struct {
 	Location *tokens.Token
 	Node     Node
-	Arg      string
-	Index    int
+	Arg      Node
 }
 
 func (g *Getitem) Position() *tokens.Token { return g.Location }
 func (g *Getitem) String() string {
-	var param string
-	if g.Arg != "" {
-		param = g.Arg
-	} else {
-		param = strconv.Itoa(g.Index)
-	}
-	return fmt.Sprintf("%s[%s]", g.Node, param)
+	return fmt.Sprintf("%s[%s]", g.Node, g.Arg)
 }
 
 type Getattr struct {

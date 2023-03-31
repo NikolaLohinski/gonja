@@ -268,6 +268,9 @@ value
 ```
 
 ### The `get` filter
+| **ℹ️** This filter was initially created because expressions like `obj[pipeline]` were not possible which is not the case anymore as of `v1.3.2` |
+| --- |
+
 
 The `get` filter helps getting an item in a map with a dynamic key:
 

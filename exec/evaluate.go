@@ -282,35 +282,36 @@ func (e *Evaluator) evalGetitem(node *nodes.Getitem) *Value {
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
 	}
-
-	if node.Arg != "" {
-		item, found := value.Getitem(node.Arg)
-		if !found {
-			item, found = value.Getattr(node.Arg)
-		}
-		if !found {
-			if item.IsError() {
-				return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))
-			}
-			if e.Config.StrictUndefined {
-				return AsValue(errors.Errorf(`Unable to evaluate %s: item '%s' not found`, node, node.Arg))
-			}
-			return AsValue(nil)
-		}
-		return item
-	} else {
-		item, found := value.Getitem(node.Index)
-		if !found {
-			if item.IsError() {
-				return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))
-			}
-			if e.Config.StrictUndefined {
-				return AsValue(errors.Errorf(`Unable to evaluate %s: item %d not found`, node, node.Index))
-			}
-			return AsValue(nil)
-		}
-		return item
+	if node.Arg == nil {
+		return AsValue(errors.Wrapf(value, `Argument not provided %s`, node.Node))
 	}
+
+	argument := e.Eval(node.Arg)
+	var key interface{}
+	switch {
+	case argument != nil && argument.IsString():
+		key = argument.String()
+	case argument != nil && argument.IsInteger():
+		key = argument.Integer()
+	default:
+		return AsValue(errors.Wrapf(value, `Argument %s does not evaluate to string or integer in: %s`, node.Arg, node.Node))
+	}
+
+	item, found := value.Getitem(key)
+	if !found && argument.IsString() {
+		item, found = value.Getattr(argument.String())
+	}
+	if !found {
+		if item.IsError() || argument.IsInteger() /* always fail when accessing array indexes */ {
+			return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))
+		}
+		if e.Config.StrictUndefined {
+			return AsValue(errors.Errorf(`Unable to evaluate %s: item '%s' not found`, node, node.Arg))
+		}
+		return AsValue(nil)
+	}
+	return item
+
 }
 
 func (e *Evaluator) evalGetattr(node *nodes.Getattr) *Value {

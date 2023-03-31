@@ -530,7 +530,7 @@ func (l *Lexer) lexString() lexFn {
 			near = append(near, r)
 		}
 		if r == rEOF {
-			return l.errorf(`unclosed string near line %d near "%s"`, l.Position().Line, string(near))
+			return l.errorf(`%s`, string(near))
 		}
 	}
 	l.processAndEmit(String, unescape)

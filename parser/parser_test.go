@@ -355,9 +355,17 @@ var testCases = []struct {
 			"Node": specs{nodes.Name{}, attrs{
 				"Name": _token("a_var"),
 			}},
-			"Arg": val{"item"},
+			"Arg": _literal(nodes.String{}, "item"),
 		}},
 	}}},
+	// {"variable array access", "{{ a_var[b_var] }}", specs{nodes.Output{}, attrs{
+	// 	"Expression": specs{nodes.Getitem{}, attrs{
+	// 		"Node": specs{nodes.Name{}, attrs{
+	// 			"Name": _token("a_var"),
+	// 		}},
+	// 		"Arg": val{"item"},
+	// 	}},
+	// }}},
 	{"variable and filter", "{{ a_var|safe }}", specs{nodes.Output{}, attrs{
 		"Expression": specs{nodes.FilteredExpression{}, attrs{
 			"Expression": specs{nodes.Name{}, attrs{

@@ -2,6 +2,7 @@ package parser
 
 import (
 	// "fmt"
+
 	"strconv"
 	"strings"
 
@@ -275,22 +276,36 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 			variable = getattr
 			continue
 		} else if bracket := p.Match(tokens.Lbracket); bracket != nil {
+			tok := p.Match(tokens.String, tokens.Integer)
 			getitem := &nodes.Getitem{
 				Location: dot,
 				Node:     variable,
 			}
-			tok := p.Match(tokens.String, tokens.Integer)
-			switch tok.Type {
-			case tokens.String:
-				getitem.Arg = tok.Val
-			case tokens.Integer:
-				i, err := strconv.Atoi(tok.Val)
-				if err != nil {
-					return nil, p.Error(err.Error(), tok)
+			if tok != nil {
+				switch tok.Type {
+				case tokens.String:
+					getitem.Arg = &nodes.String{
+						Location: tok,
+						Val:      strings.Trim(tok.Val, "\""),
+					}
+				case tokens.Integer:
+					i, err := strconv.Atoi(tok.Val)
+					if err != nil {
+						return nil, p.Error(err.Error(), tok)
+					}
+					getitem.Arg = &nodes.Integer{
+						Location: tok,
+						Val:      i,
+					}
+				default:
+					return nil, p.Error("This token is not allowed within a variable name.", p.Current())
 				}
-				getitem.Index = i
-			default:
-				return nil, p.Error("This token is not allowed within a variable name.", p.Current())
+			} else {
+				expression, err := p.ParseExpression()
+				if err != nil {
+					return nil, p.Error("Invalid expression", p.Current())
+				}
+				getitem.Arg = expression
 			}
 			variable = getitem
 			if p.Match(tokens.Rbracket) == nil {

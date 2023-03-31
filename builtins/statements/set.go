@@ -37,7 +37,7 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 		if target.IsError() {
 			return errors.Wrapf(target, `Unable to evaluate target %s`, n)
 		}
-		if err := target.Set(n.Attr, value.Interface()); err != nil {
+		if err := target.Set(exec.AsValue(n.Attr), value.Interface()); err != nil {
 			return errors.Wrapf(err, `Unable to set value on "%s"`, n.Attr)
 		}
 	case *nodes.Getitem:
@@ -45,7 +45,11 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 		if target.IsError() {
 			return errors.Wrapf(target, `Unable to evaluate target %s`, n)
 		}
-		if err := target.Set(n.Arg, value.Interface()); err != nil {
+		arg := r.Eval(n.Arg)
+		if arg.IsError() {
+			return errors.Wrapf(target, `Unable to evaluate argument %s`, n.Arg)
+		}
+		if err := target.Set(arg, value.Interface()); err != nil {
 			return errors.Wrapf(err, `Unable to set value on "%s"`, n.Arg)
 		}
 	default:

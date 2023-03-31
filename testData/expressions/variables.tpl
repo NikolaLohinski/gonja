@@ -6,7 +6,9 @@
 {{ None }}
 {{ nil }}
 {{ simple.uint }}
-{{ simple['uint'] }}
+{%- set str = "UINT" %}
+{{ simple[str | lower] }}
+{{ simple["uint"] }}
 {{ simple.nil }}
 {{ simple.str }}
 {{ simple.bool_false }}

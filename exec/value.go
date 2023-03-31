@@ -919,7 +919,7 @@ func (v *Value) Get(key string) (*Value, bool) {
 	return value, found
 }
 
-func (v *Value) Set(key string, value interface{}) error {
+func (v *Value) Set(key *Value, value interface{}) error {
 	if v.IsNil() {
 		return errors.New(`Can't set attribute or item on None`)
 	}
@@ -934,14 +934,17 @@ func (v *Value) Set(key string, value interface{}) error {
 
 	switch val.Kind() {
 	case reflect.Struct:
-		field := val.FieldByName(key)
+		if !key.IsString() {
+			return errors.Errorf(`Can't write non-string field "%s" to struct: %s`, key, value)
+		}
+		field := val.FieldByName(key.String())
 		if field.IsValid() && field.CanSet() {
 			field.Set(reflect.ValueOf(value))
 		} else {
 			return errors.Errorf(`Can't write field "%s"`, key)
 		}
 	case reflect.Map:
-		val.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
+		val.SetMapIndex(key.Val, reflect.ValueOf(value))
 	default:
 		return errors.Errorf(`Unkown type "%s", can't set value on "%s"`, val.Kind(), key)
 	}

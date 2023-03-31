@@ -277,7 +277,7 @@ func TestValueSet(t *testing.T) {
 			assert := assert.New(t)
 
 			value := exec.AsValue(test.value)
-			err := value.Set(test.attr, test.set)
+			err := value.Set(exec.AsValue(test.attr), test.set)
 
 			if test.error {
 				assert.NotNil(err)
