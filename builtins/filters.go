@@ -1781,7 +1781,7 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
 	}
-	if in.IsError() || in.IsNil() || (in.IsBool() && !in.IsTrue()) {
+	if in.IsError() || in.IsNil() {
 		return p.First()
 	}
 	return in
