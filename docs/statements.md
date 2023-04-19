@@ -2,16 +2,16 @@
 
 This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _statement_  (or _control structure_) is a special keyword that can be used in block to achieve conditional logic in a template.
 
-Any statement that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any statement that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-control-structures) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.0.x/templates/) can be used as additional reference.
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 ### The `if` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#if) |
+| --- |
 
 The `if` statement in Jinja is comparable with `python`'s `if` statement.
 
@@ -26,8 +26,8 @@ The `if` statement in Jinja is comparable with `python`'s `if` statement.
 ```
 
 ### The `set` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments) |
+| --- |
 
 Inside code blocks, you can also assign values to variables:
 
@@ -39,8 +39,8 @@ Inside code blocks, you can also assign values to variables:
 For more details on scoping especially within a `for` loop, please refer to the `python` [implementation documentation](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments).
 
 ### The `for` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#for) |
+| --- |
 
 Loop over each item in a sequence. For example, to display a list of users provided in a variable called users:
 
@@ -66,8 +66,8 @@ For more details on the special variables available within the loop, please refe
 
 
 ### The `include` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#include) |
+| --- |
 
 The include tag is useful to include a template and return the rendered contents of that file into the current namespace:
 
@@ -78,8 +78,8 @@ The include tag is useful to include a template and return the rendered contents
 ```
 
 ### The `with` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-statement) |
+| --- |
 
 The with statement makes it possible to create a new inner scope. Variables set within this scope are not visible outside of the scope.
 
@@ -97,7 +97,7 @@ Which is equivalent to:
 ```
 
 ### The `filter` statement
-| 🐍 `python` |
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#id11) |
 |-------------|
 
 Filter sections allow you to apply regular Jinja filters on a full node of template data. It just wraps the code in the special `filter` section:
@@ -110,8 +110,8 @@ Filter sections allow you to apply regular Jinja filters on a full node of templ
 
 
 ### The `raw` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#escaping) |
+| --- |
 
 It is sometimes desirable – even necessary – to have Jinja ignore parts it would otherwise handle as variables or blocks and is possible with the `raw` statement:
 ```html
@@ -125,8 +125,8 @@ It is sometimes desirable – even necessary – to have Jinja ignore parts it w
 ```
 
 ### The `block` and `extends` statements
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#child-template) |
+| --- |
 
 The most powerful part of Jinja is template inheritance. Template inheritance allows you to build a base “skeleton” template that contains all the common elements of your site and defines blocks that child templates can override.
 
@@ -174,8 +174,8 @@ A child template might look like this:
 The `{% extends %}` tag is the key here. It tells the template engine that this template “extends” another template. When the template system evaluates this template, it first locates the parent. The extends tag should be the first tag in the template. Everything before it is printed out normally and may cause confusion. Also a block will always be filled in regardless of whether the surrounding condition is evaluated to be `True` or `False`.
 
 ### The `import` and `macro` statements
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#import) |
+| --- |
 
 Jinja supports putting often used code into macros. Macros are comparable with functions in regular programming languages. They are useful to put often used idioms into reusable functions to not repeat yourself (“DRY”). These macros can go into different templates and get imported from there. This works similarly to the `import` statements in Python.
 
@@ -221,7 +221,7 @@ Alternatively, you can `import` specific names from a template into the current 
 Included templates have access to the variables of the active context by default.
 
 ### The `autoescape` statement
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#autoescape-overrides) |
+| --- |
 
 If you want you can activate and deactivate the autoescaping from within the templates.

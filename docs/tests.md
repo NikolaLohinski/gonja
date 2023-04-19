@@ -10,29 +10,35 @@ A test can be used in blocks and/or expressions to trigger conditional behavior,
 {% end if%}
 ```
 
-Any test that is also implemented in the `python` version of the Jinja engine will be marked with the following tag:
+Any test that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
 
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-builtin-tests) |
+| --- |
 
-For any of those, the [official documentation for `python`'s Jinja implementation](https://jinja.palletsprojects.com/en/3.1.x/templates/#list-of-builtin-tests)  can be used as additional reference.
+Which can be used to browse the `python` dedicated documentation for additional details.
 
 
 ### The `callable` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.callable) |
+| --- |
 
 Return whether the object is callable (i.e., some kind of function).
 
-### The `defined` and `undefined` tests
-| 🐍 `python` |
+### The `defined` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.defined) |
+| --- |
+
+Tells whether a variable is defined.
+
+### The  `undefined` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.undefined) |
 |-------------|
 
-Tells whether a variable is `defined` or `undefined`.
+Tells when a variable is not defined.
 
 ### The `divisibleby` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.divisibleby) |
+| --- |
 
 Check if a variable is divisible by a number.
 ```
@@ -41,27 +47,58 @@ Check if a variable is divisible by a number.
 {% endif %}
 ```
 
-### The `eq`/`equalto`/`==` and `ne`/`!=` tests
-| 🐍 `python` |
-|-------------|
+### The `eq`, `equalto` or `==` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.eq) |
+| --- |
 
-Classic arithmetic equality and inequality comparisons.
+Classic equality comparisons.
 
-### The `ge`/`>=`, `gt`/`>`, `le`/`<=` and `lt`/`<` tests
-| 🐍 `python` |
-|-------------|
+### The `ne`  or `!=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.ne) |
+| --- |
+
+Classic arithmetic inequality comparisons.
+
+### The `ge` or `>=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.ge) |
+| --- |
 
 Classic arithmetic comparisons.
 
-### The `even` and `odd` tests
-| 🐍 `python` |
-|-------------|
+### The `gt` or `>` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.gt) |
+| --- |
 
-Tells whether a given number can be divided by 2 (`even`) or not (`odd`).
+Classic arithmetic comparisons.
+
+### The `le` or `<=` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.le) |
+| --- |
+
+Classic arithmetic comparisons.
+
+
+### The `lt` or `<` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.lt) |
+| --- |
+
+Classic arithmetic comparisons.
+
+### The `even` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.even) |
+| --- |
+
+Tells whether a given number can be divided by 2.
+
+### The `odd` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.odd) |
+| --- |
+
+Tells whether a given number can not be divided by 2.
 
 ### The `in` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.in) |
+| --- |
 
 Return whether the input contains the argument:
 * on strings, tells whether the provided substring is part of the tested one ;
@@ -74,9 +111,9 @@ Return whether the input contains the argument:
 {{ "value" is in {"key": "value"} }}  // False
 ```
 
-### The `iterable` tests
-| 🐍 `python` |
-|-------------|
+### The `iterable` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.iterable) |
+| --- |
 
 Check if it’s possible to iterate over the tested input, i.e the object is either a list, a dictionary or a string.
 
@@ -84,13 +121,31 @@ Check if it’s possible to iterate over the tested input, i.e the object is eit
 Check if the input is empty. Works on strings, lists and dictionaries.
 
 ### The `none` test
-| 🐍 `python` |
-|-------------|
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.none) |
+| --- |
 
 Return `True` if the input is `nil` or `None`
 
-### The `mapping`,`sequence`, `number` and `string` tests
-| 🐍 `python` |
-|-------------|
+### The `mapping` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.mapping) |
+| --- |
+
+Classic type casting tests.
+
+### The `sequence` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.sequence) |
+| --- |
+
+Classic type casting tests.
+
+### The `number` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.number) |
+| --- |
+
+Classic type casting tests.
+
+### The `string` test
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-tests.string) |
+| --- |
 
 Classic type casting tests.
