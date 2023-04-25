@@ -1777,11 +1777,17 @@ func filterPanic(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 }
 
 func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	p := params.ExpectArgs(1)
-	if p.IsError() {
+	p := params.Expect(1, []*exec.KwArg{{
+		Name:    "boolean",
+		Default: false,
+	}})
+	if p.IsError() || !p.GetKwarg("boolean", false).IsBool() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
 	}
 	if in.IsError() || in.IsNil() {
+		return p.First()
+	}
+	if p.GetKwarg("boolean", false).Bool() && !in.Bool() {
 		return p.First()
 	}
 	return in

@@ -3,3 +3,5 @@ n/a
 42
 5
 False
+false with boolean argument should hit default
+empty string with boolean argument should hit default
