@@ -1,2 +1,2 @@
-{{ '  test  '|trim }}
-{{ "  \ntest\n  "|trim }}
+{{ '  spaces  ' | trim }}
+{{ '#%custom chars#' | trim(chars="#%") }}
