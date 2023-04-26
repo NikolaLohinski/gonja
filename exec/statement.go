@@ -65,9 +65,6 @@ func (ss StatementSet) Exists(name string) bool {
 // Registers a new tag. You usually want to call this
 // function in the tag's init() function:
 // http://golang.org/doc/effective_go.html#init
-//
-// See http://www.florian-schlachter.de/post/gonja/ for more about
-// writing filters and tags.
 func (ss *StatementSet) Register(name string, parser parser.StatementParser) error {
 	if ss.Exists(name) {
 		return errors.Errorf("Statement '%s' is already registered", name)

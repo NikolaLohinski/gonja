@@ -24,7 +24,7 @@ func (ms MacroSet) Exists(name string) bool {
 // function in the filter's init() function:
 // http://golang.org/doc/effective_go.html#init
 //
-// See http://www.florian-schlachter.de/post/gonja/ for more about
+// See http://www.john-doe.de/post/gonja/ for more about
 // writing filters and tags.
 func (ms *MacroSet) Register(name string, fn Macro) error {
 	if ms.Exists(name) {

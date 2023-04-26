@@ -21,9 +21,6 @@ func (fs FilterSet) Exists(name string) bool {
 // name, Register will panic. You usually want to call this
 // function in the filter's init() function:
 // http://golang.org/doc/effective_go.html#init
-//
-// See http://www.florian-schlachter.de/post/gonja/ for more about
-// writing filters and tags.
 func (fs *FilterSet) Register(name string, fn FilterFunction) error {
 	if fs.Exists(name) {
 		return errors.Errorf("filter with name '%s' is already registered", name)

@@ -22,9 +22,6 @@ func (ts TestSet) Exists(name string) bool {
 // name, RegisterTest will panic. You usually want to call this
 // function in the test's init() function:
 // http://golang.org/doc/effective_go.html#init
-//
-// See http://www.florian-schlachter.de/post/gonja/ for more about
-// writing tests and tags.
 func (ts *TestSet) Register(name string, fn TestFunction) error {
 	if ts.Exists(name) {
 		return errors.Errorf("test with name '%s' is already registered", name)

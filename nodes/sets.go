@@ -17,7 +17,7 @@ func (bs BlockSet) Exists(name string) bool {
 // function in the filter's init() function:
 // http://golang.org/doc/effective_go.html#init
 //
-// See http://www.florian-schlachter.de/post/gonja/ for more about
+// See http://www.john-doe.de/post/gonja/ for more about
 // writing filters and tags.
 func (bs *BlockSet) Register(name string, w *Wrapper) error {
 	if bs.Exists(name) {
