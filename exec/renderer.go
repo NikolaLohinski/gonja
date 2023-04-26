@@ -58,7 +58,26 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		_, err := r.Out.WriteString(output)
 		return nil, err
 	case *nodes.Output:
-		value := r.Eval(n.Expression)
+		var value *Value
+		if n.Condition != nil {
+			condition := r.Eval(n.Condition)
+			if condition.IsError() {
+				return nil, errors.Wrapf(condition, `Unable to render condition at line %d: %s`, n.Condition.Position().Line, n.Condition)
+			}
+			if !condition.IsNil() && condition.IsTrue() {
+				value = r.Eval(n.Expression)
+			} else if condition.IsNil() || !condition.IsTrue() {
+				if n.Alternative != nil {
+					value = r.Eval(n.Alternative)
+				} else {
+					return nil, nil
+				}
+			} else {
+				return nil, errors.Wrapf(condition, `Unable to evaluation condition as boolean at line %d: %s`, n.Condition.Position().Line, n.Condition)
+			}
+		} else {
+			value = r.Eval(n.Expression)
+		}
 		if value.IsError() {
 			return nil, errors.Wrapf(value, `Unable to render expression at line %d: %s`, n.Expression.Position().Line, n.Expression)
 		}
