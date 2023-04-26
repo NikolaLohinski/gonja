@@ -103,13 +103,21 @@ func (c *Comment) String() string {
 
 // Ouput represents a printable expression node {{ }}
 type Output struct {
-	Start      *tokens.Token
-	Expression Expression
-	End        *tokens.Token
+	Start       *tokens.Token
+	Expression  Expression
+	Condition   Expression
+	Alternative Expression
+	End         *tokens.Token
 }
 
 func (o *Output) Position() *tokens.Token { return o.Start }
 func (o *Output) String() string {
+	if o.Alternative != nil {
+		return fmt.Sprintf("output(%s if %s else %s)", o.Expression, o.Condition, o.Alternative)
+	}
+	if o.Condition != nil {
+		return fmt.Sprintf("output(%s if %s)", o.Expression, o.Condition)
+	}
 	return fmt.Sprintf("output(%s)", o.Expression)
 }
 

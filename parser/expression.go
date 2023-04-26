@@ -82,6 +82,10 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 	}
 	node.Expression = expr
 
+	// TODO: implement conditional logic
+	// if p.MatchName("if") != nil {
+	// }
+
 	tok = p.Match(tokens.VariableEnd)
 	if tok == nil {
 		return nil, p.Error("'}}' expected here", p.Current())
