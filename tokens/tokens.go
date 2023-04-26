@@ -15,7 +15,6 @@ const (
 	Div
 	Dot
 	Eq
-	// EqEq
 	Floordiv
 	Gt
 	Gteq
@@ -24,10 +23,9 @@ const (
 	Lparen
 	Lt
 	Lteq
-	// Not
-	// And
-	// Or
-	// Neq
+	Not
+	And
+	Or
 	Mod
 	Mul
 	Ne
@@ -66,27 +64,25 @@ const (
 
 // TokenNames maps token types to their human readable name
 var Names = map[Type]string{
-	Error:  "Error",
-	Add:    "Add",
-	Assign: "Assign",
-	Colon:  "Colon",
-	Comma:  "Comma",
-	Div:    "Div",
-	Dot:    "Dot",
-	Eq:     "Eq",
-	// EqEq:     "EqEq",
-	Floordiv: "Floordiv",
-	Gt:       "Gt",
-	Gteq:     "Gteq",
-	Lbrace:   "Lbrace",
-	Lbracket: "Lbracket",
-	Lparen:   "Lparen",
-	Lt:       "Lt",
-	Lteq:     "Lteq",
-	// Not:                "Not",
-	// And:                "And",
-	// Or:                 "Or",
-	// Neq:                "Neq",
+	Error:              "Error",
+	Add:                "Add",
+	Assign:             "Assign",
+	Colon:              "Colon",
+	Comma:              "Comma",
+	Div:                "Div",
+	Dot:                "Dot",
+	Eq:                 "Eq",
+	Not:                "Not",
+	Floordiv:           "Floordiv",
+	Gt:                 "Gt",
+	Gteq:               "Gteq",
+	Lbrace:             "Lbrace",
+	Lbracket:           "Lbracket",
+	Lparen:             "Lparen",
+	Lt:                 "Lt",
+	Lteq:               "Lteq",
+	And:                "And",
+	Or:                 "Or",
 	Mod:                "Mod",
 	Mul:                "Mul",
 	Ne:                 "Ne",

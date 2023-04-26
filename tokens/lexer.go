@@ -330,18 +330,9 @@ func (l *Lexer) lexBlockEnd() lexFn {
 func (l *Lexer) lexExpression() lexFn {
 	for {
 		if !l.expectDelimiter(l.peek()) {
-			if l.hasPrefix(l.Config.VariableEndString) { // && l.expectDelimiter(l.peek()) {
+			if l.hasPrefix(l.Config.VariableEndString) {
 				return l.lexVariableEnd
 			}
-
-			// if this is the rightDelim, but we are expecting the next char as a delimiter
-			// then skip marking this as rightDelim.  This allows us to have, eg, '}}' as
-			// part of a literal inside a var block.
-			// if strings.HasPrefix(l.input[l.pos:], l.rightDelim) && !l.shouldExpectDelim(l.peek()) {
-			// 	l.pos += Pos(len(l.rightDelim))
-			// 	l.emitRight()
-			// 	return lexText
-			// }
 
 			if l.hasPrefix(l.Config.BlockEndString) {
 				return l.lexBlockEnd
@@ -349,31 +340,21 @@ func (l *Lexer) lexExpression() lexFn {
 		}
 
 		r := l.next()
-		// remaining := l.Input[l.Pos:]
 		switch {
 		case isSpace(r):
 			return l.lexSpace
 		case isNumeric(r):
 			return l.lexNumber
-		case isAlphaNumeric(r):
-			return l.lexIdentifier
-		}
-
-		switch r {
-		case '"', '\'':
+		case r == '"' || r == '\'':
 			l.backup()
 			return l.lexString
-		case ',':
+		case r == ',':
 			l.emit(Comma)
-		case '|':
+		case r == '|':
 			l.emit(Pipe)
-			// if l.accept("|") {
-			// 	l.emit(Or)
-			// } else {
-			// }
-		case '+':
+		case r == '+':
 			l.emit(Add)
-		case '-':
+		case r == '-':
 			if l.hasPrefix(l.Config.BlockEndString) {
 				l.backup()
 				return l.lexBlockEnd
@@ -383,84 +364,97 @@ func (l *Lexer) lexExpression() lexFn {
 			} else {
 				l.emit(Sub)
 			}
-		case '~':
+		case r == '~':
 			l.emit(Tilde)
-		case ':':
+		case r == ':':
 			l.emit(Colon)
-		case '.':
+		case r == '.':
 			l.emit(Dot)
-		case '%':
+		case r == '%':
 			l.emit(Mod)
-		case '/':
+		case r == '/':
 			if l.accept("/") {
 				l.emit(Floordiv)
 			} else {
 				l.emit(Div)
 			}
-		case '<':
+		case r == '<':
 			if l.accept("=") {
 				l.emit(Lteq)
 			} else {
 				l.emit(Lt)
 			}
-		case '>':
+		case r == '>':
 			if l.accept("=") {
 				l.emit(Gteq)
 			} else {
 				l.emit(Gt)
 			}
-		case '*':
+		case r == '*':
 			if l.accept("*") {
 				l.emit(Pow)
 			} else {
 				l.emit(Mul)
 			}
-		case '!':
+		case r == '!':
 			if l.accept("=") {
 				l.emit(Ne)
 			} else {
 				// l.emit(Not)
 				l.errorf(`Unexpected "!"`)
 			}
-		// case '&':
-		// 	if l.accept("&") {
-		// 		l.emit(And)
-		// 	} else {
-		// 		return nil
-		// 	}
-		case '=':
+		case r == '=':
 			if l.accept("=") {
 				l.emit(Eq)
 			} else {
 				l.emit(Assign)
 			}
-		case '(':
+		case r == '(':
 			l.emit(Lparen)
 			l.pushDelimiter(')')
-		case '{':
+		case r == '{':
 			l.emit(Lbrace)
 			l.pushDelimiter('}')
-		case '[':
+		case r == '[':
 			l.emit(Lbracket)
 			l.pushDelimiter(']')
-		case ')':
+		case r == ')':
 			if !l.popDelimiter(')') {
 				return nil
 			}
 			l.emit(Rparen)
-		case '}':
+		case r == '}':
 			if !l.popDelimiter('}') {
 				return nil
 			}
 			l.emit(Rbrace)
-		case ']':
+		case r == ']':
 			if !l.popDelimiter(']') {
 				return nil
 			}
 			l.emit(Rbracket)
+		// and
+		case r == 'a' && l.accept("n"):
+			if !(l.accept("d") && isSpace(l.peek())) {
+				return l.lexIdentifier
+			}
+			l.emit(And)
+		// or
+		case r == 'o' && l.accept("r"):
+			if !isSpace(l.peek()) {
+				return l.lexIdentifier
+			}
+			l.emit(Or)
+		// not
+		case r == 'n' && l.accept("o"):
+			if !(l.accept("t") && isSpace(l.peek())) {
+				return l.lexIdentifier
+			}
+			l.emit(Not)
+		case isAlphaNumeric(r):
+			return l.lexIdentifier
 		}
 	}
-	return l.lexData
 }
 
 func (l *Lexer) lexSpace() lexFn {

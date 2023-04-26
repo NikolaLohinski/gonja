@@ -213,6 +213,29 @@ var lexerCases = []struct {
 		blockBegin, space, name("endif"), space, blockEnd,
 		EOF,
 	}},
+	{"logical 'and' expression", `{{ a is defined and a == "x" }}`, []tok{
+		varBegin,
+		space, name("a"), space, name("is"), space, name("defined"),
+		space, {tokens.And, "and"},
+		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
+		varEnd,
+		EOF,
+	}},
+	{"logical 'or' expression", `{{ a is defined or a == "x" }}`, []tok{
+		varBegin,
+		space, name("a"), space, name("is"), space, name("defined"),
+		space, {tokens.Or, "or"},
+		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
+		varEnd,
+		EOF,
+	}},
+	{"logical 'not' expression", `{{ not a }}`, []tok{
+		varBegin,
+		space, {tokens.Not, "not"},
+		space, name("a"), space,
+		varEnd,
+		EOF,
+	}},
 }
 
 func tokenSlice(c chan *tokens.Token) []*tokens.Token {

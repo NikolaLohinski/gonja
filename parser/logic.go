@@ -7,43 +7,17 @@ import (
 )
 
 var compareOps = []tokens.Type{
-	tokens.Eq, tokens.Ne,
-	tokens.Gt, tokens.Gteq,
-	tokens.Lt, tokens.Lteq,
-	// "in", "not in") != nil || p.PeekOne(TokenSymbol, "==", "<=", ">=", "!=", "<>", ">", "<"
+	tokens.Eq,
+	tokens.Ne,
+	tokens.Gt,
+	tokens.Gteq,
+	tokens.Lt,
+	tokens.Lteq,
 }
 
 func BinOp(token *tokens.Token) *nodes.BinOperator {
-	return &nodes.BinOperator{token}
+	return &nodes.BinOperator{Token: token}
 }
-
-// type negation struct {
-// 	term     Expression
-// 	operator *Token
-// }
-
-// func (expr *negation) String() string {
-// 	t := expr.GetPositionToken()
-
-// 	return fmt.Sprintf("<Negation term=%s Line=%d Col=%d>", expr.term, t.Line, t.Col)
-// }
-
-// func (expr *negation) FilterApplied(name string) bool {
-// 	return expr.term.FilterApplied(name)
-// }
-
-// func (expr *negation) GetPositionToken() *Token {
-// 	return expr.operator
-// }
-
-// func (expr *negation) Evaluate(ctx *ExecutionContext) (*Value, error) {
-// 	result, err := expr.term.Evaluate(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return result.Negate(), nil
-// }
 
 func (p *Parser) ParseLogicalExpression() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
@@ -64,7 +38,7 @@ func (p *Parser) parseOr() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.CurrentName("or") != nil {
+	for p.Current(tokens.Or) != nil {
 		op := BinOp(p.Pop())
 		right, err := p.parseAnd()
 		if err != nil {
@@ -95,15 +69,14 @@ func (p *Parser) parseAnd() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.CurrentName("and") != nil {
+	for p.Current(tokens.And) != nil {
 		op := BinOp(p.Pop())
-		// binExpr :=
 
 		right, err := p.parseNot()
 		if err != nil {
 			return nil, err
 		}
-		// binExpr.right = right
+
 		expr = &nodes.BinaryExpression{
 			Left:     expr,
 			Right:    right,
@@ -122,7 +95,7 @@ func (p *Parser) parseNot() (nodes.Expression, error) {
 		"current": p.Current(),
 	}).Trace("parseNot")
 
-	op := p.MatchName("not")
+	op := p.Match(tokens.Not)
 	expr, err := p.parseCompare()
 	if err != nil {
 		return nil, err
@@ -153,15 +126,9 @@ func (p *Parser) parseCompare() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	// for p.PeekOne(TokenKeyword, "in", "not in") != nil || p.PeekOne(TokenSymbol, "==", "<=", ">=", "!=", "<>", ">", "<") != nil {
-	for p.Current(compareOps...) != nil || p.CurrentName("in", "not") != nil {
+	for p.Current(append(compareOps, tokens.Not)...) != nil || p.CurrentName("in") != nil {
 
 		op := p.Pop()
-		// if op = p.MatchOne(TokenKeyword, "in", "not in"); op == nil {
-		// 	if op = p.MatchOne(TokenSymbol, "==", "<=", ">=", "!=", "<>", ">", "<"); op == nil {
-		// 		return nil, p.Error("Unexpected operator %s", p.Current())
-		// 	}
-		// }
 
 		right, err := p.ParseMath()
 		if err != nil {

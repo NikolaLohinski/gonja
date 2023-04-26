@@ -18,16 +18,11 @@ func (p *Parser) ParseFilterExpression(expr nodes.Expression) (nodes.Expression,
 			Expression: expr,
 		}
 		for p.Match(tokens.Pipe) != nil {
-			// Parse one single filter
+
 			filter, err := p.ParseFilter()
 			if err != nil {
 				return nil, err
 			}
-
-			// Check sandbox filter restriction
-			// if _, isBanned := p.template.set.bannedFilters[filter.name]; isBanned {
-			// 	return nil, p.Error(fmt.Sprintf("Usage of filter '%s' is not allowed (sandbox restriction active).", filter.name), nil)
-			// }
 
 			filtered.Filters = append(filtered.Filters, filter)
 		}
@@ -40,8 +35,8 @@ func (p *Parser) ParseFilterExpression(expr nodes.Expression) (nodes.Expression,
 	return expr, nil
 }
 
-// ParseExpression parses an expression with optionnal filters
-// Nested expression shoulds call this method
+// ParseExpression parses an expression with optional filters
+// Nested expression should call this method
 func (p *Parser) ParseExpression() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
