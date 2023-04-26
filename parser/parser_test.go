@@ -553,6 +553,25 @@ var testCases = []struct {
 			}},
 		}},
 	}}},
+	{"inlined if condition", "{{ 'foo' if 2 is odd }}", specs{nodes.Output{}, attrs{
+		"Expression": _literal(nodes.String{}, "foo"),
+		"Condition": specs{nodes.TestExpression{}, attrs{
+			"Expression": _literal(nodes.Integer{}, int64(2)),
+			"Test": specs{nodes.TestCall{}, attrs{
+				"Name": val{"odd"},
+			}},
+		}},
+	}}},
+	{"inlined if else condition", "{{ 'foo' if 2 is odd else 'bar' }}", specs{nodes.Output{}, attrs{
+		"Expression": _literal(nodes.String{}, "foo"),
+		"Condition": specs{nodes.TestExpression{}, attrs{
+			"Expression": _literal(nodes.Integer{}, int64(2)),
+			"Test": specs{nodes.TestCall{}, attrs{
+				"Name": val{"odd"},
+			}},
+		}},
+		"Alternative": _literal(nodes.String{}, "bar"),
+	}}},
 }
 
 // func parseText(text string) (*nodeDocument, *Error) {

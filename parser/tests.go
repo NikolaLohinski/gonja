@@ -27,12 +27,13 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 			Args:   []nodes.Expression{},
 			Kwargs: map[string]nodes.Expression{},
 		}
-
-		arg, err := p.ParseExpression()
-		if err == nil && arg != nil {
-			test.Args = append(test.Args, arg)
+		// avoid trying to parse "else" as test arguments
+		if p.CurrentName("else") == nil {
+			arg, err := p.ParseExpression()
+			if err == nil && arg != nil {
+				test.Args = append(test.Args, arg)
+			}
 		}
-
 		expr = &nodes.TestExpression{
 			Expression: expr,
 			Test:       test,

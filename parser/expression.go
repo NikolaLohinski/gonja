@@ -82,9 +82,27 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 	}
 	node.Expression = expr
 
-	// TODO: implement conditional logic
-	// if p.MatchName("if") != nil {
-	// }
+	if p.MatchName("if") != nil {
+		condition, err := p.ParseExpression()
+		if err != nil {
+			return nil, err
+		}
+		if condition == nil {
+			return nil, p.Error("Expected a condition", p.Current())
+		}
+		node.Condition = condition
+
+		if p.MatchName("else") != nil {
+			alternative, err := p.ParseExpression()
+			if err != nil {
+				return nil, err
+			}
+			if expr == nil {
+				return nil, p.Error("Expected an alternative", p.Current())
+			}
+			node.Alternative = alternative
+		}
+	}
 
 	tok = p.Match(tokens.VariableEnd)
 	if tok == nil {
