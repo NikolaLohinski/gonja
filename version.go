@@ -1,3 +1,3 @@
 package gonja
 
-const VERSION = "1.3.4"
+const VERSION = "1.4.1"
