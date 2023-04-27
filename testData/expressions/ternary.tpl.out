@@ -2,3 +2,6 @@ simple if when true
 
 if and else when true
 if and else when false
+when condition is nil
+when condition is empty string
+when condition is 0
