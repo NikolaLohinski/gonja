@@ -83,3 +83,13 @@ Prev/Next items with if
 {%- for idx in range(6) if idx is even  %}
 {{ idx }}: prev: {{ loop.PrevItem }} next: {{ loop.NextItem }}
 {%- endfor %}
+
+Else with if
+{% set keywords = ["yes", "hello"] -%}
+{%- for w in keywords if w in ["no"] -%}
+{%- if loop.first -%}
+match
+{%- endif -%}
+{%- else -%}
+no match
+{%- endfor -%}

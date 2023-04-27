@@ -96,22 +96,18 @@ func (node *ForStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) (forEr
 		}
 		items.Pairs = append(items.Pairs, pair)
 		return true
-	}, func() {
-		// Nothing to iterate over (maybe wrong type or no items)
-		if node.emptyWrapper != nil {
-			sub := r.Inherit()
-			err := sub.ExecuteWrapper(node.emptyWrapper)
-			if err != nil {
-				forError = err
-			}
-		}
-	})
+	}, func() {})
 
 	// 2nd pass: all values are defined, render
 	length := len(items.Pairs)
 	loop := &LoopInfos{
 		first:  true,
 		index0: -1,
+	}
+	if len(items.Pairs) == 0 && node.emptyWrapper != nil {
+		if err := r.Inherit().ExecuteWrapper(node.emptyWrapper); err != nil {
+			return err
+		}
 	}
 	for idx, pair := range items.Pairs {
 		sub := r.Inherit()
