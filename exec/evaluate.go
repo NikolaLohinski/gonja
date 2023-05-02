@@ -311,7 +311,6 @@ func (e *Evaluator) evalGetitem(node *nodes.Getitem) *Value {
 		return AsValue(nil)
 	}
 	return item
-
 }
 
 func (e *Evaluator) evalGetattr(node *nodes.Getattr) *Value {

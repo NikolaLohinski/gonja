@@ -278,7 +278,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 		} else if bracket := p.Match(tokens.Lbracket); bracket != nil {
 			tok := p.Match(tokens.String, tokens.Integer)
 			getitem := &nodes.Getitem{
-				Location: dot,
+				Location: bracket,
 				Node:     variable,
 			}
 			if tok != nil {
