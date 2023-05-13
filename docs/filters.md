@@ -398,17 +398,32 @@ The basic usage is mapping on an attribute. Imagine you have a list of users but
 Users on this page: {{ users | map(attribute='username') | join(', ') }}
 ```
 
-### The `min` filter
-| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.min) |
-| --- |
 
-Return the smallest item from the sequence.
+### The `match` filter
+
+Expects a string holding a regular expression to be passed as an argument to match against the input. Returns `true` if the input matches the expression and `false` otherwise. For example:
+
+```
+{{ "123 is a number" | match("^[0-9]+") }}
+```
+
+will render as:
+
+```
+True
+```
 
 ### The `max` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.max) |
 | --- |
 
 Return the largest item from the sequence.
+
+### The `min` filter
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.min) |
+| --- |
+
+Return the smallest item from the sequence.
 
 ### The `pprint` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.pprint) |

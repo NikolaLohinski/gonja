@@ -75,6 +75,7 @@ var Filters = exec.FilterSet{
 	"list":           filterList,
 	"lower":          filterLower,
 	"map":            filterMap,
+	"match":          filterMatch,
 	"max":            filterMax,
 	"min":            filterMin,
 	"panic":          filterPanic,
@@ -1957,4 +1958,27 @@ func filterFromTOML(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		return exec.AsValue(fmt.Errorf("failed to unmarshal from toml %s: %s", in.String(), err))
 	}
 	return exec.AsValue(*object)
+}
+
+func filterMatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	p := params.ExpectArgs(1)
+	if p.IsError() || len(p.Args) != 1 {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'match'"))
+	}
+	if !in.IsString() {
+		return exec.AsValue(errors.New("Filter 'match' was passed a non-string type input"))
+	}
+	if !p.Args[0].IsString() {
+		return exec.AsValue(errors.New("Filter 'match' was passed a non-string type argument"))
+	}
+	expression := p.Args[0].String()
+	matcher, err := regexp.Compile(expression)
+	if err != nil {
+		return exec.AsValue(fmt.Errorf("failed to compile: %s: %s", expression, err))
+	}
+
+	return exec.AsValue(matcher.MatchString(in.String()))
 }
