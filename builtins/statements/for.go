@@ -180,7 +180,7 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 		}
 	}
 
-	if args.MatchName("in") == nil {
+	if args.Match(tokens.In) == nil {
 		return nil, args.Error("Expected keyword 'in'.", nil)
 	}
 
