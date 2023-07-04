@@ -596,7 +596,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 			items = append(items, ToValue(resolved.Index(i)))
 		}
 
-		if sorted {
+		if sorted && itemCount > 0 {
 			if reverse {
 				if !caseSensitive && items[0].IsString() {
 					sort.Slice(items, func(i, j int) bool {
@@ -614,7 +614,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 					sort.Sort(items)
 				}
 			}
-		} else {
+		} else if itemCount > 2 {
 			if reverse {
 				for i := 0; i < itemCount/2; i++ {
 					items[i], items[itemCount-1-i] = items[itemCount-1-i], items[i]

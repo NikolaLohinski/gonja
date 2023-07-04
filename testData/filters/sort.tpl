@@ -16,3 +16,4 @@
 {{ simple.casedStrmap|sort(true) }}
 {{ simple.casedStrmap|sort(case_sensitive=true) }}
 {{ simple.casedStrmap|sort(true, true) }}
+{{ [] | sort }}
