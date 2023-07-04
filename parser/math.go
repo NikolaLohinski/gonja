@@ -181,6 +181,10 @@ func (p *Parser) ParsePower() (nodes.Expression, error) {
 		"current": p.Current(),
 	}).Trace("ParsePower")
 
+	if p.Current(tokens.In) != nil {
+		return nil, nil
+	}
+
 	expr, err := p.ParseVariableOrLiteral()
 	if err != nil {
 		return nil, err

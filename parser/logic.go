@@ -126,7 +126,7 @@ func (p *Parser) parseCompare() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.Current(append(compareOps, tokens.Not)...) != nil || p.Current(tokens.In) != nil {
+	for p.Current(append(compareOps, tokens.Not, tokens.In)...) != nil {
 
 		op := p.Pop()
 

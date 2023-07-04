@@ -16,3 +16,4 @@
 {% if 0 %}!0{% elif nothing %}nothing{% else %}true{% endif %}
 {% if 0 %}!0{% elif simple.float %}simple.float{% else %}false{% endif %}
 {% if 0 %}!0{% elif not simple.float %}false{% elif "Text" in complex.post%}Elseif with no else{% endif %}
+{% if simple.str != '' and 'foo' not in simple.str | lower %}https://github.com/NikolaLohinski/gonja/issues/7{% endif %}

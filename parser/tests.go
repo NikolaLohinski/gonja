@@ -16,7 +16,17 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 	if err != nil {
 		return nil, err
 	}
-	if p.Match(tokens.Is) != nil {
+	if p.Current(
+		tokens.Gt,
+		tokens.Gteq,
+		tokens.Lt,
+		tokens.Lteq,
+		tokens.Not,
+		tokens.In,
+		tokens.Is,
+	) != nil {
+		_ = p.Match(tokens.Is) // ignore the is keyword entirely if present
+
 		not := p.Match(tokens.Not)
 		ident := p.Next()
 
