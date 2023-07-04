@@ -215,7 +215,7 @@ var lexerCases = []struct {
 	}},
 	{"logical 'and' expression", `{{ a is defined and a == "x" }}`, []tok{
 		varBegin,
-		space, name("a"), space, name("is"), space, name("defined"),
+		space, name("a"), space, {tokens.Is, "is"}, space, name("defined"),
 		space, {tokens.And, "and"},
 		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
 		varEnd,
@@ -223,7 +223,7 @@ var lexerCases = []struct {
 	}},
 	{"logical 'or' expression", `{{ a is defined or a == "x" }}`, []tok{
 		varBegin,
-		space, name("a"), space, name("is"), space, name("defined"),
+		space, name("a"), space, {tokens.Is, "is"}, space, name("defined"),
 		space, {tokens.Or, "or"},
 		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
 		varEnd,

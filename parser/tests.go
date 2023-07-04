@@ -16,8 +16,7 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if p.MatchName("is") != nil {
+	if p.Match(tokens.Is) != nil {
 		not := p.Match(tokens.Not)
 		ident := p.Next()
 

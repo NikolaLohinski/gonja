@@ -433,6 +433,12 @@ func (l *Lexer) lexExpression() lexFn {
 				return nil
 			}
 			l.emit(Rbracket)
+		// is
+		case r == 'i' && l.accept("s"):
+			if !isSpace(l.peek()) {
+				return l.lexIdentifier
+			}
+			l.emit(Is)
 		// and
 		case r == 'a' && l.accept("n"):
 			if !(l.accept("d") && isSpace(l.peek())) {
