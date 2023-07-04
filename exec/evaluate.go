@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/nikolalohinski/gonja/nodes"
+	"github.com/nikolalohinski/gonja/tokens"
 )
 
 var (
@@ -99,8 +100,8 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 	}
 
-	switch node.Operator.Token.Val {
-	case "+":
+	switch node.Operator.Token.Type {
+	case tokens.Add:
 		if left.IsList() {
 			if !right.IsList() {
 				return AsValue(errors.Wrapf(right, `Unable to concatenate list to %s`, node.Right))
@@ -124,14 +125,14 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 		// Result will be an integer
 		return AsValue(left.Integer() + right.Integer())
-	case "-":
+	case tokens.Sub:
 		if left.IsFloat() || right.IsFloat() {
 			// Result will be a float
 			return AsValue(left.Float() - right.Float())
 		}
 		// Result will be an integer
 		return AsValue(left.Integer() - right.Integer())
-	case "*":
+	case tokens.Mul:
 		if left.IsFloat() || right.IsFloat() {
 			// Result will be float
 			return AsValue(left.Float() * right.Float())
@@ -141,20 +142,20 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 		// Result will be int
 		return AsValue(left.Integer() * right.Integer())
-	case "/":
+	case tokens.Div:
 		// Float division
 		return AsValue(left.Float() / right.Float())
-	case "//":
+	case tokens.Floordiv:
 		// Int division
 		return AsValue(int(left.Float() / right.Float()))
-	case "%":
+	case tokens.Mod:
 		// Result will be int
 		return AsValue(left.Integer() % right.Integer())
-	case "**":
+	case tokens.Pow:
 		return AsValue(math.Pow(left.Float(), right.Float()))
-	case "~":
+	case tokens.Tilde:
 		return AsValue(strings.Join([]string{left.String(), right.String()}, ""))
-	case "and":
+	case tokens.And:
 		if !left.IsTrue() {
 			return AsValue(false)
 		}
@@ -163,7 +164,7 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			return AsValue(errors.Wrapf(right, `Unable to evaluate right parameter %s`, node.Right))
 		}
 		return AsValue(right.IsTrue())
-	case "or":
+	case tokens.Or:
 		if left.IsTrue() {
 			return AsValue(true)
 		}
@@ -172,34 +173,32 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			return AsValue(errors.Wrapf(right, `Unable to evaluate right parameter %s`, node.Right))
 		}
 		return AsValue(right.IsTrue())
-	case "<=":
+	case tokens.Lteq:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() <= right.Float())
 		}
 		return AsValue(left.Integer() <= right.Integer())
-	case ">=":
+	case tokens.Gteq:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() >= right.Float())
 		}
 		return AsValue(left.Integer() >= right.Integer())
-	case "==":
+	case tokens.Eq:
 		return AsValue(left.EqualValueTo(right))
-	case ">":
+	case tokens.Gt:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() > right.Float())
 		}
 		return AsValue(left.Integer() > right.Integer())
-	case "<":
+	case tokens.Lt:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() < right.Float())
 		}
 		return AsValue(left.Integer() < right.Integer())
-	case "!=", "<>":
+	case tokens.Ne:
 		return AsValue(!left.EqualValueTo(right))
-	case "in":
+	case tokens.In:
 		return AsValue(right.Contains(left))
-	case "is":
-		return nil
 	default:
 		return AsValue(errors.Errorf(`Unknown operator "%s"`, node.Operator.Token))
 	}
