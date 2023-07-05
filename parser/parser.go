@@ -166,11 +166,10 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 						stream := tokens.NewStream(args)
 						return wrapper, NewParser(p.Name, p.Config, stream), nil
 					}
-					t := p.Next()
-					if t == nil {
+					if p.End() || p.Current(tokens.EOF) != nil {
 						return nil, nil, p.Error("Unexpected EOF.", p.Current())
 					}
-					args = append(args, t)
+					args = append(args, p.Next())
 				}
 			}
 			p.Stream.Backup()
