@@ -404,12 +404,21 @@ func (w Wrapper) String() string {
 type Macro struct {
 	Location *tokens.Token
 	Name     string
-	Args     []string
 	Kwargs   []*Pair
 	Wrapper  *Wrapper
 }
 
 func (m *Macro) Position() *tokens.Token { return m.Location }
 func (m *Macro) String() string {
-	return fmt.Sprintf("%s(%s,%s)", m.Name, m.Args, m.Kwargs)
+	return fmt.Sprintf("%s(%s)", m.Name, m.Kwargs)
+}
+
+type Error struct {
+	Location *tokens.Token
+	Error    error
+}
+
+func (c *Error) Position() *tokens.Token { return c.Location }
+func (c *Error) String() string {
+	return c.Error.Error()
 }

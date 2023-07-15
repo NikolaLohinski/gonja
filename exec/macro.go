@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/nodes"
@@ -45,40 +46,68 @@ func (ms *MacroSet) Replace(name string, fn Macro) error {
 }
 
 func MacroNodeToFunc(node *nodes.Macro, r *Renderer) (Macro, error) {
-	// Compute default values once
-	defaultKwargs := []*KwArg{}
-	var err error
-	for _, pair := range node.Kwargs {
-		key := r.Eval(pair.Key).String()
-		value := r.Eval(pair.Value)
-		if value.IsError() {
-			return nil, errors.Wrapf(value, `Unable to evaluate parameter %s=%s`, key, pair.Value)
-		}
-		defaultKwargs = append(defaultKwargs, &KwArg{key, value.Interface()})
-	}
-
 	return func(params *VarArgs) *Value {
 		var out strings.Builder
 		sub := r.Inherit()
 		sub.Out = &out
 
-		if err != nil {
-			return AsValue(err)
+		macroArguments := make([]*Pair, len(node.Kwargs))
+		for i, positionalArgument := range params.Args {
+			if i >= len(node.Kwargs) {
+				return AsValue(fmt.Errorf("macro '%s' received %d arguments but expected only %d", node.Name, len(params.Args), len(node.Wrapper.Nodes)))
+			}
+			key := r.Eval(node.Kwargs[i].Key)
+			if key.IsError() {
+				return AsValue(fmt.Errorf("macro '%s' failed to evaluate positional argument named '%s': %s", node.Name, node.Kwargs[i].Key.String(), key))
+			}
+			macroArguments[i] = &Pair{
+				Value: positionalArgument,
+				Key:   key,
+			}
 		}
-		p := params.Expect(len(node.Args), defaultKwargs)
-		if p.IsError() {
-			return AsValue(errors.Wrapf(p, `Wrong '%s' macro signature`, node.Name))
+	kwargs:
+		for keyword, argument := range params.KwArgs {
+			for i, validArgument := range node.Kwargs {
+				validKeyword := r.Eval(validArgument.Key)
+				if validKeyword.IsError() {
+					return AsValue(fmt.Errorf("macro '%s' failed to evaluate positional argument named '%s': %s", node.Name, node.Kwargs[i].Key.String(), validKeyword))
+				}
+				if validKeyword.String() == keyword {
+					if macroArguments[i] != nil {
+						return AsValue(fmt.Errorf("macro '%s' received '%s' argument twice", node.Name, keyword))
+					}
+					macroArguments[i] = &Pair{
+						Value: argument,
+						Key:   validKeyword,
+					}
+					continue kwargs
+				}
+			}
+			return AsValue(fmt.Errorf("macro '%s' takes no keyword argument '%s'", node.Name, keyword))
 		}
-		for idx, arg := range p.Args {
-			sub.Ctx.Set(node.Args[idx], arg)
+		for i, defaultArgument := range node.Kwargs {
+			if macroArguments[i] == nil {
+				key := r.Eval(defaultArgument.Key)
+				if key.IsError() {
+					return AsValue(fmt.Errorf("macro '%s' failed to evaluate default argument key named '%s': %s", node.Name, defaultArgument.Key.String(), key))
+				}
+				value := r.Eval(defaultArgument.Value)
+				if value.IsError() {
+					return AsValue(fmt.Errorf("macro '%s' failed to evaluate '%s': %s", node.Name, defaultArgument.Value.String(), value))
+				}
+				macroArguments[i] = &Pair{
+					Key:   key,
+					Value: value,
+				}
+			}
 		}
-		for key, value := range p.KwArgs {
-			sub.Ctx.Set(key, value)
+		for _, arg := range macroArguments {
+			sub.Ctx.Set(arg.Key.String(), arg.Value)
 		}
 		err := sub.ExecuteWrapper(node.Wrapper)
 		if err != nil {
-			return AsValue(errors.Wrapf(err, `Unable to execute macro '%s`, node.Name))
+			return AsValue(errors.Wrapf(err, `Unable to execute macro '%s'`, node.Name))
 		}
 		return AsSafeValue(out.String())
-	}, err
+	}, nil
 }

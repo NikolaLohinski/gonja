@@ -14,7 +14,6 @@ type MacroStmt struct {
 	*nodes.Macro
 }
 
-// func (stmt *MacroStmt) Position() *tokens.Token { return stmt.Location }
 func (stmt *MacroStmt) String() string {
 	t := stmt.Position()
 	return fmt.Sprintf("MacroStmt(Macro=%s Line=%d Col=%d)", stmt.Macro, t.Line, t.Col)
@@ -29,58 +28,9 @@ func (stmt *MacroStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) erro
 	return nil
 }
 
-func (node *MacroStmt) call(ctx *exec.Context, args ...*exec.Value) *exec.Value {
-	// argsCtx := make(exec.Context)
-
-	// for k, v := range node.args {
-	// 	if v == nil {
-	// 		// User did not provided a default value
-	// 		argsCtx[k] = nil
-	// 	} else {
-	// 		// Evaluate the default value
-	// 		valueExpr, err := v.Evaluate(ctx)
-	// 		if err != nil {
-	// 			ctx.Logf(err.Error())
-	// 			return AsSafeValue(err.Error())
-	// 		}
-
-	// 		argsCtx[k] = valueExpr
-	// 	}
-	// }
-
-	// if len(args) > len(node.argsOrder) {
-	// 	// Too many arguments, we're ignoring them and just logging into debug mode.
-	// 	err := ctx.Error(fmt.Sprintf("Macro '%s' called with too many arguments (%d instead of %d).",
-	// 		node.name, len(args), len(node.argsOrder)), nil).updateFromTokenIfNeeded(ctx.template, node.position)
-
-	// 	ctx.Logf(err.Error()) // TODO: This is a workaround, because the error is not returned yet to the Execution()-methods
-	// 	return AsSafeValue(err.Error())
-	// }
-
-	// // Make a context for the macro execution
-	// macroCtx := NewChildExecutionContext(ctx)
-
-	// // Register all arguments in the private context
-	// macroCtx.Private.Update(argsCtx)
-
-	// for idx, argValue := range args {
-	// 	macroCtx.Private[node.argsOrder[idx]] = argValue.Interface()
-	// }
-
-	// var b bytes.Buffer
-	// err := node.wrapper.Execute(macroCtx, &b)
-	// if err != nil {
-	// 	return AsSafeValue(err.updateFromTokenIfNeeded(ctx.template, node.position).Error())
-	// }
-
-	// return AsSafeValue(b.String())
-	return nil
-}
-
 func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	stmt := &nodes.Macro{
 		Location: p.Current(),
-		Args:     []string{},
 		Kwargs:   []*nodes.Pair{},
 	}
 
@@ -101,18 +51,35 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 		}
 
 		if args.Match(tokens.Assign) != nil {
-			// Default expression follows
 			expr, err := args.ParseExpression()
 			if err != nil {
 				return nil, err
 			}
 			stmt.Kwargs = append(stmt.Kwargs, &nodes.Pair{
-				Key:   &nodes.String{argName, argName.Val},
+				Key: &nodes.String{
+					Location: argName,
+					Val:      argName.Val,
+				},
 				Value: expr,
 			})
-			// stmt.Kwargs[argName.Val] = expr
 		} else {
-			stmt.Args = append(stmt.Args, argName.Val)
+			arg := &nodes.Pair{
+				Key: &nodes.String{
+					Location: argName,
+					Val:      argName.Val,
+				},
+			}
+			if p.Config.StrictUndefined {
+				arg.Value = &nodes.Error{
+					Location: argName,
+					Error:    fmt.Errorf("parameter \"%s\" was not provided", argName.Val),
+				}
+			} else {
+				arg.Value = &nodes.None{
+					Location: argName,
+				}
+			}
+			stmt.Kwargs = append(stmt.Kwargs, arg)
 		}
 
 		if args.Match(tokens.Rparen) != nil {
@@ -123,15 +90,10 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 		}
 	}
 
-	// if args.MatchName("export") != nil {
-	// 	stmt.exported = true
-	// }
-
 	if !args.End() {
 		return nil, args.Error("Malformed macro-tag.", nil)
 	}
 
-	// Body wrapping
 	wrapper, endargs, err := p.WrapUntil("endmacro")
 	if err != nil {
 		return nil, err
@@ -143,15 +105,6 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 	}
 
 	p.Template.Macros[stmt.Name] = stmt
-
-	// if stmt.exported {
-	// 	// Now register the macro if it wants to be exported
-	// 	_, has := p.template.exportedMacros[stmt.name]
-	// 	if has {
-	// 		return nil, p.Error(fmt.Sprintf("another macro with name '%s' already exported", stmt.name), start)
-	// 	}
-	// 	p.template.exportedMacros[stmt.name] = stmt
-	// }
 
 	return &MacroStmt{stmt}, nil
 }

@@ -61,6 +61,8 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 		return e.evalGetitem(n)
 	case *nodes.Getattr:
 		return e.evalGetattr(n)
+	case *nodes.Error:
+		return AsValue(n.Error)
 	case *nodes.Negation:
 		result := e.Eval(n.Term)
 		if result.IsError() {

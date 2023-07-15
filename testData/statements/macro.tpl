@@ -4,3 +4,4 @@
 {%- endmacro -%}
 <p>{{ input('username') }}</p>
 <p>{{ input('username', type='password') }}</p>
+<p>{{ input(name='address', size=42) }}</p>
