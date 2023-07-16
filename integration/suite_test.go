@@ -4,6 +4,9 @@
 package integration_test
 
 import (
+	"bytes"
+	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -12,6 +15,14 @@ func TestTemplates(t *testing.T) {
 	root := "./testdata"
 	env := testEnv(root)
 	env.Globals.Set("this_is_a_global_variable", "this is a global text")
+	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
+	buf := new(bytes.Buffer)
+	cmd.Stdout = buf
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+	env.Globals.Set("CI_COMMIT_TAG", strings.TrimSpace(buf.String()))
 	GlobTemplateTests(t, root, env)
 }
 
