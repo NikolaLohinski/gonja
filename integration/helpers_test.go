@@ -1,4 +1,7 @@
-package testutils
+//go:build integration
+// +build integration
+
+package integration_test
 
 import (
 	"bytes"
@@ -19,7 +22,7 @@ import (
 	u "github.com/nikolalohinski/gonja/utils"
 )
 
-func TestEnv(root string) *gonja.Environment {
+func testEnv(root string) *gonja.Environment {
 	cfg := gonja.NewConfig()
 	loader := loaders.MustNewFileSystemLoader(root)
 	env := gonja.NewEnvironment(cfg, loader)
@@ -83,7 +86,7 @@ func GlobTemplateTests(t *testing.T, root string, env *gonja.Environment) {
 func GlobErrorTests(t *testing.T, root string) {
 	pattern := filepath.Join(root, `*.err`)
 	matches, err := filepath.Glob(pattern)
-	env := TestEnv(root)
+	env := testEnv(root)
 	if err != nil {
 		t.Fatal(err)
 	}

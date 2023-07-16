@@ -1,4 +1,7 @@
-package gonja_test
+//go:build integration
+// +build integration
+
+package integration_test
 
 import (
 	"bytes"
@@ -10,12 +13,10 @@ import (
 	"github.com/nikolalohinski/gonja"
 	"github.com/nikolalohinski/gonja/config"
 	"github.com/pmezard/go-difflib/difflib"
-
-	tu "github.com/nikolalohinski/gonja/testutils"
 )
 
 func TestWhiteSpace(t *testing.T) {
-	files, err := filepath.Glob("testData/whitespaces/*.tpl")
+	files, err := filepath.Glob("testdata/whitespaces/*.tpl")
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +41,7 @@ func TestWhiteSpace(t *testing.T) {
 			if rerr != nil {
 				t.Fatalf("Error on ReadFile('%s'): %s", output, rerr.Error())
 			}
-			rendered, err := tpl.ExecuteBytes(tu.Fixtures)
+			rendered, err := tpl.ExecuteBytes(Fixtures)
 			if err != nil {
 				t.Fatalf("Error on Execute('%s'): %s", source, err.Error())
 			}
