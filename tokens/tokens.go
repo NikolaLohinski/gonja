@@ -8,36 +8,36 @@ type Type int
 // Known tokens
 const (
 	Error Type = iota
-	Add
+	Addition
 	Assign
 	Colon
 	Comma
-	Div
+	Division
 	Dot
-	Eq
-	Floordiv
-	Gt
-	Gteq
-	Lbrace
-	Lbracket
-	Lparen
-	Lt
-	Lteq
+	Equals
+	FloorDivision
+	GreaterThan
+	GreaterThanOrEqual
+	LeftBrace
+	LeftBracket
+	LeftParenthesis
+	LowerThan
+	LowerThanOrEqual
 	Not
 	Is
 	In
 	And
 	Or
-	Mod
-	Mul
+	Modulo
+	Multiply
 	Ne
 	Pipe
-	Pow
-	Rbrace
-	Rbracket
-	Rparen
+	Power
+	RightBrace
+	RightBracket
+	RightParenthesis
 	Semicolon
-	Sub
+	Subtraction
 	Tilde
 	Whitespace
 	Float
@@ -67,36 +67,36 @@ const (
 // TokenNames maps token types to their human readable name
 var Names = map[Type]string{
 	Error:              "Error",
-	Add:                "Add",
+	Addition:           "Add",
 	Assign:             "Assign",
 	Colon:              "Colon",
 	Comma:              "Comma",
-	Div:                "Div",
+	Division:           "Div",
 	Dot:                "Dot",
-	Eq:                 "Eq",
+	Equals:             "Eq",
 	Not:                "Not",
 	Is:                 "Is",
 	In:                 "In",
-	Floordiv:           "Floordiv",
-	Gt:                 "Gt",
-	Gteq:               "Gteq",
-	Lbrace:             "Lbrace",
-	Lbracket:           "Lbracket",
-	Lparen:             "Lparen",
-	Lt:                 "Lt",
-	Lteq:               "Lteq",
+	FloorDivision:      "Floordiv",
+	GreaterThan:        "Gt",
+	GreaterThanOrEqual: "Gteq",
+	LeftBrace:          "Lbrace",
+	LeftBracket:        "Lbracket",
+	LeftParenthesis:    "Lparen",
+	LowerThan:          "Lt",
+	LowerThanOrEqual:   "Lteq",
 	And:                "And",
 	Or:                 "Or",
-	Mod:                "Mod",
-	Mul:                "Mul",
+	Modulo:             "Mod",
+	Multiply:           "Mul",
 	Ne:                 "Ne",
 	Pipe:               "Pipe",
-	Pow:                "Pow",
-	Rbrace:             "Rbrace",
-	Rbracket:           "Rbracket",
-	Rparen:             "Rparen",
+	Power:              "Pow",
+	RightBrace:         "Rbrace",
+	RightBracket:       "Rbracket",
+	RightParenthesis:   "Rparen",
 	Semicolon:          "Semicolon",
-	Sub:                "Sub",
+	Subtraction:        "Sub",
 	Tilde:              "Tilde",
 	Whitespace:         "Whitespace",
 	Float:              "Float",

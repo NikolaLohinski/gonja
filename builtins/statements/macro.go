@@ -40,11 +40,11 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 	}
 	stmt.Name = name.Val
 
-	if args.Match(tokens.Lparen) == nil {
+	if args.Match(tokens.LeftParenthesis) == nil {
 		return nil, args.Error("Expected '('.", nil)
 	}
 
-	for args.Match(tokens.Rparen) == nil {
+	for args.Match(tokens.RightParenthesis) == nil {
 		argName := args.Match(tokens.Name)
 		if argName == nil {
 			return nil, args.Error("Expected argument name as identifier.", nil)
@@ -82,7 +82,7 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 			stmt.Kwargs = append(stmt.Kwargs, arg)
 		}
 
-		if args.Match(tokens.Rparen) != nil {
+		if args.Match(tokens.RightParenthesis) != nil {
 			break
 		}
 		if args.Match(tokens.Comma) == nil {

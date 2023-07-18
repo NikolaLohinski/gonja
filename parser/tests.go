@@ -17,10 +17,10 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 		return nil, err
 	}
 	if p.Current(
-		tokens.Gt,
-		tokens.Gteq,
-		tokens.Lt,
-		tokens.Lteq,
+		tokens.GreaterThan,
+		tokens.GreaterThanOrEqual,
+		tokens.LowerThan,
+		tokens.LowerThanOrEqual,
 		tokens.Not,
 		tokens.In,
 		tokens.Is,

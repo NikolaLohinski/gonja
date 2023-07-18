@@ -1,740 +1,847 @@
 package parser_test
 
 import (
-	"flag"
 	"fmt"
-	"os"
-	"reflect"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"strconv"
 
 	"github.com/nikolalohinski/gonja/nodes"
 	"github.com/nikolalohinski/gonja/parser"
 	"github.com/nikolalohinski/gonja/tokens"
-	log "github.com/sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	"github.com/onsi/gomega/types"
 )
 
-var logLevel = flag.String("log.level", "", "Log Level")
+var _ = Context("parser", func() {
+	var (
+		input = new(string)
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	log.SetFormatter(&prefixed.TextFormatter{
-		ForceColors:      true,
-		DisableTimestamp: true,
-		ForceFormatting:  true,
+		returnedTemplate = new(nodes.Template)
+		returnedError    = new(error)
+	)
+	JustBeforeEach(func() {
+		returnedTemplate, *returnedError = parser.Parse(*input)
 	})
-
-	switch *logLevel {
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	case "warning", "warn":
-		log.SetLevel(log.WarnLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "trace":
-		log.SetLevel(log.TraceLevel)
-	default:
-		log.SetLevel(log.PanicLevel)
-	}
-	os.Exit(m.Run())
-}
-
-var testCases = []struct {
-	name     string
-	text     string
-	expected specs
-}{
-	{"comment", "{# My comment #}", specs{nodes.Comment{}, attrs{
-		"Text": val{" My comment "},
-	}}},
-	{"multiline comment", "{# My\nmultiline\ncomment #}", specs{nodes.Comment{}, attrs{
-		"Text": val{" My\nmultiline\ncomment "},
-	}}},
-	{"empty comment", "{##}", specs{nodes.Comment{}, attrs{
-		"Text": val{""},
-	}}},
-	{"raw text", "raw text", specs{nodes.Data{}, attrs{
-		"Data": _token("raw text"),
-	}}},
-	// Literals
-	{"single quotes string", "{{ 'test' }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "test"),
-	}}},
-	{"single quotes string with whitespace chars", "{{ '  \n\ttest' }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "  \n\ttest"),
-	}}},
-	{"single quotes string with raw whitespace chars", `{{ '  \n\ttest' }}`, specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "  \n\ttest"),
-	}}},
-	{"double quotes string", `{{ "test" }}`, specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "test"),
-	}}},
-	{"double quotes string with whitespace chars", "{{ \"  \n\ttest\" }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "  \n\ttest"),
-	}}},
-	{"double quotes string with raw whitespace chars", `{{ "  \n\ttest" }}`, specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "  \n\ttest"),
-	}}},
-	{"single quotes inside double quotes string", `{{ "'quoted' test" }}`, specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "'quoted' test"),
-	}}},
-	{"integer", "{{ 42 }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Integer{}, int64(42)),
-	}}},
-	{"negative-integer", "{{ -42 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.UnaryExpression{}, attrs{
-			"Negative": val{true},
-			"Term":     _literal(nodes.Integer{}, int64(42)),
-		}},
-	}}},
-	{"float", "{{ 42.0 }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Float{}, float64(42)),
-	}}},
-	{"negative-float", "{{ -42.0 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.UnaryExpression{}, attrs{
-			"Negative": val{true},
-			"Term":     _literal(nodes.Float{}, float64(42)),
-		}},
-	}}},
-	{"bool-true", "{{ true }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Bool{}, true),
-	}}},
-	{"bool-True", "{{ True }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Bool{}, true),
-	}}},
-	{"bool-false", "{{ false }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Bool{}, false),
-	}}},
-	{"bool-False", "{{ False }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Bool{}, false),
-	}}},
-	{"list", "{{ ['list', \"of\", 'objects'] }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.List{}, slice{
-			_literal(nodes.String{}, "list"),
-			_literal(nodes.String{}, "of"),
-			_literal(nodes.String{}, "objects"),
-		}),
-	}}},
-	{"list with trailing coma", "{{ ['list', \"of\", 'objects',] }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.List{}, slice{
-			_literal(nodes.String{}, "list"),
-			_literal(nodes.String{}, "of"),
-			_literal(nodes.String{}, "objects"),
-		}),
-	}}},
-	{"single entry list", "{{ ['list'] }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.List{}, slice{
-			_literal(nodes.String{}, "list"),
-		}),
-	}}},
-	{"empty list", "{{ [] }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.List{}, slice{}),
-	}}},
-	{"tuple", "{{ ('tuple', \"of\", 'objects') }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Tuple{}, slice{
-			_literal(nodes.String{}, "tuple"),
-			_literal(nodes.String{}, "of"),
-			_literal(nodes.String{}, "objects"),
-		}),
-	}}},
-	{"tuple with trailing coma", "{{ ('tuple', \"of\", 'objects',) }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Tuple{}, slice{
-			_literal(nodes.String{}, "tuple"),
-			_literal(nodes.String{}, "of"),
-			_literal(nodes.String{}, "objects"),
-		}),
-	}}},
-	{"single entry tuple", "{{ ('tuple',) }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.Tuple{}, slice{
-			_literal(nodes.String{}, "tuple"),
-		}),
-	}}},
-	{"empty dict", "{{ {} }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Dict{}, attrs{}},
-	}}},
-	{"dict string", "{{ {'dict': 'of', 'key': 'and', 'value': 'pairs'} }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Dict{}, attrs{
-			"Pairs": slice{
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.String{}, "dict"),
-					"Value": _literal(nodes.String{}, "of"),
-				}},
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.String{}, "key"),
-					"Value": _literal(nodes.String{}, "and"),
-				}},
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.String{}, "value"),
-					"Value": _literal(nodes.String{}, "pairs"),
-				}},
+	for _, testCase := range []struct {
+		description  string
+		inputs       []string
+		nodeMatchers []types.GomegaMatcher
+	}{
+		{
+			"is a comment",
+			[]string{"{# My comment #}"},
+			[]types.GomegaMatcher{
+				And(
+					BeAssignableToTypeOf(nodes.Comment{}),
+					MatchFields(IgnoreExtras, Fields{"Text": Equal(" My comment ")}),
+				),
 			},
-		}},
-	}}},
-	{"dict int", "{{ {1: 'one', 2: 'two', 3: 'three'} }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Dict{}, attrs{
-			"Pairs": slice{
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.Integer{}, int64(1)),
-					"Value": _literal(nodes.String{}, "one"),
-				}},
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.Integer{}, int64(2)),
-					"Value": _literal(nodes.String{}, "two"),
-				}},
-				specs{nodes.Pair{}, attrs{
-					"Key":   _literal(nodes.Integer{}, int64(3)),
-					"Value": _literal(nodes.String{}, "three"),
-				}},
+		},
+		{
+			"is a multiline comment",
+			[]string{"{# My\nmultiline\ncomment #}"},
+			[]types.GomegaMatcher{
+				And(
+					BeAssignableToTypeOf(nodes.Comment{}),
+					MatchFields(IgnoreExtras, Fields{"Text": Equal(" My\nmultiline\ncomment ")}),
+				),
 			},
-		}},
-	}}},
-	{"addition", "{{ 40 + 2 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left":     _literal(nodes.Integer{}, int64(40)),
-			"Right":    _literal(nodes.Integer{}, int64(2)),
-			"Operator": _binOp("+"),
-		}},
-	}}},
-	{"multiple additions", "{{ 40 + 1 + 1 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Integer{}, int64(40)),
-				"Right":    _literal(nodes.Integer{}, int64(1)),
-				"Operator": _binOp("+"),
-			}},
-			"Right":    _literal(nodes.Integer{}, int64(1)),
-			"Operator": _binOp("+"),
-		}},
-	}}},
-	{"multiple additions with power", "{{ 40 + 2 ** 1 + 0 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left": _literal(nodes.Integer{}, int64(40)),
-				"Right": specs{nodes.BinaryExpression{}, attrs{
-					"Left":     _literal(nodes.Integer{}, int64(2)),
-					"Right":    _literal(nodes.Integer{}, int64(1)),
-					"Operator": _binOp("**"),
-				}},
-				"Operator": _binOp("+"),
-			}},
-			"Right":    _literal(nodes.Integer{}, int64(0)),
-			"Operator": _binOp("+"),
-		}},
-	}}},
-	{"substract", "{{ 40 - 2 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left":     _literal(nodes.Integer{}, int64(40)),
-			"Right":    _literal(nodes.Integer{}, int64(2)),
-			"Operator": _binOp("-"),
-		}},
-	}}},
-	{"complex math", "{{ -1 * (-(-(10-100)) ** 2) ** 3 + 3 * (5 - 17) + 1 + 2 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left": specs{nodes.BinaryExpression{}, attrs{
-					"Left": specs{nodes.BinaryExpression{}, attrs{
-						"Left": specs{nodes.UnaryExpression{}, attrs{
-							"Negative": val{true},
-							"Term":     _literal(nodes.Integer{}, int64(1)),
-						}},
-						"Right": specs{nodes.BinaryExpression{}, attrs{
-							"Left": specs{nodes.UnaryExpression{}, attrs{
-								"Negative": val{true},
-								"Term": specs{nodes.BinaryExpression{}, attrs{
-									"Left": specs{nodes.UnaryExpression{}, attrs{
-										"Negative": val{true},
-										"Term": specs{nodes.BinaryExpression{}, attrs{
-											"Left":     _literal(nodes.Integer{}, int64(10)),
-											"Right":    _literal(nodes.Integer{}, int64(100)),
-											"Operator": _binOp("-"),
-										}},
-									}},
-									"Right":    _literal(nodes.Integer{}, int64(2)),
-									"Operator": _binOp("**"),
-								}},
-							}},
-							"Right":    _literal(nodes.Integer{}, int64(3)),
-							"Operator": _binOp("**"),
-						}},
-						"Operator": _binOp("*"),
-					}},
-					"Right": specs{nodes.BinaryExpression{}, attrs{
-						"Left": _literal(nodes.Integer{}, int64(3)),
-						"Right": specs{nodes.BinaryExpression{}, attrs{
-							"Left":     _literal(nodes.Integer{}, int64(5)),
-							"Right":    _literal(nodes.Integer{}, int64(17)),
-							"Operator": _binOp("-"),
-						}},
-						"Operator": _binOp("*"),
-					}},
-					"Operator": _binOp("+"),
-				}},
-				"Right":    _literal(nodes.Integer{}, int64(1)),
-				"Operator": _binOp("+"),
-			}},
-			"Right":    _literal(nodes.Integer{}, int64(2)),
-			"Operator": _binOp("+"),
-		}},
-	}}},
-	{"negative-expression", "{{ -(40 + 2) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.UnaryExpression{}, attrs{
-			"Negative": val{true},
-			"Term": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Integer{}, int64(40)),
-				"Right":    _literal(nodes.Integer{}, int64(2)),
-				"Operator": _binOp("+"),
-			}},
-		}},
-	}}},
-	{"Operators precedence", "{{ 2 * 3 + 4 % 2 + 1 - 2 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left": specs{nodes.BinaryExpression{}, attrs{
-					"Left": specs{nodes.BinaryExpression{}, attrs{
-						"Left":     _literal(nodes.Integer{}, int64(2)),
-						"Right":    _literal(nodes.Integer{}, int64(3)),
-						"Operator": _binOp("*"),
-					}},
-					"Right": specs{nodes.BinaryExpression{}, attrs{
-						"Left":     _literal(nodes.Integer{}, int64(4)),
-						"Right":    _literal(nodes.Integer{}, int64(2)),
-						"Operator": _binOp("%"),
-					}},
-					"Operator": _binOp("+"),
-				}},
-				"Right":    _literal(nodes.Integer{}, int64(1)),
-				"Operator": _binOp("+"),
-			}},
-			"Right":    _literal(nodes.Integer{}, int64(2)),
-			"Operator": _binOp("-"),
-		}},
-	}}},
-	{"Operators precedence with parenthesis", "{{ 2 * (3 + 4) % 2 + (1 - 2) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left": specs{nodes.BinaryExpression{}, attrs{
-					"Left": _literal(nodes.Integer{}, int64(2)),
-					"Right": specs{nodes.BinaryExpression{}, attrs{
-						"Left":     _literal(nodes.Integer{}, int64(3)),
-						"Right":    _literal(nodes.Integer{}, int64(4)),
-						"Operator": _binOp("+"),
-					}},
-					"Operator": _binOp("*"),
-				}},
-				"Right":    _literal(nodes.Integer{}, int64(2)),
-				"Operator": _binOp("%"),
-			}},
-			"Right": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Integer{}, int64(1)),
-				"Right":    _literal(nodes.Integer{}, int64(2)),
-				"Operator": _binOp("-"),
-			}},
-			"Operator": _binOp("+"),
-		}},
-	}}},
-	{"variable", "{{ a_var }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Name{}, attrs{
-			"Name": _token("a_var"),
-		}},
-	}}},
-	{"variable attribute", "{{ a_var.attr }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Getattr{}, attrs{
-			"Node": specs{nodes.Name{}, attrs{
-				"Name": _token("a_var"),
-			}},
-			"Attr": val{"attr"},
-		}},
-	}}},
-	{"variable item", "{{ a_var[\"item\"] }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Getitem{}, attrs{
-			"Node": specs{nodes.Name{}, attrs{
-				"Name": _token("a_var"),
-			}},
-			"Arg": _literal(nodes.String{}, "item"),
-		}},
-	}}},
-	// {"variable array access", "{{ a_var[b_var] }}", specs{nodes.Output{}, attrs{
-	// 	"Expression": specs{nodes.Getitem{}, attrs{
-	// 		"Node": specs{nodes.Name{}, attrs{
-	// 			"Name": _token("a_var"),
-	// 		}},
-	// 		"Arg": val{"item"},
-	// 	}},
-	// }}},
-	{"variable and filter", "{{ a_var|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.Name{}, attrs{
-				"Name": _token("a_var"),
-			}},
-			"Filters": slice{
-				filter{"safe", slice{}, attrs{}},
+		},
+		{
+			"is raw text data",
+			[]string{"raw text"},
+			[]types.GomegaMatcher{
+				And(
+					BeAssignableToTypeOf(nodes.Data{}),
+					MatchFields(IgnoreExtras, Fields{
+						"Data": PointTo(MatchFields(IgnoreExtras, Fields{
+							"Type": Equal(tokens.Data),
+							"Val":  Equal("raw text"),
+						})),
+					}),
+				),
 			},
-		}},
-	}}},
-	{"integer and filter", "{{ 42|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(42)),
-			"Filters": slice{
-				filter{"safe", slice{}, attrs{}},
+		},
+		{
+			"is a single quoted string",
+			[]string{"{{ 'test' }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchStringNode("test")),
 			},
-		}},
-	}}},
-	{"negative integer and filter", "{{ -42|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.UnaryExpression{}, attrs{
-				"Negative": val{true},
-				"Term":     _literal(nodes.Integer{}, int64(42)),
-			}},
-			"Filters": slice{
-				filter{"safe", slice{}, attrs{}},
+		},
+		{
+			"is a single quoted string with nested spaces, lines and tabs",
+			[]string{"{{ '  \r\n\ttest' }}", `{{ '  \r\n\ttest' }}`},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchStringNode("  \r\n\ttest")),
 			},
-		}},
-	}}},
-	{"logical expressions", "{{ true and false }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left":     _literal(nodes.Bool{}, true),
-			"Right":    _literal(nodes.Bool{}, false),
-			"Operator": _binOp("and"),
-		}},
-	}}},
-	{"negated boolean", "{{ not true }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Negation{}, attrs{
-			"Term": _literal(nodes.Bool{}, true),
-		}},
-	}}},
-	{"negated logical expression", "{{ not false and true }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.Negation{}, attrs{
-				"Term": _literal(nodes.Bool{}, false),
-			}},
-			"Right":    _literal(nodes.Bool{}, true),
-			"Operator": _binOp("and"),
-		}},
-	}}},
-	{"negated logical expression with parenthesis", "{{ not (false and true) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Negation{}, attrs{
-			"Term": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Bool{}, false),
-				"Right":    _literal(nodes.Bool{}, true),
-				"Operator": _binOp("and"),
-			}},
-		}},
-	}}},
-	{"logical expression with math comparison", "{{ 40 + 2 > 5 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Integer{}, int64(40)),
-				"Right":    _literal(nodes.Integer{}, int64(2)),
-				"Operator": _binOp("+"),
-			}},
-			"Right":    _literal(nodes.Integer{}, int64(5)),
-			"Operator": _binOp(">"),
-		}},
-	}}},
-	{"logical expression with filter", "{{ false and true|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.BinaryExpression{}, attrs{
-			"Left": _literal(nodes.Bool{}, false),
-			"Right": specs{nodes.FilteredExpression{}, attrs{
-				"Expression": _literal(nodes.Bool{}, true),
-				"Filters": slice{
-					filter{"safe", slice{}, attrs{}},
-				},
-			}},
-			"Operator": _binOp("and"),
-		}},
-	}}},
-	{"logical expression with parenthesis and filter", "{{ (false and true)|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.BinaryExpression{}, attrs{
-				"Left":     _literal(nodes.Bool{}, false),
-				"Right":    _literal(nodes.Bool{}, true),
-				"Operator": _binOp("and"),
-			}},
-			"Filters": slice{
-				filter{"safe", slice{}, attrs{}},
+		},
+		{
+			"is an integer",
+			[]string{`{{ 42 }}`},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchIntegerNode(42)),
 			},
-		}},
-	}}},
-	{"function", "{{ a_func(42) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Call{}, attrs{
-			"Func": specs{nodes.Name{}, attrs{"Name": _token("a_func")}},
-			"Args": slice{_literal(nodes.Integer{}, int64(42))},
-		}},
-	}}},
-	{"method", "{{ an_obj.a_method(42) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Call{}, attrs{
-			"Func": specs{nodes.Getattr{}, attrs{
-				"Node": specs{nodes.Name{}, attrs{"Name": _token("an_obj")}},
-				"Attr": val{"a_method"},
-			}},
-			"Args": slice{_literal(nodes.Integer{}, int64(42))},
-		}},
-	}}},
-	{"function with filtered args", "{{ a_func(42|safe) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.Call{}, attrs{
-			"Func": specs{nodes.Name{}, attrs{"Name": _token("a_func")}},
-			"Args": slice{
-				specs{nodes.FilteredExpression{}, attrs{
-					"Expression": _literal(nodes.Integer{}, int64(42)),
-					"Filters": slice{
-						filter{"safe", slice{}, attrs{}},
-					},
-				}},
+		},
+		{
+			"is a negative integer",
+			[]string{`{{ -42 }}`},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchUnaryExpression(tokens.Subtraction, MatchIntegerNode(42))),
 			},
-		}},
-	}}},
-	{"variable and multiple filters", "{{ a_var|add(42)|safe }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.Name{}, attrs{"Name": _token("a_var")}},
-			"Filters": slice{
-				filter{"add", slice{_literal(nodes.Integer{}, int64(42))}, attrs{}},
-				filter{"safe", slice{}, attrs{}},
+		},
+		{
+			"is a float",
+			[]string{`{{ 1.0 }}`},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(And(
+					BeAssignableToTypeOf(nodes.Float{}),
+					MatchFields(IgnoreExtras, Fields{
+						"Val": Equal(1.0),
+					}),
+				),
+				),
 			},
-		}},
-	}}},
-	{"variable and expression filters", "{{ a_var|add(40 + 2) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.Name{}, attrs{"Name": _token("a_var")}},
-			"Filters": slice{
-				filter{"add", slice{
-					specs{nodes.BinaryExpression{}, attrs{
-						"Left":     _literal(nodes.Integer{}, int64(40)),
-						"Right":    _literal(nodes.Integer{}, int64(2)),
-						"Operator": _binOp("+"),
-					}},
-				}, attrs{}},
+		},
+		{
+			"is a true boolean",
+			[]string{"{{ true }}", "{{ True }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchNodeBool(true)),
 			},
-		}},
-	}}},
-	{"variable and nested filters", "{{ a_var|add( 42|add(2) ) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.FilteredExpression{}, attrs{
-			"Expression": specs{nodes.Name{}, attrs{"Name": _token("a_var")}},
-			"Filters": slice{
-				filter{"add", slice{
-					specs{nodes.FilteredExpression{}, attrs{
-						"Expression": _literal(nodes.Integer{}, int64(42)),
-						"Filters": slice{
-							filter{"add", slice{_literal(nodes.Integer{}, int64(2))}, attrs{}},
+		},
+		{
+			"is a false boolean",
+			[]string{"{{ false }}", "{{ False }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchNodeBool(false)),
+			},
+		},
+		{
+			"is a list",
+			[]string{"{{ ['a', 'b'] }}", "{{ [\"a\", \"b\"] }}", "{{ ['a', 'b', ] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.List{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Val": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+								return strconv.Itoa(index)
+							}, Elements{
+								"0": PointTo(MatchStringNode("a")),
+								"1": PointTo(MatchStringNode("b")),
+							}),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is an empty list",
+			[]string{"{{ [] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.List{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Val": BeEmpty(),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is a tuple",
+			[]string{"{{ ('a', 'b') }}", "{{ (\"a\", \"b\") }}", "{{ ('a', 'b', ) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.Tuple{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Val": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+								return strconv.Itoa(index)
+							}, Elements{
+								"0": PointTo(MatchStringNode("a")),
+								"1": PointTo(MatchStringNode("b")),
+							}),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is an empty dict",
+			[]string{"{{ {} }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.Dict{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Pairs": BeEmpty(),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is an inline dict with string keys",
+			[]string{"{{ {'foo': 'bar'} }}", "{{ {\"foo\": \"bar\"} }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.Dict{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Pairs": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+								return strconv.Itoa(index)
+							}, Elements{
+								"0": PointTo(And(
+									BeAssignableToTypeOf(nodes.Pair{}),
+									MatchFields(IgnoreExtras, Fields{
+										"Key":   PointTo(MatchStringNode("foo")),
+										"Value": PointTo(MatchStringNode("bar")),
+									}),
+								)),
+							}),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is an inline dict with integer keys",
+			[]string{"{{ {1: 2} }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					And(
+						BeAssignableToTypeOf(nodes.Dict{}),
+						MatchFields(IgnoreExtras, Fields{
+							"Pairs": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+								return strconv.Itoa(index)
+							}, Elements{
+								"0": PointTo(And(
+									BeAssignableToTypeOf(nodes.Pair{}),
+									MatchFields(IgnoreExtras, Fields{
+										"Key":   PointTo(MatchIntegerNode(1)),
+										"Value": PointTo(MatchIntegerNode(2)),
+									}),
+								)),
+							}),
+						}),
+					),
+				),
+			},
+		},
+		{
+			"is an addition",
+			[]string{"{{ 1 + 2 }}", "{{ (1 + 2) }}", "{{ 1 + (2) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchIntegerNode(1),
+						tokens.Addition,
+						MatchIntegerNode(2),
+					),
+				),
+			},
+		},
+		{
+			"is a multi-addition",
+			[]string{"{{ 1 + 2 + 3 }}", "{{ (1 + 2) + 3 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchIntegerNode(1),
+							tokens.Addition,
+							MatchIntegerNode(2),
+						),
+						tokens.Addition,
+						MatchIntegerNode(3),
+					),
+				),
+			},
+		},
+		{
+			"is a multi-addition and power operation",
+			[]string{"{{ 1 + 2 ** 3 + 4 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchIntegerNode(1),
+							tokens.Addition,
+							MatchNodeBinaryExpression(
+								MatchIntegerNode(2),
+								tokens.Power,
+								MatchIntegerNode(3),
+							),
+						),
+						tokens.Addition,
+						MatchIntegerNode(4),
+					),
+				),
+			},
+		},
+		{
+			"is a subtraction",
+			[]string{"{{ 1 - 2 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchIntegerNode(1),
+						tokens.Subtraction,
+						MatchIntegerNode(2),
+					),
+				),
+			},
+		},
+		{
+			"is a complex math expression",
+			[]string{"{{ -1 * (-(-(10-100)) ** 2) ** 3 + 3 * (5 - 17) + 1 + 2 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchNodeBinaryExpression(
+								MatchNodeBinaryExpression(
+									MatchUnaryExpression(
+										tokens.Subtraction,
+										MatchIntegerNode(1),
+									),
+									tokens.Multiply,
+									MatchNodeBinaryExpression(
+										MatchUnaryExpression(
+											tokens.Subtraction,
+											MatchNodeBinaryExpression(
+												MatchUnaryExpression(
+													tokens.Subtraction,
+													MatchNodeBinaryExpression(
+														MatchIntegerNode(10),
+														tokens.Subtraction,
+														MatchIntegerNode(100),
+													)),
+												tokens.Power,
+												MatchIntegerNode(2),
+											)),
+										tokens.Power,
+										MatchIntegerNode(3),
+									),
+								),
+								tokens.Addition,
+								MatchNodeBinaryExpression(
+									MatchIntegerNode(3),
+									tokens.Multiply,
+									MatchNodeBinaryExpression(
+										MatchIntegerNode(5),
+										tokens.Subtraction,
+										MatchIntegerNode(17),
+									)),
+							),
+							tokens.Addition,
+							MatchIntegerNode(1),
+						),
+						tokens.Addition,
+						MatchIntegerNode(2),
+					),
+				),
+			},
+		},
+		{
+			"is a negative expression",
+			[]string{"{{ -(1 + 2) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchUnaryExpression(
+						tokens.Subtraction,
+						MatchNodeBinaryExpression(
+							MatchIntegerNode(1),
+							tokens.Addition,
+							MatchIntegerNode(2),
+						),
+					),
+				),
+			},
+		},
+		{
+			"is a combination of all operators",
+			[]string{"{{ 2 * 3 + 4 % 2 + 1 - 2 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchNodeBinaryExpression(
+								MatchNodeBinaryExpression(
+									MatchIntegerNode(2),
+									tokens.Multiply,
+									MatchIntegerNode(3),
+								),
+								tokens.Addition,
+								MatchNodeBinaryExpression(
+									MatchIntegerNode(4),
+									tokens.Modulo,
+									MatchIntegerNode(2),
+								),
+							),
+							tokens.Addition,
+							MatchIntegerNode(1),
+						),
+						tokens.Subtraction,
+						MatchIntegerNode(2),
+					),
+				),
+			},
+		},
+		{
+			"is a combination of all operators with parenthesis precedence",
+			[]string{"{{ 2 * (3 + 4) % 2 + (1 - 2) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchNodeBinaryExpression(
+								MatchIntegerNode(2),
+								tokens.Multiply,
+								MatchNodeBinaryExpression(
+									MatchIntegerNode(3),
+									tokens.Addition,
+									MatchIntegerNode(4),
+								),
+							),
+							tokens.Modulo,
+							MatchIntegerNode(2),
+						),
+						tokens.Addition,
+						MatchNodeBinaryExpression(
+							MatchIntegerNode(1),
+							tokens.Subtraction,
+							MatchIntegerNode(2),
+						),
+					),
+				),
+			},
+		},
+		{
+			"is a variable",
+			[]string{"{{ var }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNameNode("var"),
+				),
+			},
+		},
+		{
+			"is a variable attribute access",
+			[]string{"{{ var.attribute }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetAttributeNode(
+						MatchNameNode("var"),
+						"attribute",
+					),
+				),
+			},
+		},
+		{
+			"is a variable attribute integer access",
+			[]string{"{{ var.1 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetAttributeNode(
+						MatchNameNode("var"),
+						1,
+					),
+				),
+			},
+		},
+		{
+			"is a variable item access with a string",
+			[]string{"{{ var['item'] }}", `{{ var["item"] }}`, `{{ var[("item")] }}`},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetItemNode(
+						MatchNameNode("var"),
+						MatchStringNode("item"),
+					),
+				),
+			},
+		},
+		{
+			"is a variable item access with an integer",
+			[]string{"{{ var[123] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetItemNode(
+						MatchNameNode("var"),
+						MatchIntegerNode(123),
+					),
+				),
+			},
+		},
+		{
+			"is a variable item access with a variable",
+			[]string{"{{ var[other] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetItemNode(
+						MatchNameNode("var"),
+						MatchNameNode("other"),
+					),
+				),
+			},
+		},
+		{
+			"is a variable passed through a filter",
+			[]string{"{{ var | filter }}", "{{ var|filter }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchNameNode("var"),
+						MatchFilterCallNode("filter", nil, nil),
+					),
+				),
+			},
+		},
+		{
+			"is an integer passed through two filters",
+			[]string{"{{ 1 | first | second }}", "{{ 1|first|second }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchIntegerNode(1),
+						MatchFilterCallNode("first", nil, nil),
+						MatchFilterCallNode("second", nil, nil),
+					),
+				),
+			},
+		},
+		{
+			"is an integer passed through a filter with a positional argument",
+			[]string{"{{ 1 | filter(arg) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchIntegerNode(1),
+						MatchFilterCallNode(
+							"filter",
+							[]types.GomegaMatcher{
+								PointTo(MatchNameNode("arg")),
+							},
+							nil,
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an integer passed through a filter with a keyword argument",
+			[]string{"{{ 1 | filter(name=arg) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchIntegerNode(1),
+						MatchFilterCallNode(
+							"filter",
+							nil,
+							map[string]types.GomegaMatcher{
+								"name": PointTo(MatchNameNode("arg")),
+							},
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an integer passed through a filter with a keyword argument and a positional argument",
+			[]string{"{{ 1 | filter(\"str\", name=arg) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchIntegerNode(1),
+						MatchFilterCallNode(
+							"filter",
+							[]types.GomegaMatcher{
+								PointTo(MatchStringNode("str")),
+							},
+							map[string]types.GomegaMatcher{
+								"name": PointTo(MatchNameNode("arg")),
+							},
+						),
+					),
+				),
+			},
+		},
+		{
+			"is a logical expression",
+			[]string{"{{ true and false }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBool(true),
+						tokens.And,
+						MatchNodeBool(false),
+					),
+				),
+			},
+		},
+		{
+			"is a negated boolean",
+			[]string{"{{ not false }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeNegation(
+						MatchNodeBool(false),
+					),
+				),
+			},
+		},
+		{
+			"is a negation over a portion of a logical expression",
+			[]string{"{{ not false and true }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeNegation(
+							MatchNodeBool(false),
+						),
+						tokens.And,
+						MatchNodeBool(true),
+					),
+				),
+			},
+		},
+		{
+			"is a negation over of a logical expression",
+			[]string{"{{ not (false and true) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeNegation(
+						MatchNodeBinaryExpression(
+							MatchNodeBool(false),
+							tokens.And,
+							MatchNodeBool(true),
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an arithmetic expression with a comparison",
+			[]string{"{{ 40 + 2 > 5 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBinaryExpression(
+							MatchIntegerNode(40),
+							tokens.Addition,
+							MatchIntegerNode(2),
+						),
+						tokens.GreaterThan,
+						MatchIntegerNode(5),
+					),
+				),
+			},
+		},
+		{
+			"is a logical expression with a filter",
+			[]string{"{{ true and false | filter }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeBool(true),
+						tokens.And,
+						MatchNodeFilteredExpressionNode(
+							MatchNodeBool(false),
+							MatchFilterCallNode("filter", nil, nil),
+						),
+					),
+				),
+			},
+		},
+		{
+			"is a function call with both positional and named arguments",
+			[]string{"{{ func(101, name=arg) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchCallNode(
+						MatchNameNode("func"),
+						[]types.GomegaMatcher{
+							PointTo(MatchIntegerNode(101)),
 						},
-					}},
-				}, attrs{}},
+						map[string]types.GomegaMatcher{
+							"name": PointTo(MatchNameNode("arg")),
+						},
+					),
+				),
 			},
-		}},
-	}}},
-	{"Test equal", "{{ 3 is equal 3 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.TestExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(3)),
-			"Test": specs{nodes.TestCall{}, attrs{
-				"Name": val{"equal"},
-				"Args": slice{_literal(nodes.Integer{}, int64(3))},
-			}},
-		}},
-	}}},
-	{"Test equal parenthesis", "{{ 3 is equal(3) }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.TestExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(3)),
-			"Test": specs{nodes.TestCall{}, attrs{
-				"Name": val{"equal"},
-				"Args": slice{_literal(nodes.Integer{}, int64(3))},
-			}},
-		}},
-	}}},
-	{"Test ==", "{{ 3 is == 3 }}", specs{nodes.Output{}, attrs{
-		"Expression": specs{nodes.TestExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(3)),
-			"Test": specs{nodes.TestCall{}, attrs{
-				"Name": val{"=="},
-				"Args": slice{_literal(nodes.Integer{}, int64(3))},
-			}},
-		}},
-	}}},
-	{"inlined if condition", "{{ 'foo' if 2 is odd }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "foo"),
-		"Condition": specs{nodes.TestExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(2)),
-			"Test": specs{nodes.TestCall{}, attrs{
-				"Name": val{"odd"},
-			}},
-		}},
-	}}},
-	{"inlined if else condition", "{{ 'foo' if 2 is odd else 'bar' }}", specs{nodes.Output{}, attrs{
-		"Expression": _literal(nodes.String{}, "foo"),
-		"Condition": specs{nodes.TestExpression{}, attrs{
-			"Expression": _literal(nodes.Integer{}, int64(2)),
-			"Test": specs{nodes.TestCall{}, attrs{
-				"Name": val{"odd"},
-			}},
-		}},
-		"Alternative": _literal(nodes.String{}, "bar"),
-	}}},
-}
-
-// func parseText(text string) (*nodeDocument, *Error) {
-// 	tokens, err := lex("test", text)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	parser := newParser("test", tokens, &Template{
-// 		set: &TemplateSet{},
-// 	})
-// 	return parser.parseDocument()
-// }
-
-func _deref(value reflect.Value) reflect.Value {
-	for (value.Kind() == reflect.Interface || value.Kind() == reflect.Ptr) && !value.IsNil() {
-		value = value.Elem()
-	}
-	return value
-}
-
-type asserter interface {
-	assert(t *testing.T, value reflect.Value)
-}
-
-type specs struct {
-	typ   interface{}
-	attrs attrs
-}
-
-func (specs specs) assert(t *testing.T, value reflect.Value) {
-	assert := assert.New(t)
-	value = _deref(value)
-	// t.Logf("type(expected %+v, actual %+v)", reflect.TypeOf(specs.typ), value.Type())
-	if !assert.Equal(reflect.TypeOf(specs.typ), value.Type()) {
-		return
-	}
-	if specs.attrs != nil {
-		specs.attrs.assert(t, value)
-	}
-}
-
-type val struct {
-	value interface{}
-}
-
-func (val val) assert(t *testing.T, value reflect.Value) {
-	assert := assert.New(t)
-	value = _deref(value)
-	switch value.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		assert.Equal(val.value, value.Int())
-	case reflect.Float32, reflect.Float64:
-		assert.Equal(val.value, value.Float())
-	case reflect.String:
-		assert.Equal(val.value, value.String())
-	case reflect.Bool:
-		assert.Equal(val.value, value.Bool())
-	case reflect.Slice:
-		current, ok := val.value.(asserter)
-		if assert.True(ok) {
-			current.assert(t, value)
-		}
-	case reflect.Map:
-		assert.Len(val.value, value.Len())
-		v2 := reflect.ValueOf(val.value)
-
-		iter := value.MapRange()
-		for iter.Next() {
-			assert.Equal(iter.Value(), v2.MapIndex(iter.Key()))
-		}
-	case reflect.Func:
-		assert.Equal(value, reflect.ValueOf(val.value))
-	default:
-		assert.Failf("Unknown value", "Unknown value kind '%s'", value.Kind())
-	}
-}
-
-func _literal(typ interface{}, value interface{}) asserter {
-	return specs{typ, attrs{
-		"Val": val{value},
-	}}
-}
-
-func _token(value string) asserter {
-	return specs{tokens.Token{}, attrs{
-		"Val": val{value},
-	}}
-}
-
-func _binOp(value string) asserter {
-	return specs{nodes.BinOperator{}, attrs{
-		"Token": _token(value),
-	}}
-}
-
-type attrs map[string]asserter
-
-func (attrs attrs) assert(t *testing.T, value reflect.Value) {
-	assert := assert.New(t)
-	for attr, specs := range attrs {
-		field := value.FieldByName(attr)
-		if assert.True(field.IsValid(), fmt.Sprintf("No field named '%s' found", attr)) {
-			specs.assert(t, field)
-		}
-	}
-}
-
-type slice []asserter
-
-func (slice slice) assert(t *testing.T, value reflect.Value) {
-	if assert.Equal(t, reflect.Slice, value.Kind()) {
-		if assert.Equal(t, len(slice), value.Len()) {
-			for idx, specs := range slice {
-				specs.assert(t, value.Index(idx))
+		},
+		{
+			"is a function call with an argument passed through a filter",
+			[]string{"{{ func('filter me' | filter) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchCallNode(
+						MatchNameNode("func"),
+						[]types.GomegaMatcher{
+							PointTo(MatchNodeFilteredExpressionNode(
+								MatchStringNode("filter me"),
+								MatchFilterCallNode("filter", nil, nil),
+							)),
+						},
+						nil,
+					),
+				),
+			},
+		},
+		{
+			"is a function call from an object attribute",
+			[]string{"{{ object.func() }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchCallNode(
+						MatchGetAttributeNode(
+							MatchNameNode("object"),
+							"func",
+						),
+						nil,
+						nil,
+					),
+				),
+			},
+		},
+		{
+			"is a function call with math expression as an argument",
+			[]string{"{{ func(1 + 2) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchCallNode(
+						MatchNameNode("func"),
+						[]types.GomegaMatcher{
+							PointTo(
+								MatchNodeBinaryExpression(
+									MatchIntegerNode(1),
+									tokens.Addition,
+									MatchIntegerNode(2),
+								),
+							),
+						},
+						nil,
+					),
+				),
+			},
+		},
+		{
+			"is a filtered variable call with a filtered argument",
+			[]string{"{{ first | func(arg | second) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeFilteredExpressionNode(
+						MatchNameNode("first"),
+						MatchFilterCallNode(
+							"func",
+							[]types.GomegaMatcher{
+								PointTo(MatchNodeFilteredExpressionNode(
+									MatchNameNode("arg"),
+									MatchFilterCallNode("second", nil, nil),
+								)),
+							},
+							nil,
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an equality test",
+			[]string{"{{ 3 is equal 3 }}", "{{ 3 is equal(3) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchTestExpressionNode(
+						MatchIntegerNode(3),
+						MatchTestCall(
+							"equal",
+							[]types.GomegaMatcher{PointTo(MatchIntegerNode(3))},
+							nil,
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an == test",
+			[]string{"{{ 3 is == 3 }}", "{{ 3 is ==(3) }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchTestExpressionNode(
+						MatchIntegerNode(3),
+						MatchTestCall(
+							"==",
+							[]types.GomegaMatcher{PointTo(MatchIntegerNode(3))},
+							nil,
+						),
+					),
+				),
+			},
+		},
+		{
+			"is an inline if condition",
+			[]string{"{{ 'foo' if 2 is odd }}"},
+			[]types.GomegaMatcher{
+				MatchNodeConditionalOutput(
+					MatchStringNode("foo"),
+					PointTo(
+						MatchTestExpressionNode(
+							MatchIntegerNode(2),
+							MatchTestCall("odd", nil, nil),
+						),
+					),
+					BeNil(),
+				),
+			},
+		},
+		{
+			"is an inline if/else condition",
+			[]string{"{{ 'foo' if 2 is odd else 'bar' }}"},
+			[]types.GomegaMatcher{
+				MatchNodeConditionalOutput(
+					MatchStringNode("foo"),
+					PointTo(
+						MatchTestExpressionNode(
+							MatchIntegerNode(2),
+							MatchTestCall("odd", nil, nil),
+						),
+					),
+					PointTo(MatchStringNode("bar")),
+				),
+			},
+		},
+	} {
+		t := testCase
+		Context(fmt.Sprintf("when the input %s", t.description), func() {
+			for _, testInput := range t.inputs {
+				i := testInput
+				Context(i, func() {
+					BeforeEach(func() {
+						*input = i
+					})
+					elements := make(Elements)
+					for index, matcher := range t.nodeMatchers {
+						elements[strconv.Itoa(index)] = PointTo(matcher)
+					}
+					It("should return the expected tree", func() {
+						Expect(*returnedError).To(BeNil())
+						Expect(returnedTemplate).To(PointTo(MatchFields(IgnoreExtras, Fields{
+							"Name": Equal("parser"),
+							"Nodes": MatchAllElementsWithIndex(
+								func(index int, _ interface{}) string { return strconv.Itoa(index) },
+								elements,
+							),
+						})))
+					})
+				})
 			}
-		}
-	}
-}
 
-type filter struct {
-	name   string
-	args   slice
-	kwargs attrs
-}
-
-func (filter filter) assert(t *testing.T, value reflect.Value) {
-	value = _deref(value)
-	assert := assert.New(t)
-	assert.Equal(reflect.TypeOf(nodes.FilterCall{}), value.Type())
-	assert.Equal(filter.name, value.FieldByName("Name").String())
-	args := value.FieldByName("Args")
-	kwargs := value.FieldByName("Kwargs")
-	if assert.Equal(len(filter.args), args.Len()) {
-		for idx, specs := range filter.args {
-			specs.assert(t, args.Index(idx))
-		}
-	}
-	if assert.Equal(len(filter.kwargs), kwargs.Len()) {
-		for key, specs := range filter.kwargs {
-			specs.assert(t, args.MapIndex(reflect.ValueOf(key)))
-		}
-	}
-}
-
-func TestParser(t *testing.T) {
-	for _, tc := range testCases {
-		test := tc
-		t.Run(test.name, func(t *testing.T) {
-			defer func() {
-				if err := recover(); err != nil {
-					t.Error(err)
-				}
-			}()
-			// t.Parallel()
-			assert := assert.New(t)
-			tpl, err := parser.Parse(test.text)
-			if assert.Nil(err, "Unable to parse template: %s", err) {
-				if assert.Equal(1, len(tpl.Nodes), "Expected one node") {
-					test.expected.assert(t, reflect.ValueOf(tpl.Nodes[0]))
-				} else {
-					t.Logf("Nodes %+v", tpl.Nodes)
-				}
-			}
 		})
 	}
-}
+})

@@ -1,3 +1,3 @@
-{% extends "../inheritance/base.tpl" %}
+{% extends "./inheritance/base.tpl" %}
 
 {% block content %}Extends' content{% endblock content %}

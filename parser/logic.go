@@ -7,12 +7,12 @@ import (
 )
 
 var compareOps = []tokens.Type{
-	tokens.Eq,
+	tokens.Equals,
 	tokens.Ne,
-	tokens.Gt,
-	tokens.Gteq,
-	tokens.Lt,
-	tokens.Lteq,
+	tokens.GreaterThan,
+	tokens.GreaterThanOrEqual,
+	tokens.LowerThan,
+	tokens.LowerThanOrEqual,
 }
 
 func BinOp(token *tokens.Token) *nodes.BinOperator {

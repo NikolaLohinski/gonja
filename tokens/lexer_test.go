@@ -1,381 +1,513 @@
 package tokens_test
 
 import (
-	"testing"
+	"fmt"
+	"strconv"
 
-	"github.com/nikolalohinski/gonja/config"
+	"github.com/MakeNowJust/heredoc"
 	"github.com/nikolalohinski/gonja/tokens"
-	"github.com/stretchr/testify/assert"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 )
 
-type tok struct {
-	typ tokens.Type
-	val string
-}
+var _ = Context("lexer", func() {
+	var (
+		lexer = new(*tokens.Lexer)
 
-func (t tok) String() string {
-	return `"` + t.val + `"`
-}
+		returnedTokens = new([]*tokens.Token)
+	)
 
-var (
-	EOF            = tok{tokens.EOF, ""}
-	varBegin       = tok{tokens.VariableBegin, "{{"}
-	varEnd         = tok{tokens.VariableEnd, "}}"}
-	blockBegin     = tok{tokens.BlockBegin, "{%"}
-	blockBeginTrim = tok{tokens.BlockBegin, "{%-"}
-	blockEnd       = tok{tokens.BlockEnd, "%}"}
-	blockEndTrim   = tok{tokens.BlockEnd, "-%}"}
-	lParen         = tok{tokens.Lparen, "("}
-	rParen         = tok{tokens.Rparen, ")"}
-	lBrace         = tok{tokens.Lbrace, "{"}
-	rBrace         = tok{tokens.Rbrace, "}"}
-	lBracket       = tok{tokens.Lbracket, "["}
-	rBracket       = tok{tokens.Rbracket, "]"}
-	space          = tok{tokens.Whitespace, " "}
-)
+	JustBeforeEach(func() {
+		go (*lexer).Run()
 
-func data(text string) tok {
-	return tok{tokens.Data, text}
-}
-
-func name(text string) tok {
-	return tok{tokens.Name, text}
-}
-
-func str(text string) tok {
-	return tok{tokens.String, text}
-}
-
-func error(text string) tok {
-	return tok{tokens.Error, text}
-}
-
-var lexerCases = []struct {
-	name     string
-	input    string
-	expected []tok
-}{
-	{"empty", "", []tok{EOF}},
-	{"data", "Hello World", []tok{
-		data("Hello World"),
-		EOF,
-	}},
-	{"comment", "{# a comment #}", []tok{
-		tok{tokens.CommentBegin, "{#"},
-		data(" a comment "),
-		tok{tokens.CommentEnd, "#}"},
-		EOF,
-	}},
-	{"mixed comment", "Hello, {# comment #}World", []tok{
-		data("Hello, "),
-		tok{tokens.CommentBegin, "{#"},
-		data(" comment "),
-		tok{tokens.CommentEnd, "#}"},
-		data("World"),
-		EOF,
-	}},
-	{"simple variable", "{{ foo }}", []tok{
-		varBegin,
-		space,
-		name("foo"),
-		space,
-		varEnd,
-		EOF,
-	}},
-	{"basic math expression", "{{ (a - b) + c }}", []tok{
-		varBegin, space,
-		lParen, name("a"), space, tok{tokens.Sub, "-"}, space, name("b"), rParen,
-		space, tok{tokens.Add, "+"}, space, name("c"),
-		space, varEnd,
-		EOF,
-	}},
-	{"blocks", "Hello.  {% if true %}World{% else %}Nobody{% endif %}", []tok{
-		data("Hello.  "),
-		blockBegin, space, name("if"), space, name("true"), space, blockEnd,
-		data("World"),
-		blockBegin, space, name("else"), space, blockEnd,
-		data("Nobody"),
-		blockBegin, space, name("endif"), space, blockEnd,
-		EOF,
-	}},
-	{"blocks with trim control", "Hello.  {%- if true -%}World{%- else -%}Nobody{%- endif -%}", []tok{
-		data("Hello.  "),
-		blockBeginTrim, space, name("if"), space, name("true"), space, blockEndTrim,
-		data("World"),
-		blockBeginTrim, space, name("else"), space, blockEndTrim,
-		data("Nobody"),
-		blockBeginTrim, space, name("endif"), space, blockEndTrim,
-		EOF,
-	}},
-	{"Ignore tags in comment", "<html>{# ignore {% tags %} in comments ##}</html>", []tok{
-		data("<html>"),
-		tok{tokens.CommentBegin, "{#"},
-		data(" ignore {% tags %} in comments #"),
-		tok{tokens.CommentEnd, "#}"},
-		data("</html>"),
-		EOF,
-	}},
-	{"Mixed content", "{# comment #}{% if foo -%} bar {%- elif baz %} bing{%endif    %}", []tok{
-		tok{tokens.CommentBegin, "{#"},
-		data(" comment "),
-		tok{tokens.CommentEnd, "#}"},
-		blockBegin, space, name("if"), space, name("foo"), space, blockEndTrim,
-		data(" bar "),
-		blockBeginTrim, space, name("elif"), space, name("baz"), space, blockEnd,
-		data(" bing"),
-		blockBegin, name("endif"), tok{tokens.Whitespace, "    "}, blockEnd,
-		EOF,
-	}},
-	{"mixed tokens with doubles", "{{ +--+ /+//,|*/**=>>=<=< == }}", []tok{
-		varBegin,
-		space,
-		tok{tokens.Add, "+"}, tok{tokens.Sub, "-"}, tok{tokens.Sub, "-"}, tok{tokens.Add, "+"},
-		space,
-		tok{tokens.Div, "/"}, tok{tokens.Add, "+"}, tok{tokens.Floordiv, "//"},
-		tok{tokens.Comma, ","},
-		tok{tokens.Pipe, "|"},
-		tok{tokens.Mul, "*"},
-		tok{tokens.Div, "/"},
-		tok{tokens.Pow, "**"},
-		tok{tokens.Assign, "="},
-		tok{tokens.Gt, ">"},
-		tok{tokens.Gteq, ">="},
-		tok{tokens.Lteq, "<="},
-		tok{tokens.Lt, "<"},
-		space,
-		tok{tokens.Eq, "=="},
-		space,
-		varEnd,
-		EOF,
-	}},
-	{"delimiters", "{{ ([{}]()) }}", []tok{
-		varBegin, space,
-		lParen, lBracket, lBrace, rBrace, rBracket, lParen, rParen, rParen,
-		space, varEnd,
-		EOF,
-	}},
-	{"Unbalanced delimiters", "{{ ([{]) }}", []tok{
-		varBegin, space,
-		lParen, lBracket, lBrace,
-		error(`Unbalanced delimiters, expected "}", got "]"`),
-	}},
-	{"Unexpeced delimiter", "{{ ()) }}", []tok{
-		varBegin, space,
-		lParen, rParen,
-		error(`Unexpected delimiter ")"`),
-	}},
-	{"Unbalance over end block", "{{ ({a:b, {a:b}}) }}", []tok{
-		varBegin, space,
-		lParen,
-		lBrace, name("a"), tok{tokens.Colon, ":"}, name("b"), tok{tokens.Comma, ","},
-		space,
-		lBrace, name("a"), tok{tokens.Colon, ":"}, name("b"), rBrace, rBrace,
-		rParen,
-		space, varEnd,
-		EOF,
-	}},
-	{"string with double quote", `{{ "Hello, " + "World" }}`, []tok{
-		varBegin, space,
-		str("Hello, "),
-		space, tok{tokens.Add, "+"}, space,
-		str("World"),
-		space, varEnd,
-		EOF,
-	}},
-	{"string with simple quote", `{{ 'Hello, ' + 'World' }}`, []tok{
-		varBegin, space,
-		str("Hello, "),
-		space, tok{tokens.Add, "+"}, space,
-		str("World"),
-		space, varEnd,
-		EOF,
-	}},
-	{"single quotes inside double quotes string", `{{ "'quoted' test" }}`, []tok{
-		varBegin, space, str("'quoted' test"), space, varEnd, EOF,
-	}},
-	{"escaped string", `{{ "Hello, \"World\"" }}`, []tok{
-		varBegin, space,
-		str(`Hello, "World"`),
-		space, varEnd,
-		EOF,
-	}},
-	{"escaped string mixed", `{{ "Hello,\n \'World\'" }}`, []tok{
-		varBegin, space,
-		str(`Hello,\n 'World'`),
-		space, varEnd,
-		EOF,
-	}},
-	{"if statement", `{% if 5.5 == 5.500000 %}5.5 is 5.500000{% endif %}`, []tok{
-		blockBegin, space, name("if"), space,
-		tok{tokens.Float, "5.5"}, space, tok{tokens.Eq, "=="}, space, tok{tokens.Float, "5.500000"},
-		space, blockEnd,
-		data("5.5 is 5.500000"),
-		blockBegin, space, name("endif"), space, blockEnd,
-		EOF,
-	}},
-	{"logical 'and' expression", `{{ a is defined and a == "x" }}`, []tok{
-		varBegin,
-		space, name("a"), space, {tokens.Is, "is"}, space, name("defined"),
-		space, {tokens.And, "and"},
-		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
-		varEnd,
-		EOF,
-	}},
-	{"logical 'or' expression", `{{ a is defined or a == "x" }}`, []tok{
-		varBegin,
-		space, name("a"), space, {tokens.Is, "is"}, space, name("defined"),
-		space, {tokens.Or, "or"},
-		space, name("a"), space, {tokens.Eq, "=="}, space, str("x"), space,
-		varEnd,
-		EOF,
-	}},
-	{"logical 'not' expression", `{{ not a }}`, []tok{
-		varBegin,
-		space, {tokens.Not, "not"},
-		space, name("a"), space,
-		varEnd,
-		EOF,
-	}},
-}
-
-func tokenSlice(c chan *tokens.Token) []*tokens.Token {
-	toks := []*tokens.Token{}
-	for token := range c {
-		toks = append(toks, token)
-	}
-	return toks
-}
-
-func TestLexer(t *testing.T) {
-	for _, lc := range lexerCases {
-		test := lc
-		t.Run(test.name, func(t *testing.T) {
-			lexer := tokens.NewLexer(test.input)
-			go lexer.Run()
-			toks := tokenSlice(lexer.Tokens)
-
-			assert := assert.New(t)
-			assert.Equal(len(test.expected), len(toks))
-			actual := []tok{}
-			for _, token := range toks {
-				actual = append(actual, tok{token.Type, token.Val})
-			}
-			assert.Equal(test.expected, actual)
-		})
-	}
-}
-
-func streamResult(s *tokens.Stream) []tok {
-	out := []tok{}
-	for !s.End() {
-		token := s.Current()
-		out = append(out, tok{token.Type, token.Val})
-		s.Next()
-	}
-	return out
-}
-
-func asStreamResult(toks []tok) ([]tok, bool) {
-	out := []tok{}
-	isError := false
-	for _, token := range toks {
-		if token.typ == tokens.Error {
-			isError = true
-			break
+		*returnedTokens = make([]*tokens.Token, 0)
+		for message := range (*lexer).Tokens {
+			*returnedTokens = append(*returnedTokens, message)
 		}
-		if token.typ != tokens.Whitespace && token.typ != tokens.EOF {
-			out = append(out, token)
-		}
-	}
-	return out, isError
-}
-
-func TestLex(t *testing.T) {
-	for _, lc := range lexerCases {
-		test := lc
-		t.Run(test.name, func(t *testing.T) {
-			stream := tokens.Lex(test.input)
-			expected, _ := asStreamResult(test.expected)
-
-			actual := streamResult(stream)
-
-			assert := assert.New(t)
-			assert.Equal(len(expected), len(actual))
-			assert.Equal(expected, actual)
-		})
-	}
-}
-func TestRegexpClashingDelimiters(t *testing.T) {
-	t.Run("Expression delimiters clashing the regexp parsing", func(t *testing.T) {
-
-		config.DefaultConfig.VariableStartString = "[["
-		config.DefaultConfig.VariableEndString = "]]"
-		config.DefaultConfig.BlockStartString = "[%"
-		config.DefaultConfig.BlockEndString = "%]"
-		config.DefaultConfig.CommentStartString = "[#"
-		config.DefaultConfig.CommentEndString = "#]"
-		defer func() {
-			config.DefaultConfig = config.NewConfig()
-		}()
-
-		lexer := tokens.NewLexer("[[ variable ]][% block %][# comment #]")
-		go lexer.Run()
-		toks := tokenSlice(lexer.Tokens)
-
-		stream := tokens.NewStream(toks)
-		expected, _ := asStreamResult([]tok{
-			tok{tokens.VariableBegin, "[["}, space, name("variable"), space, tok{tokens.VariableEnd, "]]"},
-			tok{tokens.BlockBegin, "[%"}, space, name("block"), space, tok{tokens.BlockEnd, "%]"},
-			tok{tokens.CommentBegin, "[#"}, data(" comment "), tok{tokens.CommentEnd, "#]"},
-			EOF,
-		})
-
-		actual := streamResult(stream)
-
-		assert := assert.New(t)
-		assert.Equal(len(expected), len(actual))
-		assert.Equal(expected, actual)
 	})
-}
-func TestStreamSlice(t *testing.T) {
-	for _, lc := range lexerCases {
-		test := lc
-		t.Run(test.name, func(t *testing.T) {
-			lexer := tokens.NewLexer(test.input)
-			go lexer.Run()
-			toks := tokenSlice(lexer.Tokens)
+	Context("default", func() {
+		for _, testCase := range []struct {
+			description  string
+			input        string
+			tokenMatcher []Fields
+		}{
+			{
+				"is empty",
+				"",
+				[]Fields{
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"just contains regular data",
+				"Hello World",
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("Hello World")},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a comment",
+				"{# a comment #}",
+				[]Fields{
+					{"Type": Equal(tokens.CommentBegin)},
+					{"Type": Equal(tokens.Data), "Val": Equal(" a comment ")},
+					{"Type": Equal(tokens.CommentEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"has data and a comment",
+				"Hello, {# comment #}World",
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("Hello, ")},
+					{"Type": Equal(tokens.CommentBegin)},
+					{"Type": Equal(tokens.Data), "Val": Equal(" comment ")},
+					{"Type": Equal(tokens.CommentEnd)},
+					{"Type": Equal(tokens.Data), "Val": Equal("World")},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a simple variable",
+				"{{ foo }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("foo")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a simple math expression",
+				"{{ (a - b) + c }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Subtraction)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("b")},
+					{"Type": Equal(tokens.RightParenthesis)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Addition)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("c")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"contains data and and 'if ... else' block",
+				"Hello.  {% if true %}World{% else %}Nobody{% endif %}",
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("Hello.  ")},
+					{"Type": Equal(tokens.BlockBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("if")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("true")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd)},
+					{"Type": Equal(tokens.Data), "Val": Equal("World")},
+					{"Type": Equal(tokens.BlockBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("else")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd)},
+					{"Type": Equal(tokens.Data), "Val": Equal("Nobody")},
+					{"Type": Equal(tokens.BlockBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("endif")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a block with trim control",
+				"come      {%- if true -%}  -  {%- endif -%}closer",
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("come      ")},
+					{"Type": Equal(tokens.BlockBegin), "Val": MatchRegexp("^.*-$")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("if")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("true")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd), "Val": MatchRegexp("^-.*$")},
+					{"Type": Equal(tokens.Data), "Val": Equal("  -  ")},
+					{"Type": Equal(tokens.BlockBegin), "Val": MatchRegexp("^.*-$")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("endif")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd), "Val": MatchRegexp("^-.*$")},
+					{"Type": Equal(tokens.Data), "Val": Equal("closer")},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a comment with a nested block",
+				"<html>{# ignore {% tags %} in comments ##}</html>",
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("<html>")},
+					{"Type": Equal(tokens.CommentBegin)},
+					{"Type": Equal(tokens.Data), "Val": Equal(" ignore {% tags %} in comments #")},
+					{"Type": Equal(tokens.CommentEnd)},
+					{"Type": Equal(tokens.Data), "Val": Equal("</html>")},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a little bit of everything",
+				"{# comment #}{% if foo -%} bar {%- elif baz %} bing{%endif    %}",
+				[]Fields{
+					{"Type": Equal(tokens.CommentBegin)},
+					{"Type": Equal(tokens.Data), "Val": Equal(" comment ")},
+					{"Type": Equal(tokens.CommentEnd)},
+					{"Type": Equal(tokens.BlockBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("if")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("foo")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd), "Val": MatchRegexp("^-.*$")},
+					{"Type": Equal(tokens.Data), "Val": Equal(" bar ")},
+					{"Type": Equal(tokens.BlockBegin), "Val": MatchRegexp("^.*-$")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("elif")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("baz")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd)},
+					{"Type": Equal(tokens.Data), "Val": Equal(" bing")},
+					{"Type": Equal(tokens.BlockBegin)},
+					{"Type": Equal(tokens.Name), "Val": Equal("endif")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.BlockEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"contains all possible operators",
+				"{{ +--+ /+//,|*/**=>>=<=< == % }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Addition)},
+					{"Type": Equal(tokens.Subtraction)},
+					{"Type": Equal(tokens.Subtraction)},
+					{"Type": Equal(tokens.Addition)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Division)},
+					{"Type": Equal(tokens.Addition)},
+					{"Type": Equal(tokens.FloorDivision)},
+					{"Type": Equal(tokens.Comma)},
+					{"Type": Equal(tokens.Pipe)},
+					{"Type": Equal(tokens.Multiply)},
+					{"Type": Equal(tokens.Division)},
+					{"Type": Equal(tokens.Power)},
+					{"Type": Equal(tokens.Assign)},
+					{"Type": Equal(tokens.GreaterThan)},
+					{"Type": Equal(tokens.GreaterThanOrEqual)},
+					{"Type": Equal(tokens.LowerThanOrEqual)},
+					{"Type": Equal(tokens.LowerThan)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Equals)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Modulo)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"contains all possible delimiters",
+				"{{ ([{}]()) }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.LeftBracket)},
+					{"Type": Equal(tokens.LeftBrace)},
+					{"Type": Equal(tokens.RightBrace)},
+					{"Type": Equal(tokens.RightBracket)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.RightParenthesis)},
+					{"Type": Equal(tokens.RightParenthesis)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"contains unbalanced delimiters",
+				"{{ ([{]) }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.LeftBracket)},
+					{"Type": Equal(tokens.LeftBrace)},
+					{"Type": Equal(tokens.Error), "Val": Equal(`Unbalanced delimiters, expected "}", got "]"`)},
+				},
+			},
+			{
+				"contains an unexpected delimiter",
+				"{{ ()) }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.RightParenthesis)},
+					{"Type": Equal(tokens.Error), "Val": Equal(`Unexpected delimiter ")"`)},
+				},
+			},
+			{
+				"contains what looks likes to be an unbalanced variable block but is actually valid",
+				"{{ ({a:b, {a:b}}) }}",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftParenthesis)},
+					{"Type": Equal(tokens.LeftBrace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Colon)},
+					{"Type": Equal(tokens.Name), "Val": Equal("b")},
+					{"Type": Equal(tokens.Comma)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.LeftBrace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Colon)},
+					{"Type": Equal(tokens.Name), "Val": Equal("b")},
+					{"Type": Equal(tokens.RightBrace)},
+					{"Type": Equal(tokens.RightBrace)},
+					{"Type": Equal(tokens.RightParenthesis)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a variable block with single and double quoted strings",
+				`{{ "Hello, " + 'World' }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal("Hello, ")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Addition)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal("World")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a variable block with a double quoted string containing single quotes",
+				`{{ "foo 'bar'" }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal("foo 'bar'")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a variable block with a single quoted string containing double quotes",
+				`{{ 'foo "bar"' }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal(`foo "bar"`)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a variable block with an escaped double quoted string",
+				`{{ "foo \"bar\"" }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal(`foo "bar"`)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a logical 'and' expression",
+				`{{ a is defined and a == "x" }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Is)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("defined")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.And)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Equals)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal("x")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a logical 'or' expression",
+				`{{ a is defined or a == "x" }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Is)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("defined")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Or)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Equals)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.String), "Val": Equal("x")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"is a logical 'not' expression",
+				`{{ not a }}`,
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Not)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Name), "Val": Equal("a")},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.VariableEnd)},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
+				"when when the input is multiline and exact positions matter",
+				heredoc.Doc(`
+					Hello
+					{#
+					    Multiline comment
+					#}
+					World
+				`),
+				[]Fields{
+					{"Type": Equal(tokens.Data), "Val": Equal("Hello\n"), "Pos": Equal(0), "Line": Equal(1), "Col": Equal(1)},
+					{"Type": Equal(tokens.CommentBegin), "Val": Equal("{#"), "Pos": Equal(6), "Line": Equal(2), "Col": Equal(1)},
+					{"Type": Equal(tokens.Data), "Val": Equal("\n    Multiline comment\n"), "Pos": Equal(8), "Line": Equal(2), "Col": Equal(3)},
+					{"Type": Equal(tokens.CommentEnd), "Val": Equal("#}"), "Pos": Equal(31), "Line": Equal(4), "Col": Equal(1)},
+					{"Type": Equal(tokens.Data), "Val": Equal("\nWorld\n"), "Pos": Equal(33), "Line": Equal(4), "Col": Equal(3)},
+					{"Type": Equal(tokens.EOF), "Val": Equal(""), "Pos": Equal(40), "Line": Equal(6), "Col": Equal(1)},
+				},
+			},
+		} {
+			t := testCase
+			Context(fmt.Sprintf("when the input %s", t.description), func() {
+				BeforeEach(func() {
+					*lexer = tokens.NewLexer(t.input)
+				})
+				elements := make(Elements)
+				for index, fields := range t.tokenMatcher {
+					elements[strconv.Itoa(index)] = PointTo(MatchFields(IgnoreExtras, fields))
+				}
+				It("should return the expected tokens", func() {
+					Expect(*returnedTokens).To(MatchAllElementsWithIndex(
+						func(index int, _ interface{}) string { return strconv.Itoa(index) },
+						elements,
+					))
+				})
+			})
+		}
+	})
+	Context("when overriding the default delimiters", func() {
+		BeforeEach(func() {
+			*lexer = tokens.NewLexer(`<@ block @>{$ variable $}(### comment ###)`)
 
-			stream := tokens.NewStream(toks)
-			expected, _ := asStreamResult(test.expected)
-
-			actual := streamResult(stream)
-
-			assert := assert.New(t)
-			assert.Equal(len(expected), len(actual))
-			assert.Equal(expected, actual)
+			(*lexer).Config.BlockStartString = "<@"
+			(*lexer).Config.BlockEndString = "@>"
+			(*lexer).Config.VariableStartString = "{$"
+			(*lexer).Config.VariableEndString = "$}"
+			(*lexer).Config.CommentStartString = "(###"
+			(*lexer).Config.CommentEndString = "###)"
 		})
-	}
-}
-
-const positionsCase = `Hello
-{#
-    Multiline comment
-#}
-World
-`
-
-func TestLexerPosition(t *testing.T) {
-	assert := assert.New(t)
-
-	lexer := tokens.NewLexer(positionsCase)
-	go lexer.Run()
-	toks := tokenSlice(lexer.Tokens)
-	assert.Equal([]*tokens.Token{
-		{tokens.Data, "Hello\n", 0, 1, 1, false},
-		{tokens.CommentBegin, "{#", 6, 2, 1, false},
-		{tokens.Data, "\n    Multiline comment\n", 8, 2, 3, false},
-		{tokens.CommentEnd, "#}", 31, 4, 1, false},
-		{tokens.Data, "\nWorld\n", 33, 4, 3, false},
-		{tokens.EOF, "", 40, 6, 1, false},
-	}, toks)
-}
+		It("should return the expected tokens", func() {
+			Expect(*returnedTokens).To(MatchAllElementsWithIndex(
+				func(index int, _ interface{}) string { return strconv.Itoa(index) },
+				Elements{
+					"0": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.BlockBegin),
+					})),
+					"1": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Whitespace),
+					})),
+					"2": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Name),
+						"Val":  Equal("block"),
+					})),
+					"3": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Whitespace),
+					})),
+					"4": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.BlockEnd),
+					})),
+					"5": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.VariableBegin),
+					})),
+					"6": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Whitespace),
+					})),
+					"7": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Name),
+						"Val":  Equal("variable"),
+					})),
+					"8": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Whitespace),
+					})),
+					"9": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.VariableEnd),
+					})),
+					"10": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.CommentBegin),
+					})),
+					"11": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.Data),
+						"Val":  Equal(" comment "),
+					})),
+					"12": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.CommentEnd),
+					})),
+					"13": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.EOF),
+					})),
+				},
+			))
+		})
+	})
+})

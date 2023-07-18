@@ -307,26 +307,26 @@ func (c *Call) String() string {
 	return fmt.Sprintf("call(%s, %s)", c.Args, c.Kwargs)
 }
 
-type Getitem struct {
+type GetItem struct {
 	Location *tokens.Token
 	Node     Node
 	Arg      Node
 }
 
-func (g *Getitem) Position() *tokens.Token { return g.Location }
-func (g *Getitem) String() string {
+func (g *GetItem) Position() *tokens.Token { return g.Location }
+func (g *GetItem) String() string {
 	return fmt.Sprintf("%s[%s]", g.Node, g.Arg)
 }
 
-type Getattr struct {
+type GetAttribute struct {
 	Location *tokens.Token
 	Node     Node
 	Attr     string
 	Index    int
 }
 
-func (g *Getattr) Position() *tokens.Token { return g.Location }
-func (g *Getattr) String() string {
+func (g *GetAttribute) Position() *tokens.Token { return g.Location }
+func (g *GetAttribute) String() string {
 	var param string
 	if g.Attr != "" {
 		param = g.Attr

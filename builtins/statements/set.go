@@ -32,7 +32,7 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 	switch n := stmt.Target.(type) {
 	case *nodes.Name:
 		r.Ctx.Set(n.Name.Val, value.Interface())
-	case *nodes.Getattr:
+	case *nodes.GetAttribute:
 		target := r.Eval(n.Node)
 		if target.IsError() {
 			return errors.Wrapf(target, `Unable to evaluate target %s`, n)
@@ -40,7 +40,7 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 		if err := target.Set(exec.AsValue(n.Attr), value.Interface()); err != nil {
 			return errors.Wrapf(err, `Unable to set value on "%s"`, n.Attr)
 		}
-	case *nodes.Getitem:
+	case *nodes.GetItem:
 		target := r.Eval(n.Node)
 		if target.IsError() {
 			return errors.Wrapf(target, `Unable to evaluate target %s`, n)
@@ -70,7 +70,7 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 		return nil, errors.Wrap(err, `Unable to parse identifier`)
 	}
 	switch n := ident.(type) {
-	case *nodes.Name, *nodes.Call, *nodes.Getitem, *nodes.Getattr:
+	case *nodes.Name, *nodes.Call, *nodes.GetItem, *nodes.GetAttribute:
 		stmt.Target = n
 	default:
 		return nil, errors.Errorf(`Unexpected set target %s`, n)

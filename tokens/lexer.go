@@ -353,7 +353,7 @@ func (l *Lexer) lexExpression() lexFn {
 		case r == '|':
 			l.emit(Pipe)
 		case r == '+':
-			l.emit(Add)
+			l.emit(Addition)
 		case r == '-':
 			if l.hasPrefix(l.Config.BlockEndString) {
 				l.backup()
@@ -362,7 +362,7 @@ func (l *Lexer) lexExpression() lexFn {
 				l.backup()
 				return l.lexVariableEnd
 			} else {
-				l.emit(Sub)
+				l.emit(Subtraction)
 			}
 		case r == '~':
 			l.emit(Tilde)
@@ -371,30 +371,30 @@ func (l *Lexer) lexExpression() lexFn {
 		case r == '.':
 			l.emit(Dot)
 		case r == '%':
-			l.emit(Mod)
+			l.emit(Modulo)
 		case r == '/':
 			if l.accept("/") {
-				l.emit(Floordiv)
+				l.emit(FloorDivision)
 			} else {
-				l.emit(Div)
+				l.emit(Division)
 			}
 		case r == '<':
 			if l.accept("=") {
-				l.emit(Lteq)
+				l.emit(LowerThanOrEqual)
 			} else {
-				l.emit(Lt)
+				l.emit(LowerThan)
 			}
 		case r == '>':
 			if l.accept("=") {
-				l.emit(Gteq)
+				l.emit(GreaterThanOrEqual)
 			} else {
-				l.emit(Gt)
+				l.emit(GreaterThan)
 			}
 		case r == '*':
 			if l.accept("*") {
-				l.emit(Pow)
+				l.emit(Power)
 			} else {
-				l.emit(Mul)
+				l.emit(Multiply)
 			}
 		case r == '!':
 			if l.accept("=") {
@@ -405,34 +405,34 @@ func (l *Lexer) lexExpression() lexFn {
 			}
 		case r == '=':
 			if l.accept("=") {
-				l.emit(Eq)
+				l.emit(Equals)
 			} else {
 				l.emit(Assign)
 			}
 		case r == '(':
-			l.emit(Lparen)
+			l.emit(LeftParenthesis)
 			l.pushDelimiter(')')
 		case r == '{':
-			l.emit(Lbrace)
+			l.emit(LeftBrace)
 			l.pushDelimiter('}')
 		case r == '[':
-			l.emit(Lbracket)
+			l.emit(LeftBracket)
 			l.pushDelimiter(']')
 		case r == ')':
 			if !l.popDelimiter(')') {
 				return nil
 			}
-			l.emit(Rparen)
+			l.emit(RightParenthesis)
 		case r == '}':
 			if !l.popDelimiter('}') {
 				return nil
 			}
-			l.emit(Rbrace)
+			l.emit(RightBrace)
 		case r == ']':
 			if !l.popDelimiter(']') {
 				return nil
 			}
-			l.emit(Rbracket)
+			l.emit(RightBracket)
 		// in
 		case r == 'i' && l.accept("n"):
 			if !isSpace(l.peek()) {

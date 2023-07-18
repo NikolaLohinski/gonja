@@ -66,11 +66,11 @@ func (p *Parser) parseString() (nodes.Expression, error) {
 
 func (p *Parser) parseCollection() (nodes.Expression, error) {
 	switch p.Current().Type {
-	case tokens.Lbracket:
+	case tokens.LeftBracket:
 		return p.parseList()
-	case tokens.Lparen:
+	case tokens.LeftParenthesis:
 		return p.parseTuple()
-	case tokens.Lbrace:
+	case tokens.LeftBrace:
 		return p.parseDict()
 	default:
 		return nil, nil
@@ -81,12 +81,12 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
 	}).Trace("parseList")
-	t := p.Match(tokens.Lbracket)
+	t := p.Match(tokens.LeftBracket)
 	if t == nil {
 		return nil, p.Error("Expected [", t)
 	}
 
-	if p.Match(tokens.Rbracket) != nil {
+	if p.Match(tokens.RightBracket) != nil {
 		// Empty list
 		return &nodes.List{t, []nodes.Expression{}}, nil
 	}
@@ -98,7 +98,7 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 	list := []nodes.Expression{expr}
 
 	for p.Match(tokens.Comma) != nil {
-		if p.Current(tokens.Rbracket) != nil {
+		if p.Current(tokens.RightBracket) != nil {
 			// Trailing coma
 			break
 		}
@@ -112,7 +112,7 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 		list = append(list, expr)
 	}
 
-	if p.Match(tokens.Rbracket) == nil {
+	if p.Match(tokens.RightBracket) == nil {
 		return nil, p.Error("Expected ]", p.Current())
 	}
 
@@ -123,7 +123,7 @@ func (p *Parser) parseTuple() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
 	}).Trace("parseTuple")
-	t := p.Match(tokens.Lparen)
+	t := p.Match(tokens.LeftParenthesis)
 	if t == nil {
 		return nil, p.Error("Expected (", t)
 	}
@@ -136,7 +136,7 @@ func (p *Parser) parseTuple() (nodes.Expression, error) {
 	trailingComa := false
 
 	for p.Match(tokens.Comma) != nil {
-		if p.Current(tokens.Rparen) != nil {
+		if p.Current(tokens.RightParenthesis) != nil {
 			// Trailing coma
 			trailingComa = true
 			break
@@ -151,7 +151,7 @@ func (p *Parser) parseTuple() (nodes.Expression, error) {
 		list = append(list, expr)
 	}
 
-	if p.Match(tokens.Rparen) == nil {
+	if p.Match(tokens.RightParenthesis) == nil {
 		return nil, p.Error("Unbalanced parenthesis", t)
 		// return nil, p.Error("Expected )", p.Current())
 	}
@@ -189,7 +189,7 @@ func (p *Parser) parseDict() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
 	}).Trace("parseDict")
-	t := p.Match(tokens.Lbrace)
+	t := p.Match(tokens.LeftBrace)
 	if t == nil {
 		return nil, p.Error("Expected {", t)
 	}
@@ -199,7 +199,7 @@ func (p *Parser) parseDict() (nodes.Expression, error) {
 		Pairs: []*nodes.Pair{},
 	}
 
-	if p.Current(tokens.Rbrace) == nil {
+	if p.Current(tokens.RightBrace) == nil {
 		pair, err := p.parsePair()
 		if err != nil {
 			return nil, err
@@ -215,7 +215,7 @@ func (p *Parser) parseDict() (nodes.Expression, error) {
 		dict.Pairs = append(dict.Pairs, pair)
 	}
 
-	if p.Match(tokens.Rbrace) == nil {
+	if p.Match(tokens.RightBrace) == nil {
 		return nil, p.Error("Expected }", p.Current())
 	}
 
@@ -256,7 +256,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 
 	for !p.Stream.EOF() {
 		if dot := p.Match(tokens.Dot); dot != nil {
-			getattr := &nodes.Getattr{
+			getattr := &nodes.GetAttribute{
 				Location: dot,
 				Node:     variable,
 			}
@@ -275,9 +275,9 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 			}
 			variable = getattr
 			continue
-		} else if bracket := p.Match(tokens.Lbracket); bracket != nil {
+		} else if bracket := p.Match(tokens.LeftBracket); bracket != nil {
 			tok := p.Match(tokens.String, tokens.Integer)
-			getitem := &nodes.Getitem{
+			getitem := &nodes.GetItem{
 				Location: bracket,
 				Node:     variable,
 			}
@@ -308,12 +308,12 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 				getitem.Arg = expression
 			}
 			variable = getitem
-			if p.Match(tokens.Rbracket) == nil {
+			if p.Match(tokens.RightBracket) == nil {
 				return nil, p.Error("Unbalanced bracket", bracket)
 			}
 			continue
 
-		} else if lparen := p.Match(tokens.Lparen); lparen != nil {
+		} else if lparen := p.Match(tokens.LeftParenthesis); lparen != nil {
 			call := &nodes.Call{
 				Location: lparen,
 				Func:     variable,
@@ -324,7 +324,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 			// 	return nil, p.Error("Filter parameter required after '('.", nil)
 			// }
 
-			for p.Match(tokens.Comma) != nil || p.Match(tokens.Rparen) == nil {
+			for p.Match(tokens.Comma) != nil || p.Match(tokens.RightParenthesis) == nil {
 				// TODO: Handle multiple args and kwargs
 				v, err := p.ParseExpression()
 				if err != nil {
@@ -373,7 +373,7 @@ func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 	case tokens.String:
 		return p.parseString()
 
-	case tokens.Lparen, tokens.Lbrace, tokens.Lbracket:
+	case tokens.LeftParenthesis, tokens.LeftBrace, tokens.LeftBracket:
 		return p.parseCollection()
 
 	case tokens.Name:

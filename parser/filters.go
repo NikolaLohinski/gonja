@@ -104,12 +104,12 @@ func (p *Parser) ParseFilter() (*nodes.FilterCall, error) {
 	// filter.filterFunc = filterFn
 
 	// Check for filter-argument (2 tokens needed: ':' ARG)
-	if p.Match(tokens.Lparen) != nil {
+	if p.Match(tokens.LeftParenthesis) != nil {
 		if p.Current(tokens.VariableEnd) != nil {
 			return nil, p.Error("Filter parameter required after '('.", nil)
 		}
 
-		for p.Match(tokens.Comma) != nil || p.Match(tokens.Rparen) == nil {
+		for p.Match(tokens.Comma) != nil || p.Match(tokens.RightParenthesis) == nil {
 			// TODO: Handle multiple args and kwargs
 			v, err := p.ParseExpression()
 			if err != nil {

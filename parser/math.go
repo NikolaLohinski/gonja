@@ -73,7 +73,7 @@ func (p *Parser) ParseMath() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.Current(tokens.Add, tokens.Sub) != nil {
+	for p.Current(tokens.Addition, tokens.Subtraction) != nil {
 		op := BinOp(p.Pop())
 		right, err := p.parseConcat()
 		if err != nil {
@@ -131,7 +131,7 @@ func (p *Parser) ParseMathPrioritary() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.Current(tokens.Mul, tokens.Div, tokens.Floordiv, tokens.Mod) != nil {
+	for p.Current(tokens.Multiply, tokens.Division, tokens.FloorDivision, tokens.Modulo) != nil {
 		op := BinOp(p.Pop())
 		right, err := p.parseUnary()
 		if err != nil {
@@ -155,7 +155,7 @@ func (p *Parser) parseUnary() (nodes.Expression, error) {
 		"current": p.Current(),
 	}).Trace("parseUnary")
 
-	sign := p.Match(tokens.Add, tokens.Sub)
+	sign := p.Match(tokens.Addition, tokens.Subtraction)
 
 	expr, err := p.ParsePower()
 	if err != nil {
@@ -190,7 +190,7 @@ func (p *Parser) ParsePower() (nodes.Expression, error) {
 		return nil, err
 	}
 
-	for p.Current(tokens.Pow) != nil {
+	for p.Current(tokens.Power) != nil {
 		op := BinOp(p.Pop())
 		right, err := p.ParseVariableOrLiteral()
 		if err != nil {

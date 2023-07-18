@@ -141,7 +141,7 @@ func filterAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'attr'"))
 	}
 	attr := p.First().String()
-	value, _ := in.Getattr(attr)
+	value, _ := in.GetAttribute(attr)
 	return value
 }
 
@@ -1064,7 +1064,7 @@ func filterSum(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 				sum += val.Float()
 			}
 		} else if attribute.IsInteger() {
-			value, found := key.Getitem(attribute.Integer())
+			value, found := key.GetItem(attribute.Integer())
 			if found {
 				sum += value.Float()
 			}
@@ -1434,7 +1434,7 @@ func filterGet(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		return exec.AsValue(errors.New("Filter 'get' was passed a non-dict type"))
 	}
 	item := p.First().String()
-	value, ok := in.Getitem(item)
+	value, ok := in.GetItem(item)
 	if !ok {
 		if fallback := p.GetKwarg("default", nil); !fallback.IsNil() {
 			return fallback

@@ -57,9 +57,9 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 		return e.evalName(n)
 	case *nodes.Call:
 		return e.evalCall(n)
-	case *nodes.Getitem:
+	case *nodes.GetItem:
 		return e.evalGetitem(n)
-	case *nodes.Getattr:
+	case *nodes.GetAttribute:
 		return e.evalGetattr(n)
 	case *nodes.Error:
 		return AsValue(n.Error)
@@ -103,7 +103,7 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 	}
 
 	switch node.Operator.Token.Type {
-	case tokens.Add:
+	case tokens.Addition:
 		if left.IsList() {
 			if !right.IsList() {
 				return AsValue(errors.Wrapf(right, `Unable to concatenate list to %s`, node.Right))
@@ -127,14 +127,14 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 		// Result will be an integer
 		return AsValue(left.Integer() + right.Integer())
-	case tokens.Sub:
+	case tokens.Subtraction:
 		if left.IsFloat() || right.IsFloat() {
 			// Result will be a float
 			return AsValue(left.Float() - right.Float())
 		}
 		// Result will be an integer
 		return AsValue(left.Integer() - right.Integer())
-	case tokens.Mul:
+	case tokens.Multiply:
 		if left.IsFloat() || right.IsFloat() {
 			// Result will be float
 			return AsValue(left.Float() * right.Float())
@@ -144,16 +144,16 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 		// Result will be int
 		return AsValue(left.Integer() * right.Integer())
-	case tokens.Div:
+	case tokens.Division:
 		// Float division
 		return AsValue(left.Float() / right.Float())
-	case tokens.Floordiv:
+	case tokens.FloorDivision:
 		// Int division
 		return AsValue(int(left.Float() / right.Float()))
-	case tokens.Mod:
+	case tokens.Modulo:
 		// Result will be int
 		return AsValue(left.Integer() % right.Integer())
-	case tokens.Pow:
+	case tokens.Power:
 		return AsValue(math.Pow(left.Float(), right.Float()))
 	case tokens.Tilde:
 		return AsValue(strings.Join([]string{left.String(), right.String()}, ""))
@@ -175,24 +175,24 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			return AsValue(errors.Wrapf(right, `Unable to evaluate right parameter %s`, node.Right))
 		}
 		return AsValue(right.IsTrue())
-	case tokens.Lteq:
+	case tokens.LowerThanOrEqual:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() <= right.Float())
 		}
 		return AsValue(left.Integer() <= right.Integer())
-	case tokens.Gteq:
+	case tokens.GreaterThanOrEqual:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() >= right.Float())
 		}
 		return AsValue(left.Integer() >= right.Integer())
-	case tokens.Eq:
+	case tokens.Equals:
 		return AsValue(left.EqualValueTo(right))
-	case tokens.Gt:
+	case tokens.GreaterThan:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() > right.Float())
 		}
 		return AsValue(left.Integer() > right.Integer())
-	case tokens.Lt:
+	case tokens.LowerThan:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() < right.Float())
 		}
@@ -278,7 +278,7 @@ func (e *Evaluator) evalName(node *nodes.Name) *Value {
 	return ToValue(val)
 }
 
-func (e *Evaluator) evalGetitem(node *nodes.Getitem) *Value {
+func (e *Evaluator) evalGetitem(node *nodes.GetItem) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
@@ -298,9 +298,9 @@ func (e *Evaluator) evalGetitem(node *nodes.Getitem) *Value {
 		return AsValue(errors.Wrapf(value, `Argument %s does not evaluate to string or integer in: %s`, node.Arg, node.Node))
 	}
 
-	item, found := value.Getitem(key)
+	item, found := value.GetItem(key)
 	if !found && argument.IsString() {
-		item, found = value.Getattr(argument.String())
+		item, found = value.GetAttribute(argument.String())
 	}
 	if !found {
 		if item.IsError() || argument.IsInteger() /* always fail when accessing array indexes */ {
@@ -314,16 +314,16 @@ func (e *Evaluator) evalGetitem(node *nodes.Getitem) *Value {
 	return item
 }
 
-func (e *Evaluator) evalGetattr(node *nodes.Getattr) *Value {
+func (e *Evaluator) evalGetattr(node *nodes.GetAttribute) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
 	}
 
 	if node.Attr != "" {
-		attr, found := value.Getattr(node.Attr)
+		attr, found := value.GetAttribute(node.Attr)
 		if !found {
-			attr, found = value.Getitem(node.Attr)
+			attr, found = value.GetItem(node.Attr)
 		}
 		if !found {
 			if attr.IsError() {
@@ -336,7 +336,7 @@ func (e *Evaluator) evalGetattr(node *nodes.Getattr) *Value {
 		}
 		return attr
 	} else {
-		item, found := value.Getitem(node.Index)
+		item, found := value.GetItem(node.Index)
 		if !found {
 			if item.IsError() {
 				return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))

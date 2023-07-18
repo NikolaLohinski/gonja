@@ -577,7 +577,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		}
 		keyLen := len(keys)
 		for idx, key := range keys {
-			value, _ := v.Getitem(key.Interface())
+			value, _ := v.GetItem(key.Interface())
 			if !fn(idx, keyLen, key, value) {
 				return
 			}
@@ -830,7 +830,7 @@ func ToValue(data interface{}) *Value {
 	return &Value{Val: val, Safe: isSafe}
 }
 
-func (v *Value) Getattr(name string) (*Value, bool) {
+func (v *Value) GetAttribute(name string) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use getattr on None`)), false
 	}
@@ -859,7 +859,7 @@ func (v *Value) Getattr(name string) (*Value, bool) {
 	return AsValue(nil), false // Attr not found
 }
 
-func (v *Value) Getitem(key interface{}) (*Value, bool) {
+func (v *Value) GetItem(key interface{}) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use Getitem on None`)), false
 	}
@@ -912,9 +912,9 @@ func (v *Value) Getitem(key interface{}) (*Value, bool) {
 }
 
 func (v *Value) Get(key string) (*Value, bool) {
-	value, found := v.Getattr(key)
+	value, found := v.GetAttribute(key)
 	if !found {
-		value, found = v.Getitem(key)
+		value, found = v.GetItem(key)
 	}
 	return value, found
 }
@@ -935,18 +935,18 @@ func (v *Value) Set(key *Value, value interface{}) error {
 	switch val.Kind() {
 	case reflect.Struct:
 		if !key.IsString() {
-			return errors.Errorf(`Can't write non-string field "%s" to struct: %s`, key, value)
+			return errors.Errorf(`Can't write non-string field "%s" to struct: %s`, key.String(), value)
 		}
 		field := val.FieldByName(key.String())
 		if field.IsValid() && field.CanSet() {
 			field.Set(reflect.ValueOf(value))
 		} else {
-			return errors.Errorf(`Can't write field "%s"`, key)
+			return errors.Errorf(`Can't write field "%s"`, key.String())
 		}
 	case reflect.Map:
 		val.SetMapIndex(key.Val, reflect.ValueOf(value))
 	default:
-		return errors.Errorf(`Unkown type "%s", can't set value on "%s"`, val.Kind(), key)
+		return errors.Errorf(`Unknown type "%s", can't set value on "%s"`, val.Kind(), key.String())
 	}
 
 	return nil
