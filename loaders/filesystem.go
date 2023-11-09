@@ -3,7 +3,6 @@ package loaders
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,7 +19,7 @@ type FilesystemLoader struct {
 // MustNewFileSystemLoader creates a new FilesystemLoader instance
 // and panics if there's any error during instantiation. The parameters
 // are the same like NewFileSystemLoader.
-func MustNewFileSystemLoader(root string) *FilesystemLoader {
+func MustNewFileSystemLoader(root string) Loader {
 	fs, err := NewFileSystemLoader(root)
 	if err != nil {
 		log.Panic(err)
@@ -29,53 +28,50 @@ func MustNewFileSystemLoader(root string) *FilesystemLoader {
 }
 
 // NewFileSystemLoader creates a new FilesystemLoader and allows
-// templatesto be loaded from disk (unrestricted). If any base directory
+// templates to be loaded from disk (unrestricted). If any base directory
 // is given (or being set using SetBaseDir), this base directory is being used
 // for path calculation in template inclusions/imports. Otherwise the path
-// is calculated based relatively to the including template's path.
-func NewFileSystemLoader(root string) (*FilesystemLoader, error) {
+// is calculated relatively to the current working directory.
+func NewFileSystemLoader(root string) (Loader, error) {
 	fs := &FilesystemLoader{}
 	if root != "" {
-		if err := fs.SetBaseDir(root); err != nil {
+		// Make the path absolute
+		if !filepath.IsAbs(root) {
+			abs, err := filepath.Abs(root)
+			if err != nil {
+				return nil, err
+			}
+			root = abs
+		}
+
+		// Check for existence
+		fi, err := os.Stat(root)
+		if err != nil {
 			return nil, err
 		}
+		if !fi.IsDir() {
+			return nil, errors.Errorf("The given root '%s' is not a directory.", root)
+		}
+
+		fs.root = root
 	}
 	return fs, nil
 }
 
-// SetBaseDir sets the template's base directory. This directory will
-// be used for any relative path in filters, tags and From*-functions to determine
-// your template. See the comment for NewFileSystemLoader as well.
-func (fs *FilesystemLoader) SetBaseDir(path string) error {
-	// Make the path absolute
-	if !filepath.IsAbs(path) {
-		abs, err := filepath.Abs(path)
-		if err != nil {
-			return err
-		}
-		path = abs
+func (fs *FilesystemLoader) Inherit(root string) (Loader, error) {
+	if root == "" {
+		root = fs.root
 	}
-
-	// Check for existence
-	fi, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !fi.IsDir() {
-		return errors.Errorf("The given path '%s' is not a directory.", path)
-	}
-
-	fs.root = path
-	return nil
+	return NewFileSystemLoader(root)
 }
 
 // Get reads the path's content from your local filesystem.
-func (fs *FilesystemLoader) Get(path string) (io.Reader, error) {
-	realPath, err := fs.Path(path)
+func (fs *FilesystemLoader) Read(path string) (io.Reader, error) {
+	realPath, err := fs.Resolve(path)
 	if err != nil {
 		return nil, err
 	}
-	buf, err := ioutil.ReadFile(realPath)
+	buf, err := os.ReadFile(realPath)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +83,7 @@ func (fs *FilesystemLoader) Get(path string) (io.Reader, error) {
 // will be calculated based on either the provided base directory (which
 // might be a path of a template which includes another template) or
 // the current working directory.
-func (fs *FilesystemLoader) Path(name string) (string, error) {
+func (fs *FilesystemLoader) Resolve(name string) (string, error) {
 	if filepath.IsAbs(name) {
 		return name, nil
 	}

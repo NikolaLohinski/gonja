@@ -95,7 +95,7 @@ func (env *Environment) FromBytes(tpl []byte) (*exec.Template, error) {
 
 // FromFile loads a template from a filename and returns a Template instance.
 func (env *Environment) FromFile(filename string) (*exec.Template, error) {
-	fd, err := env.Loader.Get(filename)
+	fd, err := env.Loader.Read(filename)
 	if err != nil {
 		return nil, emperror.With(err, "filename", filename)
 	}
@@ -112,5 +112,5 @@ func (env *Environment) GetTemplate(filename string) (*exec.Template, error) {
 }
 
 func (env *Environment) Path(path string) (string, error) {
-	return env.Loader.Path(path)
+	return env.Loader.Resolve(path)
 }
