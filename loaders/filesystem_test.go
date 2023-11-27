@@ -27,7 +27,7 @@ var _ = Context("filesystem", func() {
 		loader = loaders.MustNewFileSystemLoader(*root)
 	})
 
-	Context("Get", func() {
+	Context("Read", func() {
 		var (
 			path = new(string)
 			file = new(os.File)
@@ -107,7 +107,7 @@ var _ = Context("filesystem", func() {
 			})
 		})
 	})
-	Context("Path", func() {
+	Context("Resolve", func() {
 		var (
 			path = new(string)
 			file = new(os.File)

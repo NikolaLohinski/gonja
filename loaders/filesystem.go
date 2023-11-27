@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FilesystemLoader represents a local filesystem loader with basic
+// filesystemLoader represents a local filesystem loader with basic
 // BaseDirectory capabilities. The access to the local filesystem is unrestricted.
-type FilesystemLoader struct {
+type filesystemLoader struct {
 	root string
 }
 
@@ -33,7 +33,7 @@ func MustNewFileSystemLoader(root string) Loader {
 // for path calculation in template inclusions/imports. Otherwise the path
 // is calculated relatively to the current working directory.
 func NewFileSystemLoader(root string) (Loader, error) {
-	fs := &FilesystemLoader{}
+	fs := &filesystemLoader{}
 	if root != "" {
 		// Make the path absolute
 		if !filepath.IsAbs(root) {
@@ -58,7 +58,7 @@ func NewFileSystemLoader(root string) (Loader, error) {
 	return fs, nil
 }
 
-func (fs *FilesystemLoader) Inherit(root string) (Loader, error) {
+func (fs *filesystemLoader) Inherit(root string) (Loader, error) {
 	if root == "" {
 		root = fs.root
 	}
@@ -66,7 +66,7 @@ func (fs *FilesystemLoader) Inherit(root string) (Loader, error) {
 }
 
 // Get reads the path's content from your local filesystem.
-func (fs *FilesystemLoader) Read(path string) (io.Reader, error) {
+func (fs *filesystemLoader) Read(path string) (io.Reader, error) {
 	realPath, err := fs.Resolve(path)
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (fs *FilesystemLoader) Read(path string) (io.Reader, error) {
 // will be calculated based on either the provided base directory (which
 // might be a path of a template which includes another template) or
 // the current working directory.
-func (fs *FilesystemLoader) Resolve(name string) (string, error) {
+func (fs *filesystemLoader) Resolve(name string) (string, error) {
 	if filepath.IsAbs(name) {
 		return name, nil
 	}
