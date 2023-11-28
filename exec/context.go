@@ -44,14 +44,9 @@ func (ctx *Context) Inherit() *Context {
 }
 
 // Update updates this context with the key/value pairs from a map.
-func (ctx *Context) Update(other map[string]interface{}) *Context {
-	for k, v := range other {
+func (ctx *Context) Update(other *Context) *Context {
+	for k, v := range other.data {
 		ctx.data[k] = v
 	}
 	return ctx
-}
-
-// Merge updates this context with the key/value pairs from another context.
-func (ctx *Context) Merge(other *Context) *Context {
-	return ctx.Update(other.data)
 }

@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/nikolalohinski/gonja/config"
+	"github.com/nikolalohinski/gonja/loaders"
 	"github.com/nikolalohinski/gonja/nodes"
 	"github.com/nikolalohinski/gonja/tokens"
 )
@@ -17,20 +19,9 @@ var (
 )
 
 type Evaluator struct {
-	*EvalConfig
-	Ctx *Context
-}
-
-func (r *Renderer) Evaluator() *Evaluator {
-	return &Evaluator{
-		EvalConfig: r.EvalConfig,
-		Ctx:        r.Ctx,
-	}
-}
-
-func (r *Renderer) Eval(node nodes.Expression) *Value {
-	e := r.Evaluator()
-	return e.Eval(node)
+	Config      *config.Config
+	Environment *Environment
+	Loader      loaders.Loader
 }
 
 func (e *Evaluator) Eval(node nodes.Expression) *Value {
@@ -271,7 +262,7 @@ func (e *Evaluator) evalPair(node *nodes.Pair) *Value {
 }
 
 func (e *Evaluator) evalName(node *nodes.Name) *Value {
-	val, ok := e.Ctx.Get(node.Name.Val)
+	val, ok := e.Environment.Context.Get(node.Name.Val)
 	if !ok && e.Config.StrictUndefined {
 		return AsValue(errors.Errorf(`Unable to evaluate name "%s"`, node.Name.Val))
 	}
@@ -416,7 +407,7 @@ func (e *Evaluator) evalVariable(node *nodes.Variable) (*Value, error) {
 
 	for idx, part := range node.Parts {
 		if idx == 0 {
-			val, ok := e.Ctx.Get(node.Parts[0].S)
+			val, ok := e.Environment.Context.Get(node.Parts[0].S)
 			if !ok && e.Config.StrictUndefined {
 				return nil, errors.Errorf(`Unable to evaluate name "%s"`, node.Parts[0].S)
 			}

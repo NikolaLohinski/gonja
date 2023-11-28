@@ -5,39 +5,45 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/nikolalohinski/gonja/config"
 	"github.com/nikolalohinski/gonja/nodes"
 )
 
 // Renderer is a node visitor in charge of rendering
 type Renderer struct {
-	*EvalConfig
-	Ctx      *Context
-	Template *Template
-	Root     *nodes.Template
-	Out      *strings.Builder
+	Config      *config.Config
+	Environment *Environment
+	Template    *Template
+	RootNode    *nodes.Template
+	Output      *strings.Builder
 }
 
 // NewRenderer initialize a new renderer
-func NewRenderer(ctx *Context, out *strings.Builder, cfg *EvalConfig, tpl *Template) *Renderer {
+func NewRenderer(environment *Environment, output *strings.Builder, config *config.Config, template *Template) *Renderer {
 	r := &Renderer{
-		EvalConfig: cfg,
-		Ctx:        ctx,
-		Template:   tpl,
-		Root:       tpl.Root,
-		Out:        out,
+		Config:      config.Inherit(),
+		Environment: environment,
+		Template:    template,
+		RootNode:    template.root,
+		Output:      output,
 	}
-	r.Ctx.Set("self", Self(r))
+	r.Environment.Context.Set("self", Self(r))
 	return r
 }
 
 // Inherit creates a new sub renderer
 func (r *Renderer) Inherit() *Renderer {
 	sub := &Renderer{
-		EvalConfig: r.EvalConfig.Inherit(),
-		Ctx:        r.Ctx.Inherit(),
-		Template:   r.Template,
-		Root:       r.Root,
-		Out:        r.Out,
+		Config: r.Config.Inherit(),
+		Environment: &Environment{
+			Context:    r.Environment.Context.Inherit(),
+			Tests:      r.Environment.Tests,
+			Filters:    r.Environment.Filters,
+			Statements: r.Environment.Statements,
+		},
+		Template: r.Template,
+		RootNode: r.RootNode,
+		Output:   r.Output,
 	}
 	return sub
 }
@@ -55,7 +61,7 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		if n.Trim.Right {
 			output = strings.TrimRight(output, " \n\t")
 		}
-		_, err := r.Out.WriteString(output)
+		_, err := r.Output.WriteString(output)
 		return nil, err
 	case *nodes.Output:
 		var value *Value
@@ -82,10 +88,10 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 			return nil, errors.Wrapf(value, `Unable to render expression at line %d: %s`, n.Expression.Position().Line, n.Expression)
 		}
 		var err error
-		if r.Autoescape && value.IsString() && !value.Safe {
-			_, err = r.Out.WriteString(value.Escaped())
+		if r.Config.AutoEscape && value.IsString() && !value.Safe {
+			_, err = r.Output.WriteString(value.Escaped())
 		} else {
-			_, err = r.Out.WriteString(value.String())
+			_, err = r.Output.WriteString(value.String())
 
 		}
 		return nil, err
@@ -109,7 +115,7 @@ func (r *Renderer) ExecuteWrapper(wrapper *nodes.Wrapper) error {
 
 func (r *Renderer) Execute() error {
 	// Determine the parent to be executed (for template inheritance)
-	root := r.Root
+	root := r.RootNode
 	for root.Parent != nil {
 		root = root.Parent
 	}
@@ -118,5 +124,18 @@ func (r *Renderer) Execute() error {
 }
 
 func (r *Renderer) String() string {
-	return r.Out.String()
+	return r.Output.String()
+}
+
+func (r *Renderer) Evaluator() *Evaluator {
+	return &Evaluator{
+		Environment: r.Environment,
+		Config:      r.Config,
+		Loader:      r.Template.parser.Loader,
+	}
+}
+
+func (r *Renderer) Eval(node nodes.Expression) *Value {
+	e := r.Evaluator()
+	return e.Eval(node)
 }

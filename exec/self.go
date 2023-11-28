@@ -19,11 +19,11 @@ func getBlocks(tpl *nodes.Template) map[string]*nodes.Wrapper {
 
 func Self(r *Renderer) map[string]func() string {
 	blocks := map[string]func() string{}
-	for name, block := range getBlocks(r.Root) {
+	for name, block := range getBlocks(r.RootNode) {
 		blocks[name] = func() string {
 			sub := r.Inherit()
 			var out strings.Builder
-			sub.Out = &out
+			sub.Output = &out
 			sub.ExecuteWrapper(block)
 			return out.String()
 		}

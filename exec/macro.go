@@ -49,7 +49,7 @@ func MacroNodeToFunc(node *nodes.Macro, r *Renderer) (Macro, error) {
 	return func(params *VarArgs) *Value {
 		var out strings.Builder
 		sub := r.Inherit()
-		sub.Out = &out
+		sub.Output = &out
 
 		macroArguments := make([]*Pair, len(node.Kwargs))
 		for i, positionalArgument := range params.Args {
@@ -102,7 +102,7 @@ func MacroNodeToFunc(node *nodes.Macro, r *Renderer) (Macro, error) {
 			}
 		}
 		for _, arg := range macroArguments {
-			sub.Ctx.Set(arg.Key.String(), arg.Value)
+			sub.Environment.Context.Set(arg.Key.String(), arg.Value)
 		}
 		err := sub.ExecuteWrapper(node.Wrapper)
 		if err != nil {
