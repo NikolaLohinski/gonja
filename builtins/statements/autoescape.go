@@ -22,7 +22,7 @@ func (stmt *AutoescapeStmt) String() string {
 
 func (stmt *AutoescapeStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
 	sub := r.Inherit()
-	sub.Autoescape = stmt.Autoescape
+	sub.Config.AutoEscape = stmt.Autoescape
 
 	err := sub.ExecuteWrapper(stmt.Wrapper)
 	if err != nil {
@@ -53,7 +53,7 @@ func autoescapeParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, e
 		return nil, args.Error("Only 'true' or 'false' is valid as an autoescape statement.", nil)
 	}
 
-	if !args.Stream.End() {
+	if !args.Stream().End() {
 		return nil, args.Error("Malformed autoescape statement args.", nil)
 	}
 

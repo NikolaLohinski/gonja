@@ -186,12 +186,12 @@ var _ = Context("filesystem", func() {
 		var (
 			file = new(os.File)
 
-			newRoot = new(string)
+			newIdentifier = new(string)
 
 			returnedLoader = new(loaders.Loader)
 		)
 		BeforeEach(func() {
-			*newRoot = ""
+			*newIdentifier = ""
 
 			*root = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
 
@@ -202,9 +202,9 @@ var _ = Context("filesystem", func() {
 			os.RemoveAll(*root)
 		})
 		JustBeforeEach(func() {
-			*returnedLoader, *returnedErr = loader.Inherit(*newRoot)
+			*returnedLoader, *returnedErr = loader.Inherit(*newIdentifier)
 		})
-		Context("when no root is given", func() {
+		Context("when no relative identifier is provided", func() {
 			It("should create a new Loader without errors", func() {
 				By("not returning an error")
 				Expect(*returnedErr).To(BeNil())
@@ -213,12 +213,16 @@ var _ = Context("filesystem", func() {
 				Expect(err).To(BeNil())
 			})
 		})
-		Context("when a new root is defined", func() {
+		Context("when a relative identifier is defined", func() {
+			var (
+				newRoot = new(string)
+			)
 			BeforeEach(func() {
 				*newRoot = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
 
 				file = MustReturn(os.CreateTemp(*newRoot, "*.filesystem")).(*os.File)
 				MustReturn(file.WriteString("content"))
+				*newIdentifier = file.Name()
 			})
 			AfterEach(func() {
 				os.RemoveAll(*newRoot)

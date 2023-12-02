@@ -254,7 +254,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 
 	var variable nodes.Node = &nodes.Name{t}
 
-	for !p.Stream.EOF() {
+	for !p.Stream().EOF() {
 		if dot := p.Match(tokens.Dot); dot != nil {
 			getattr := &nodes.GetAttribute{
 				Location: dot,

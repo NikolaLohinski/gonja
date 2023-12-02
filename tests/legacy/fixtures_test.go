@@ -1,4 +1,4 @@
-package integration_test
+package legacy_test
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nikolalohinski/gonja"
 	"github.com/nikolalohinski/gonja/exec"
 )
 
@@ -67,7 +66,7 @@ func (p *post) String() string {
  * End setup sandbox
  */
 
-var Fixtures = gonja.Context{
+var Fixtures = exec.NewContext(map[string]interface{}{
 	"number": 11,
 	"simple": map[string]interface{}{
 		"number":                   42,
@@ -247,4 +246,4 @@ Yep!`,
 		{"grouper": "group 2", "value": "value 2-3"},
 		{"grouper": "group 3", "value": "value 3-3"},
 	},
-}
+})

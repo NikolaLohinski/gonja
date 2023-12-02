@@ -45,6 +45,9 @@ func (ctx *Context) Inherit() *Context {
 
 // Update updates this context with the key/value pairs from a map.
 func (ctx *Context) Update(other *Context) *Context {
+	if other == nil {
+		return ctx
+	}
 	for k, v := range other.data {
 		ctx.data[k] = v
 	}

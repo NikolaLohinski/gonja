@@ -1,9 +1,5 @@
 package config
 
-type Inheritable interface {
-	Inherit() Inheritable
-}
-
 // Config holds plexer and parser parameters
 type Config struct {
 	Debug bool
@@ -29,48 +25,34 @@ type Config struct {
 	// For more details about autoescaping see Markup.
 	// This can also be a callable that is passed the template name
 	// and has to return True or False depending on autoescape should be enabled by default.
-	Autoescape bool
+	AutoEscape bool
 	// Whether to be strict about undefined attribute or item in an object and return error
 	// or return a nil value on missing data and ignore it entirely
 	StrictUndefined bool
-
-	// Allow extensions to store some config
-	Ext map[string]Inheritable
 }
 
-func NewConfig() *Config {
+func New() *Config {
 	return &Config{
-		Debug:               false,
 		BlockStartString:    "{%",
 		BlockEndString:      "%}",
 		VariableStartString: "{{",
 		VariableEndString:   "}}",
 		CommentStartString:  "{#",
 		CommentEndString:    "#}",
-		Autoescape:          false,
+		AutoEscape:          false,
 		StrictUndefined:     false,
-		Ext:                 map[string]Inheritable{},
 	}
 }
 
 func (cfg *Config) Inherit() *Config {
-	ext := map[string]Inheritable{}
-	for key, cfg := range cfg.Ext {
-		ext[key] = cfg.Inherit()
-	}
 	return &Config{
-		Debug:               cfg.Debug,
 		BlockStartString:    cfg.BlockStartString,
 		BlockEndString:      cfg.BlockEndString,
 		VariableStartString: cfg.VariableStartString,
 		VariableEndString:   cfg.VariableEndString,
 		CommentStartString:  cfg.CommentStartString,
 		CommentEndString:    cfg.CommentEndString,
-		Autoescape:          cfg.Autoescape,
+		AutoEscape:          cfg.AutoEscape,
 		StrictUndefined:     cfg.StrictUndefined,
-		Ext:                 ext,
 	}
 }
-
-// DefaultConfig is a configuration with default values
-var DefaultConfig = NewConfig()

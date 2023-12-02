@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/nikolalohinski/gonja/builtins"
+	"github.com/nikolalohinski/gonja/config"
+	"github.com/nikolalohinski/gonja/loaders"
 	"github.com/nikolalohinski/gonja/nodes"
 	"github.com/nikolalohinski/gonja/parser"
 	"github.com/nikolalohinski/gonja/tokens"
@@ -22,7 +25,8 @@ var _ = Context("parser", func() {
 		returnedError    = new(error)
 	)
 	JustBeforeEach(func() {
-		returnedTemplate, *returnedError = parser.Parse(*input)
+		stream := tokens.Lex(*input)
+		returnedTemplate, *returnedError = parser.NewParser("tests", stream, config.New(), loaders.MustNewFileSystemLoader(""), builtins.Statements).Parse()
 	})
 	for _, testCase := range []struct {
 		description  string
@@ -832,7 +836,7 @@ var _ = Context("parser", func() {
 					It("should return the expected tree", func() {
 						Expect(*returnedError).To(BeNil())
 						Expect(returnedTemplate).To(PointTo(MatchFields(IgnoreExtras, Fields{
-							"Name": Equal("parser"),
+							"Identifier": Equal("tests"),
 							"Nodes": MatchAllElementsWithIndex(
 								func(index int, _ interface{}) string { return strconv.Itoa(index) },
 								elements,

@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// filesystemLoader represents a local filesystem loader with basic
+// fileSystemLoader represents a local filesystem loader with basic
 // BaseDirectory capabilities. The access to the local filesystem is unrestricted.
-type filesystemLoader struct {
+type fileSystemLoader struct {
 	root string
 }
 
@@ -33,7 +33,7 @@ func MustNewFileSystemLoader(root string) Loader {
 // for path calculation in template inclusions/imports. Otherwise the path
 // is calculated relatively to the current working directory.
 func NewFileSystemLoader(root string) (Loader, error) {
-	fs := &filesystemLoader{}
+	loader := &fileSystemLoader{}
 	if root != "" {
 		// Make the path absolute
 		if !filepath.IsAbs(root) {
@@ -53,21 +53,25 @@ func NewFileSystemLoader(root string) (Loader, error) {
 			return nil, errors.Errorf("The given root '%s' is not a directory.", root)
 		}
 
-		fs.root = root
+		loader.root = root
 	}
-	return fs, nil
+	return loader, nil
 }
 
-func (fs *filesystemLoader) Inherit(root string) (Loader, error) {
-	if root == "" {
-		root = fs.root
+func (f *fileSystemLoader) Inherit(from string) (Loader, error) {
+	if from == "" {
+		return NewFileSystemLoader(f.root)
 	}
-	return NewFileSystemLoader(root)
+	resolvedFrom, err := f.Resolve(from)
+	if err != nil {
+		return nil, errors.Errorf("failed to resolve '%s': %s", from, err)
+	}
+	return NewFileSystemLoader(filepath.Dir(resolvedFrom))
 }
 
 // Get reads the path's content from your local filesystem.
-func (fs *filesystemLoader) Read(path string) (io.Reader, error) {
-	realPath, err := fs.Resolve(path)
+func (f *fileSystemLoader) Read(path string) (io.Reader, error) {
+	realPath, err := f.Resolve(path)
 	if err != nil {
 		return nil, err
 	}
@@ -83,19 +87,18 @@ func (fs *filesystemLoader) Read(path string) (io.Reader, error) {
 // will be calculated based on either the provided base directory (which
 // might be a path of a template which includes another template) or
 // the current working directory.
-func (fs *filesystemLoader) Resolve(name string) (string, error) {
+func (f *fileSystemLoader) Resolve(name string) (string, error) {
 	if filepath.IsAbs(name) {
 		return name, nil
 	}
 
-	// root := fs.root
-	if fs.root == "" {
+	if f.root == "" {
 		root, err := os.Getwd()
 		if err != nil {
 			return "", err
 		}
 		return filepath.Join(root, name), nil
 	} else {
-		return filepath.Join(fs.root, name), nil
+		return filepath.Join(f.root, name), nil
 	}
 }

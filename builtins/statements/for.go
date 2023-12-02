@@ -27,18 +27,18 @@ func (stmt *ForStmt) String() string {
 }
 
 type LoopInfos struct {
-	index      int
-	index0     int
-	revindex   int
-	revindex0  int
-	first      bool
-	last       bool
-	length     int
-	depth      int
-	depth0     int
-	PrevItem   *exec.Value
-	NextItem   *exec.Value
-	_lastValue *exec.Value
+	index     int
+	index0    int
+	revindex  int
+	revindex0 int
+	first     bool
+	last      bool
+	length    int
+	depth     int
+	depth0    int
+	PrevItem  *exec.Value
+	NextItem  *exec.Value
+	lastValue *exec.Value
 }
 
 func (li *LoopInfos) Cycle(va *exec.VarArgs) *exec.Value {
@@ -46,8 +46,8 @@ func (li *LoopInfos) Cycle(va *exec.VarArgs) *exec.Value {
 }
 
 func (li *LoopInfos) Changed(value *exec.Value) bool {
-	same := li._lastValue != nil && value.EqualValueTo(li._lastValue)
-	li._lastValue = value
+	same := li.lastValue != nil && value.EqualValueTo(li.lastValue)
+	li.lastValue = value
 	return !same
 }
 
@@ -63,7 +63,7 @@ func (node *ForStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) (forEr
 	// First iteration: filter values to ensure proper LoopInfos
 	obj.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		sub := r.Inherit()
-		ctx := sub.Ctx
+		ctx := sub.Environment.Context
 		pair := &exec.Pair{}
 
 		// There's something to iterate over (correct type and at least 1 item)
@@ -111,7 +111,7 @@ func (node *ForStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) (forEr
 	}
 	for idx, pair := range items.Pairs {
 		sub := r.Inherit()
-		ctx := sub.Ctx
+		ctx := sub.Environment.Context
 
 		ctx.Set(node.key, pair.Key)
 		if pair.Value != nil {

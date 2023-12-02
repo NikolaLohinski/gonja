@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/gomega/types"
 )
 
-func TestClient(t *testing.T) {
+func TestParser(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "parser")
 }

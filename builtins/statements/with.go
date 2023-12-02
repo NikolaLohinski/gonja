@@ -12,12 +12,12 @@ import (
 )
 
 type WithStmt struct {
-	Location *tokens.Token
-	Pairs    map[string]nodes.Expression
-	Wrapper  *nodes.Wrapper
+	location *tokens.Token
+	pairs    map[string]nodes.Expression
+	wrapper  *nodes.Wrapper
 }
 
-func (stmt *WithStmt) Position() *tokens.Token { return stmt.Location }
+func (stmt *WithStmt) Position() *tokens.Token { return stmt.location }
 func (stmt *WithStmt) String() string {
 	t := stmt.Position()
 	return fmt.Sprintf("WithStmt(Line=%d Col=%d)", t.Line, t.Col)
@@ -26,28 +26,28 @@ func (stmt *WithStmt) String() string {
 func (stmt *WithStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
 	sub := r.Inherit()
 
-	for key, value := range stmt.Pairs {
+	for key, value := range stmt.pairs {
 		val := r.Eval(value)
 		if val.IsError() {
 			return errors.Wrapf(val, `unable to evaluate parameter %s`, value)
 		}
-		sub.Ctx.Set(key, val)
+		sub.Environment.Context.Set(key, val)
 	}
 
-	return sub.ExecuteWrapper(stmt.Wrapper)
+	return sub.ExecuteWrapper(stmt.wrapper)
 }
 
 func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	stmt := &WithStmt{
-		Location: p.Current(),
-		Pairs:    map[string]nodes.Expression{},
+		location: p.Current(),
+		pairs:    map[string]nodes.Expression{},
 	}
 
 	wrapper, endargs, err := p.WrapUntil("endwith")
 	if err != nil {
 		return nil, err
 	}
-	stmt.Wrapper = wrapper
+	stmt.wrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
@@ -65,7 +65,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 		if err != nil {
 			return nil, err
 		}
-		stmt.Pairs[key.Val] = value
+		stmt.pairs[key.Val] = value
 
 		if args.Match(tokens.Comma) == nil {
 			break

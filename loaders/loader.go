@@ -12,6 +12,6 @@ type Loader interface {
 	// Resolve the given path in the current context
 	Resolve(path string) (string, error)
 
-	// Create a new loader from the current one, with a different root if specified
-	Inherit(root string) (Loader, error)
+	// Create a new loader from the current one, relatively to the given path
+	Inherit(from string) (Loader, error)
 }

@@ -1705,7 +1705,7 @@ func filterFileset(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'fileset'"))
 	}
 
-	base, err := e.Loader.Path(".")
+	base, err := e.Loader.Resolve(".")
 	if err != nil {
 		return exec.AsValue(fmt.Errorf("failed to resolve path %s with loader: %s", in.String(), err))
 	}
@@ -1729,7 +1729,7 @@ func filterFile(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 
 	path := in.String()
 	if !filepath.IsAbs(path) {
-		base, err := e.Loader.Path(".")
+		base, err := e.Loader.Resolve(".")
 		if err != nil {
 			return exec.AsValue(fmt.Errorf("failed to get current path with loader: %s", err))
 		}

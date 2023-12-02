@@ -1,34 +1,31 @@
 package gonja
 
 import (
+	"github.com/nikolalohinski/gonja/builtins"
 	"github.com/nikolalohinski/gonja/config"
 	"github.com/nikolalohinski/gonja/exec"
 	"github.com/nikolalohinski/gonja/loaders"
 )
 
 var (
-	// DefaultLoader is being used by the DefaultSet.
-	DefaultLoader = loaders.MustNewFileSystemLoader("")
+	version = "0.0.0+trunk"
 
-	// DefaultEnv is an environment created for quick/standalone template rendering.
-	DefaultEnv = NewEnvironment(config.DefaultConfig, DefaultLoader)
-
-	// Methods on the default set
-	FromString = DefaultEnv.FromString
-	FromBytes  = DefaultEnv.FromBytes
-	FromFile   = DefaultEnv.FromFile
-	FromCache  = DefaultEnv.FromCache
-
-	// Globals for the default set
-	Globals = DefaultEnv.Globals
+	DefaultLoader      loaders.Loader
+	DefaultConfig      *config.Config
+	DefaultEnvironment *exec.Environment
 )
 
-// Must panics, if a Template couldn't successfully parsed. This is how you
-// would use it:
-//     var baseTemplate = gonja.Must(gonja.FromFile("templates/base.html"))
-func Must(tpl *exec.Template, err error) *exec.Template {
-	if err != nil {
-		panic(err)
+func init() {
+	builtins.Globals.Set("gonja", map[string]interface{}{
+		"version": version,
+	})
+
+	DefaultLoader = loaders.MustNewFileSystemLoader("")
+	DefaultConfig = config.New()
+	DefaultEnvironment = &exec.Environment{
+		Context:    builtins.Globals,
+		Filters:    builtins.Filters,
+		Tests:      builtins.Tests,
+		Statements: builtins.Statements,
 	}
-	return tpl
 }

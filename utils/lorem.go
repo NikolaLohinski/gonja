@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const LOREM_IPSUM = `Lorem ipsum dolor sit amet, consectetur adipisici elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquid ex ea commodi consequat. Quis aute iure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat cupiditat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
@@ -40,43 +38,6 @@ var (
 	LoremWords      = strings.Fields(LOREM_IPSUM)
 	WORDS           = strings.Fields(LOREM_IPSUM_WORDS)
 )
-
-func Lorem(count int, method string) (string, error) {
-	var out strings.Builder
-	switch method {
-	case "b":
-		for i := 0; i < count; i++ {
-			if i > 0 {
-				out.WriteString("\n")
-			}
-			par := LoremParagraphs[i%len(LoremParagraphs)]
-			out.WriteString(par)
-		}
-	case "w":
-		for i := 0; i < count; i++ {
-			if i > 0 {
-				out.WriteString(" ")
-			}
-			word := LoremWords[i%len(LoremWords)]
-			out.WriteString(word)
-		}
-	case "p":
-		for i := 0; i < count; i++ {
-			if i > 0 {
-				out.WriteString("\n")
-			}
-			out.WriteString("<p>")
-			par := LoremParagraphs[i%len(LoremParagraphs)]
-			out.WriteString(par)
-			out.WriteString("</p>")
-
-		}
-	default:
-		return "", errors.Errorf("unsupported method: %s", method)
-	}
-
-	return out.String(), nil
-}
 
 func Lipsum(n int, html bool, min int, max int) string {
 	result := []string{}

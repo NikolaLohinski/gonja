@@ -1,11 +1,8 @@
-package integration_test
+package legacy_test
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
-	osExec "os/exec"
+	"os"
 	"path"
 	"path/filepath"
 	"sort"
@@ -16,6 +13,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/nikolalohinski/gonja"
+	"github.com/nikolalohinski/gonja/config"
 	"github.com/nikolalohinski/gonja/exec"
 	"github.com/nikolalohinski/gonja/loaders"
 	"github.com/yargevad/filepathx"
@@ -24,26 +22,32 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Context("miscellaneous templates", func() {
+var _ = Context("legacy tests", func() {
 	const (
 		fixturesDir  = "testdata/"
 		testCasesDir = "testcases/"
 	)
 	var (
-		template    = new(string)
-		environment = new(*gonja.Environment)
-		context     = new(gonja.Context)
+		identifier = new(string)
+
+		environment = new(*exec.Environment)
+		config      = new(*config.Config)
+		loader      = new(loaders.Loader)
+
+		context = new(*exec.Context)
 
 		returnedResult = new(string)
 		returnedErr    = new(error)
 	)
 	BeforeEach(func() {
-		rand.Seed(42)
-		*environment = gonja.NewEnvironment(gonja.NewConfig(), loaders.MustNewFileSystemLoader(fixturesDir))
+		*identifier = "/test"
+		*environment = gonja.DefaultEnvironment
+		*config = gonja.DefaultConfig
+		*loader = loaders.MustNewMemoryLoader(nil)
 	})
 	JustBeforeEach(func() {
 		var t *exec.Template
-		t, *returnedErr = (*environment).FromString(*template)
+		t, *returnedErr = exec.NewTemplate(*identifier, *config, *loader, *environment)
 		if *returnedErr != nil {
 			return
 		}
@@ -52,19 +56,19 @@ var _ = Context("miscellaneous templates", func() {
 	Context("nominal", func() {
 		files := MustReturn(filepathx.Glob(path.Join(testCasesDir, "**/*.tpl"))).([]string)
 		for _, p := range files {
-			path := p
-			name := strings.TrimSuffix(strings.TrimPrefix(path, testCasesDir), ".tpl")
+			filePath := p
+			name := strings.TrimSuffix(strings.TrimPrefix(filePath, testCasesDir), ".tpl")
 			Context(strings.Join(strings.Split(name, string(filepath.Separator)), " : "), func() {
 				BeforeEach(func() {
-					*environment = gonja.NewEnvironment(gonja.NewConfig(), loaders.MustNewFileSystemLoader(filepath.Dir(path)))
-					*template = string(MustReturn(ioutil.ReadFile(path)).([]byte))
+					*loader = loaders.MustNewFileSystemLoader(filepath.Dir(filePath))
+					*identifier = filepath.Base(filePath)
 					*context = Fixtures
 				})
 				It("should render the expected content", func() {
 					By("not returning any error")
 					Expect(*returnedErr).To(BeNil())
 					By("returning the correct result")
-					expected := string(MustReturn(ioutil.ReadFile(path + ".out")).([]byte))
+					expected := string(MustReturn(os.ReadFile(filePath + ".out")).([]byte))
 					edits := myers.ComputeEdits("expected", expected, *returnedResult)
 					diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
 					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
@@ -74,21 +78,24 @@ var _ = Context("miscellaneous templates", func() {
 	})
 	Context("miscellaneous templates", func() {
 		for _, testCase := range []struct {
-			description string
-			template    string
-			expected    string
-			context     gonja.Context
+			description         string
+			template            string
+			expected            string
+			context             map[string]interface{}
+			additionalTemplates map[string]string
 		}{
 			{
 				"when the template is just data",
 				"Hello world!",
 				"Hello world!",
 				nil,
+				nil,
 			},
 			{
 				"when the template is empty",
 				"",
 				"",
+				nil,
 				nil,
 			},
 			{
@@ -127,7 +134,7 @@ var _ = Context("miscellaneous templates", func() {
 				Functions
 				hello
 			`),
-				gonja.Context{
+				map[string]interface{}{
 					"map": map[string]interface{}{
 						"struct": struct{ Text string }{
 							Text: "does not matter",
@@ -137,6 +144,7 @@ var _ = Context("miscellaneous templates", func() {
 						return fmt.Sprintf(msg, args...)
 					},
 				},
+				nil,
 			},
 			{
 				"when the template is using macros",
@@ -216,9 +224,21 @@ var _ = Context("miscellaneous templates", func() {
                 
                 End
 			`),
-				gonja.Context{
+				map[string]interface{}{
 					"name":      "john doe",
 					"misc_list": []interface{}{"Hello", 99, 3.14, "good"},
+				},
+				map[string]string{
+					"/macro.helper": heredoc.Doc(`
+						{% macro imported_macro(foo) %}<p>Hey {{ foo }}!</p>{% endmacro %}
+						{% macro imported_macro_void() %}<p>Hello mate!</p>{% endmacro %}
+					`),
+					"/macro2.helper": heredoc.Doc(`
+						{% macro greeter_macro() %}
+						{% from "macro.helper" import imported_macro, imported_macro_void %}
+						One greeting: {{ imported_macro("Dirk") }} - {{ imported_macro_void() }}
+						{% endmacro %}
+					`),
 				},
 			},
 			{
@@ -259,7 +279,7 @@ var _ = Context("miscellaneous templates", func() {
 				VarArgs(args=[], kwargs={a="a", b="b"})
 				VarArgs(args=[1, 2, 3], kwargs={a="a", b="b", c="c"})
 			`),
-				gonja.Context{
+				map[string]interface{}{
 					"name":   "john doe",
 					"number": 42,
 					"func_add": func(a, b int) int {
@@ -310,6 +330,7 @@ var _ = Context("miscellaneous templates", func() {
 						return exec.AsSafeValue(str)
 					},
 				},
+				nil,
 			},
 			{
 				"when the template is using quoting strings",
@@ -399,7 +420,7 @@ var _ = Context("miscellaneous templates", func() {
                 
                 </html>
 			`),
-				gonja.Context{
+				map[string]interface{}{
 					"text": "<h2>Hello!</h2><p>Welcome to my new blog page. I'm using gonja which supports {{ variables }} and {% tags %}.</p>",
 					"is_admin": func(u *struct {
 						Name      string
@@ -457,13 +478,18 @@ var _ = Context("miscellaneous templates", func() {
 						},
 					},
 				},
+				nil,
 			},
 		} {
 			t := testCase
 			Context(t.description, func() {
 				BeforeEach(func() {
-					*template = t.template
-					*context = t.context
+					templates := map[string]string{*identifier: t.template}
+					for name, content := range t.additionalTemplates {
+						templates[name] = content
+					}
+					*loader = loaders.MustNewMemoryLoader(templates)
+					*context = exec.NewContext(t.context)
 				})
 				It("should return the expected rendered content", func() {
 					By("not returning any error")
@@ -474,33 +500,7 @@ var _ = Context("miscellaneous templates", func() {
 					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
 				})
 			})
-			Context("when accessing gonja's version", func() {
-				BeforeEach(func() {
-					*template = heredoc.Doc(`
-					{%- if "v" ~ gonja.version != CI_COMMIT_TAG -%}
-					v{{- gonja.version }} != {{ CI_COMMIT_TAG }}
-					{%- else -%}
-					"v" ~ gonja.version == CI_COMMIT_TAG
-					{%- endif %}
-				`)
-					cmd := osExec.Command("git", "describe", "--tags", "--abbrev=0")
-					buf := new(bytes.Buffer)
-					cmd.Stdout = buf
-					Must(cmd.Run())
-					(*environment).Globals.Set("CI_COMMIT_TAG", strings.TrimSpace(buf.String()))
-				})
-				It("should return the expected rendered content", func() {
-					By("not returning any error")
-					Expect(*returnedErr).To(BeNil())
-					By("not returning the correct result")
-					expected := heredoc.Doc(`
-					"v" ~ gonja.version == CI_COMMIT_TAG
-				`)
-					edits := myers.ComputeEdits("expected", expected, *returnedResult)
-					diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
-					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
-				})
-			})
+
 		}
 	})
 })

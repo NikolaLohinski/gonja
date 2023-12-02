@@ -8,14 +8,6 @@ type Visitor interface {
 	Visit(node Node) (Visitor, error)
 }
 
-// type Visitor interface {
-// 	Template(node *Template) error
-// 	Comment(node *Template) error
-// 	Data(node *Data) error
-// 	Output(node *Output) error
-// 	Statement(node *Statement) error
-// }
-
 func Walk(v Visitor, node Node) error {
 	v, err := v.Visit(node)
 	if err != nil {
@@ -61,7 +53,6 @@ func (f Inspector) Visit(node Node) (Visitor, error) {
 // f(node); node must not be nil. If f returns true, Inspect invokes f
 // recursively for each of the non-nil children of node, followed by a
 // call of f(nil).
-//
 func Inspect(node Node, f func(Node) bool) {
 	Walk(Inspector(f), node)
 }

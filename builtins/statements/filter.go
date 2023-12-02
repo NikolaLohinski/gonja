@@ -30,7 +30,7 @@ func (stmt *FilterStmt) String() string {
 func (node *FilterStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
 	var out strings.Builder
 	sub := r.Inherit()
-	sub.Out = &out
+	sub.Output = &out
 	// temp := bytes.NewBuffer(make([]byte, 0, 1024)) // 1 KiB size
 
 	err := sub.ExecuteWrapper(node.bodyWrapper)
@@ -48,7 +48,7 @@ func (node *FilterStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) err
 		}
 	}
 
-	_, err = r.Out.WriteString(value.String())
+	_, err = r.Output.WriteString(value.String())
 
 	return err
 }

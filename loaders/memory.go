@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -28,8 +27,8 @@ func MustNewMemoryLoader(content map[string]string) Loader {
 func NewMemoryLoader(content map[string]string) (Loader, error) {
 	root := ""
 	for key := range content {
-		if !strings.HasPrefix(key, string(os.PathSeparator)) {
-			return nil, fmt.Errorf("all keys must start with '%s' but the following does not: '%s'", string(os.PathSeparator), key)
+		if !strings.HasPrefix(key, "/") {
+			return nil, fmt.Errorf("all keys must start with '/' but the following does not: '%s'", key)
 		}
 		if root == "" {
 			root = key
@@ -45,9 +44,19 @@ func NewMemoryLoader(content map[string]string) (Loader, error) {
 	}, nil
 }
 
-func (m *memoryLoader) Inherit(root string) (Loader, error) {
-	if root == "" {
-		root = m.root
+func (m *memoryLoader) Inherit(from string) (Loader, error) {
+	root := m.root
+	if from != "" {
+		resolvedFrom, err := m.Resolve(from)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve '%s': %s", from, err)
+		}
+		components := strings.Split(resolvedFrom, "/")
+		if len(components) < 2 {
+			root = "/"
+		} else {
+			root = strings.Join(components[:len(components)-1], "/")
+		}
 	}
 	return &memoryLoader{
 		content: m.content,
@@ -55,10 +64,10 @@ func (m *memoryLoader) Inherit(root string) (Loader, error) {
 	}, nil
 }
 
-func (m *memoryLoader) Read(name string) (io.Reader, error) {
-	resolved, err := m.Resolve(name)
+func (m *memoryLoader) Read(path string) (io.Reader, error) {
+	resolved, err := m.Resolve(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve name '%s': %s", name, err)
+		return nil, fmt.Errorf("failed to resolve name '%s': %s", path, err)
 	}
 
 	data, ok := m.content[resolved]
@@ -68,11 +77,11 @@ func (m *memoryLoader) Read(name string) (io.Reader, error) {
 	return strings.NewReader(data), nil
 }
 
-func (m *memoryLoader) Resolve(name string) (string, error) {
-	if strings.HasPrefix(name, string(os.PathSeparator)) {
-		return name, nil
+func (m *memoryLoader) Resolve(path string) (string, error) {
+	if strings.HasPrefix(path, "/") {
+		return path, nil
 	}
-	resolved := filepath.Join(m.root, name)
+	resolved := filepath.Clean(strings.Join([]string{m.root, path}, "/"))
 	if _, ok := m.content[resolved]; !ok {
 		return "", fmt.Errorf("unknown resolved path: '%s'", resolved)
 	}

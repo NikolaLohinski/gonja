@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestClient(t *testing.T) {
+func TestLegacy(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "integration")
 }

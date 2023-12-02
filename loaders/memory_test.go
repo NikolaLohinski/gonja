@@ -2,7 +2,6 @@ package loaders_test
 
 import (
 	"io"
-	"os"
 
 	"github.com/nikolalohinski/gonja/loaders"
 
@@ -100,15 +99,15 @@ var _ = Context("memory", func() {
 	})
 	Context("Inherit", func() {
 		var (
-			newRoot = new(string)
+			newIdentifier = new(string)
 
 			returnedLoader = new(loaders.Loader)
 		)
 		BeforeEach(func() {
-			*newRoot = ""
+			*newIdentifier = ""
 		})
 		JustBeforeEach(func() {
-			*returnedLoader, *returnedErr = loader.Inherit(*newRoot)
+			*returnedLoader, *returnedErr = loader.Inherit(*newIdentifier)
 		})
 		Context("when no root is given", func() {
 			It("should create a new Loader without errors", func() {
@@ -121,13 +120,13 @@ var _ = Context("memory", func() {
 		})
 		Context("when a new root is defined", func() {
 			BeforeEach(func() {
-				*newRoot = string(os.PathSeparator)
+				*newIdentifier = "/home/of"
 			})
 			It("should create a new Loader without errors", func() {
 				By("not returning an error")
 				Expect(*returnedErr).To(BeNil())
 				By("having the loader operate relatively to the new root")
-				_, err := (*returnedLoader).Read("home/of")
+				_, err := (*returnedLoader).Read("of")
 				Expect(err).To(BeNil())
 			})
 		})

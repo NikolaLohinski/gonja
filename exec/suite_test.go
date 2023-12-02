@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestClient(t *testing.T) {
+func TestExec(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "exec")
 }

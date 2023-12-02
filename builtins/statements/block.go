@@ -13,30 +13,29 @@ import (
 )
 
 type BlockStmt struct {
-	Location *tokens.Token
-	Name     string
+	location *tokens.Token
+	name     string
 }
 
-func (stmt *BlockStmt) Position() *tokens.Token { return stmt.Location }
+func (stmt *BlockStmt) Position() *tokens.Token { return stmt.location }
 func (stmt *BlockStmt) String() string {
 	t := stmt.Position()
 	return fmt.Sprintf("BlockStmt(Line=%d Col=%d)", t.Line, t.Col)
 }
 
 func (stmt *BlockStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
-	// root, block := r.Root.GetBlock(stmt.Name)
-	blocks := r.Root.GetBlocks(stmt.Name)
+	blocks := r.RootNode.GetBlocks(stmt.name)
 	block, blocks := blocks[0], blocks[1:]
 
 	if block == nil {
-		return errors.Errorf(`Unable to find block "%s"`, stmt.Name)
+		return errors.Errorf(`Unable to find block "%s"`, stmt.name)
 	}
 
 	sub := r.Inherit()
 	infos := &BlockInfos{Block: stmt, Renderer: sub, Blocks: blocks}
 
-	sub.Ctx.Set("super", infos.super)
-	sub.Ctx.Set("self", exec.Self(sub))
+	sub.Environment.Context.Set("super", infos.super)
+	sub.Environment.Context.Set("self", exec.Self(sub))
 
 	err := sub.ExecuteWrapper(block)
 	if err != nil {
@@ -61,21 +60,21 @@ func (bi *BlockInfos) super() string {
 	block, blocks := bi.Blocks[0], bi.Blocks[1:]
 	sub := r.Inherit()
 	var out strings.Builder
-	sub.Out = &out
+	sub.Output = &out
 	infos := &BlockInfos{
 		Block:    bi.Block,
 		Renderer: sub,
 		Blocks:   blocks,
 	}
-	sub.Ctx.Set("self", exec.Self(sub))
-	sub.Ctx.Set("super", infos.super)
+	sub.Environment.Context.Set("self", exec.Self(sub))
+	sub.Environment.Context.Set("super", infos.super)
 	sub.ExecuteWrapper(block)
 	return out.String()
 }
 
 func blockParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	block := &BlockStmt{
-		Location: p.Current(),
+		location: p.Current(),
 	}
 	if args.End() {
 		return nil, errors.New("Tag 'block' requires an identifier.")
@@ -114,7 +113,7 @@ func blockParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error)
 		return nil, args.Error(fmt.Sprintf("Block named '%s' already defined", name.Val), nil)
 	}
 
-	block.Name = name.Val
+	block.name = name.Val
 	return block, nil
 }
 

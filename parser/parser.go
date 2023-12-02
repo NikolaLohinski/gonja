@@ -2,9 +2,11 @@ package parser
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/config"
+	"github.com/nikolalohinski/gonja/loaders"
 	"github.com/nikolalohinski/gonja/nodes"
 	"github.com/nikolalohinski/gonja/tokens"
 )
@@ -19,61 +21,53 @@ import (
 //
 // (See Token's documentation for more about tokens)
 type Parser struct {
-	Name   string
-	Stream *tokens.Stream
-	Config *config.Config
+	identifier string
+	stream     *tokens.Stream
+	statements map[string]StatementParser
 
-	Template       *nodes.Template
-	Statements     map[string]StatementParser
-	Level          int8
-	TemplateParser TemplateParser
+	Config   *config.Config
+	Template *nodes.Template
+	Loader   loaders.Loader
+}
+
+func (p *Parser) Stream() *tokens.Stream {
+	return p.stream
 }
 
 // Creates a new parser to parse tokens.
 // Used inside gonja to parse documents and to provide an easy-to-use
 // parser for tag authors
-func NewParser(name string, cfg *config.Config, stream *tokens.Stream) *Parser {
+func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, statements map[string]StatementParser) *Parser {
 	return &Parser{
-		Name:   name,
-		Stream: stream,
-		Config: cfg,
+		identifier: identifier,
+		stream:     stream,
+		statements: statements,
+		Config:     cfg,
+		Loader:     loader,
 	}
-}
-
-func Parse(input string) (*nodes.Template, error) {
-	stream := tokens.Lex(input)
-	p := NewParser("parser", config.DefaultConfig, stream)
-	return p.Parse()
-}
-
-func (p *Parser) Parse() (*nodes.Template, error) {
-	return p.ParseTemplate()
 }
 
 // Consume one token. It will be gone forever.
 func (p *Parser) Consume() {
-	p.Stream.Next()
+	p.stream.Next()
 }
 
 // Next returns and consume the current token
 func (p *Parser) Next() *tokens.Token {
-	// t := p.Stream.Next()
-	// p.Consume()
-	// return t
-	return p.Stream.Next()
+	return p.stream.Next()
 }
 
 func (p *Parser) End() bool {
-	return p.Stream.End()
+	return p.stream.End()
 }
 
 // Match returns the CURRENT token if the given type matches.
 // Consumes this token on success.
 func (p *Parser) Match(types ...tokens.Type) *tokens.Token {
-	tok := p.Stream.Current()
+	tok := p.stream.Current()
 	for _, t := range types {
 		if tok.Type == t {
-			p.Stream.Next()
+			p.stream.Next()
 			return tok
 		}
 	}
@@ -94,15 +88,15 @@ func (p *Parser) MatchName(names ...string) *tokens.Token {
 
 // Pop returns the current token and advance to the next
 func (p *Parser) Pop() *tokens.Token {
-	t := p.Stream.Current()
-	p.Stream.Next()
+	t := p.stream.Current()
+	p.stream.Next()
 	return t
 }
 
 // Current returns the current token without consuming
 // it and only if it matches one of the given types
 func (p *Parser) Current(types ...tokens.Type) *tokens.Token {
-	tok := p.Stream.Current()
+	tok := p.stream.Current()
 	if types == nil {
 		return tok
 	}
@@ -115,7 +109,7 @@ func (p *Parser) Current(types ...tokens.Type) *tokens.Token {
 }
 
 func (p *Parser) Peek(types ...tokens.Type) *tokens.Token {
-	tok := p.Stream.Peek()
+	tok := p.stream.Peek()
 	if types == nil {
 		return tok
 	}
@@ -150,7 +144,7 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 
 	var args []*tokens.Token
 
-	for !p.Stream.End() {
+	for !p.stream.End() {
 		// New tag, check whether we have to stop wrapping here
 		if begin := p.Match(tokens.BlockBegin); begin != nil {
 			endTag := p.CurrentName(names...)
@@ -164,7 +158,7 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 							data.Trim = data.Trim || len(end.Val) > 0 && end.Val[0] == '-'
 						}
 						stream := tokens.NewStream(args)
-						return wrapper, NewParser(p.Name, p.Config, stream), nil
+						return wrapper, NewParser(p.identifier, stream, p.Config, p.Loader, p.statements), nil
 					}
 					if p.End() || p.Current(tokens.EOF) != nil {
 						return nil, nil, p.Error("Unexpected EOF.", p.Current())
@@ -172,7 +166,7 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 					args = append(args, p.Next())
 				}
 			}
-			p.Stream.Backup()
+			p.stream.Backup()
 		}
 
 		// Otherwise process next element to be wrapped
@@ -185,4 +179,80 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 
 	return nil, nil, p.Error(fmt.Sprintf("Unexpected EOF, expected tag %s.", strings.Join(names, " or ")),
 		p.Current())
+}
+
+func (p *Parser) parseDocElement() (nodes.Node, error) {
+	t := p.Current()
+	switch t.Type {
+	case tokens.Data:
+		n := &nodes.Data{
+			Data: t,
+			Trim: nodes.Trim{
+				Left: t.Trim,
+			},
+		}
+		if next := p.Peek(tokens.VariableBegin, tokens.CommentBegin, tokens.BlockBegin); next != nil {
+			if len(next.Val) > 0 && next.Val[len(next.Val)-1] == '-' {
+				n.Trim.Right = true
+			}
+		}
+		p.Consume()
+		return n, nil
+	case tokens.EOF:
+		p.Consume()
+		return nil, nil
+	case tokens.CommentBegin:
+		return p.ParseComment()
+	case tokens.VariableBegin:
+		return p.ParseExpressionNode()
+	case tokens.BlockBegin:
+		return p.ParseStatementBlock()
+	}
+	return nil, p.Error("Unexpected token (only HTML/tags/filters in templates allowed)", t)
+}
+
+func (p *Parser) Parse() (*nodes.Template, error) {
+	tpl := &nodes.Template{
+		Identifier: p.identifier,
+		Blocks:     nodes.BlockSet{},
+		Macros:     map[string]*nodes.Macro{},
+	}
+	p.Template = tpl
+
+	for !p.Stream().End() {
+		node, err := p.parseDocElement()
+		if err != nil {
+			return nil, err
+		}
+		if node != nil {
+			tpl.Nodes = append(tpl.Nodes, node)
+		}
+	}
+	return tpl, nil
+}
+
+func (p *Parser) Extend(identifier string) (*nodes.Template, error) {
+	input, err := p.Loader.Read(identifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reader template '%s': %s", identifier, err)
+	}
+
+	source := new(strings.Builder)
+	if _, err := io.Copy(source, input); err != nil {
+		return nil, fmt.Errorf("failed to copy '%s' to string buffer: %s", source, err)
+	}
+
+	loader, err := p.Loader.Inherit(identifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inherit loader: %s", err)
+	}
+
+	parser := &Parser{
+		identifier: identifier,
+		stream:     tokens.Lex(source.String()),
+		statements: p.statements,
+		Config:     p.Config.Inherit(),
+		Loader:     loader,
+	}
+	return parser.Parse()
 }

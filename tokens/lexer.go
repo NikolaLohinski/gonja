@@ -55,7 +55,7 @@ func escape_chars_clashing_regexp(s string) string {
 
 // NewLexer creates a new scanner for the input string.
 func NewLexer(input string) *Lexer {
-	cfg := config.DefaultConfig
+	cfg := config.New()
 	return &Lexer{
 		Input:  input,
 		Tokens: make(chan *Token),

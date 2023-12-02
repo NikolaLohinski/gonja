@@ -12,12 +12,12 @@ import (
 )
 
 type IfStmt struct {
-	Location   *tokens.Token
+	location   *tokens.Token
 	conditions []nodes.Expression
 	wrappers   []*nodes.Wrapper
 }
 
-func (stmt *IfStmt) Position() *tokens.Token { return stmt.Location }
+func (stmt *IfStmt) Position() *tokens.Token { return stmt.location }
 func (stmt *IfStmt) String() string {
 	t := stmt.Position()
 	return fmt.Sprintf("IfStmt(Line=%d Col=%d)", t.Line, t.Col)
@@ -47,7 +47,7 @@ func ifParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 		"current": p.Current(),
 	}).Trace("ParseIf")
 	ifNode := &IfStmt{
-		Location: args.Current(),
+		location: args.Current(),
 	}
 
 	// Parse first and main IF condition

@@ -11,12 +11,12 @@ import (
 )
 
 type SetStmt struct {
-	Location   *tokens.Token
-	Target     nodes.Expression
-	Expression nodes.Expression
+	location   *tokens.Token
+	target     nodes.Expression
+	expression nodes.Expression
 }
 
-func (stmt *SetStmt) Position() *tokens.Token { return stmt.Location }
+func (stmt *SetStmt) Position() *tokens.Token { return stmt.location }
 func (stmt *SetStmt) String() string {
 	t := stmt.Position()
 	return fmt.Sprintf("SetStmt(Line=%d Col=%d)", t.Line, t.Col)
@@ -24,14 +24,14 @@ func (stmt *SetStmt) String() string {
 
 func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
 	// Evaluate expression
-	value := r.Eval(stmt.Expression)
+	value := r.Eval(stmt.expression)
 	if value.IsError() {
 		return value
 	}
 
-	switch n := stmt.Target.(type) {
+	switch n := stmt.target.(type) {
 	case *nodes.Name:
-		r.Ctx.Set(n.Name.Val, value.Interface())
+		r.Environment.Context.Set(n.Name.Val, value.Interface())
 	case *nodes.GetAttribute:
 		target := r.Eval(n.Node)
 		if target.IsError() {
@@ -61,7 +61,7 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 
 func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	stmt := &SetStmt{
-		Location: p.Current(),
+		location: p.Current(),
 	}
 
 	// Parse variable name
@@ -71,7 +71,7 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	}
 	switch n := ident.(type) {
 	case *nodes.Name, *nodes.Call, *nodes.GetItem, *nodes.GetAttribute:
-		stmt.Target = n
+		stmt.target = n
 	default:
 		return nil, errors.Errorf(`Unexpected set target %s`, n)
 	}
@@ -85,7 +85,7 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	stmt.Expression = expr
+	stmt.expression = expr
 
 	// Remaining arguments
 	if !args.End() {

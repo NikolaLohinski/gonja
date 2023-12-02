@@ -18,10 +18,10 @@ type Template struct {
 	source      string
 	config      *config.Config
 	environment *Environment
+	loader      loaders.Loader
 	tokens      *tokens.Stream
 	parser      *parser.Parser
 	root        *nodes.Template
-	macros      MacroSet
 }
 
 func NewTemplate(identifier string, config *config.Config, loader loaders.Loader, environment *Environment) (*Template, error) {
@@ -36,9 +36,11 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 	}
 
 	t := &Template{
-		source: source.String(),
-		config: config,
-		tokens: tokens.Lex(source.String()),
+		source:      source.String(),
+		config:      config,
+		loader:      loader,
+		tokens:      tokens.Lex(source.String()),
+		environment: environment,
 	}
 
 	t.parser = parser.NewParser(identifier, t.tokens, config, loader, environment.Statements)
@@ -54,20 +56,23 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 
 // Executes the template and returns the rendered template as a string
 func (t *Template) Execute(ctx *Context) (string, error) {
-	var b strings.Builder
+	var output strings.Builder
 
-	renderingContext := t.environment.Context.Inherit()
-	renderingContext.Update(ctx)
-
-	var builder strings.Builder
-	renderer := NewRenderer(t.environment, &builder, t.config, t)
+	renderer := NewRenderer(&Environment{
+		Tests:      t.environment.Tests,
+		Filters:    t.environment.Filters,
+		Statements: t.environment.Statements,
+		Context:    t.environment.Context.Inherit().Update(ctx),
+	}, &output, t.config, t.loader, t)
 
 	err := renderer.Execute()
 	if err != nil {
 		return "", errors.Wrap(err, "unable to execute template")
 	}
 
-	b.WriteString(renderer.String())
+	return output.String(), nil
+}
 
-	return b.String(), nil
+func (t *Template) Macros() map[string]*nodes.Macro {
+	return t.root.Macros
 }

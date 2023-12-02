@@ -24,7 +24,7 @@ func (stmt *MacroStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) erro
 	if err != nil {
 		return errors.Wrapf(err, `Unable to parse marco '%s'`, stmt.Name)
 	}
-	r.Ctx.Set(stmt.Name, macro)
+	r.Environment.Context.Set(stmt.Name, macro)
 	return nil
 }
 

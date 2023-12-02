@@ -28,14 +28,14 @@ func (p *Parser) ParseStatementBlock() (*nodes.StatementBlock, error) {
 		return nil, p.Error("Expected a statement name here", p.Current())
 	}
 
-	stmtParser, exists := p.Statements[name.Val]
+	stmtParser, exists := p.statements[name.Val]
 	if !exists {
 		return nil, p.Error(fmt.Sprintf("Statement '%s' not found (or beginning not provided)", name.Val), name)
 	}
 
 	log.Trace("args")
 	var args []*tokens.Token
-	for p.Current(tokens.BlockEnd) == nil && !p.Stream.End() {
+	for p.Current(tokens.BlockEnd) == nil && !p.Stream().End() {
 		log.Trace("for args")
 		args = append(args, p.Next())
 	}
@@ -57,7 +57,7 @@ func (p *Parser) ParseStatementBlock() (*nodes.StatementBlock, error) {
 	log.WithFields(log.Fields{
 		"stream": stream,
 	}).Trace("Got stream")
-	argParser := NewParser(fmt.Sprintf("%s:args", name.Val), p.Config, stream)
+	argParser := NewParser(p.identifier, stream, p.Config, p.Loader, p.statements)
 	log.Trace("argparser")
 
 	stmt, err := stmtParser(p, argParser)

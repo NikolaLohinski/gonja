@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/nikolalohinski/gonja/config"
+	"github.com/nikolalohinski/gonja/loaders"
 	"github.com/nikolalohinski/gonja/nodes"
 )
 
@@ -13,19 +14,21 @@ import (
 type Renderer struct {
 	Config      *config.Config
 	Environment *Environment
+	Loader      loaders.Loader
 	Template    *Template
 	RootNode    *nodes.Template
 	Output      *strings.Builder
 }
 
 // NewRenderer initialize a new renderer
-func NewRenderer(environment *Environment, output *strings.Builder, config *config.Config, template *Template) *Renderer {
+func NewRenderer(environment *Environment, output *strings.Builder, config *config.Config, loader loaders.Loader, template *Template) *Renderer {
 	r := &Renderer{
 		Config:      config.Inherit(),
 		Environment: environment,
 		Template:    template,
 		RootNode:    template.root,
 		Output:      output,
+		Loader:      loader,
 	}
 	r.Environment.Context.Set("self", Self(r))
 	return r
@@ -44,6 +47,7 @@ func (r *Renderer) Inherit() *Renderer {
 		Template: r.Template,
 		RootNode: r.RootNode,
 		Output:   r.Output,
+		Loader:   r.Loader,
 	}
 	return sub
 }
@@ -121,10 +125,6 @@ func (r *Renderer) Execute() error {
 	}
 
 	return nodes.Walk(r, root)
-}
-
-func (r *Renderer) String() string {
-	return r.Output.String()
 }
 
 func (r *Renderer) Evaluator() *Evaluator {

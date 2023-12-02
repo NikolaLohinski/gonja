@@ -44,16 +44,16 @@ type Statement interface {
 
 // Template is the root node of any template
 type Template struct {
-	Name   string
-	Nodes  []Node
-	Blocks BlockSet
-	Macros map[string]*Macro
-	Parent *Template
+	Identifier string
+	Nodes      []Node
+	Blocks     BlockSet
+	Macros     map[string]*Macro
+	Parent     *Template
 }
 
 func (t *Template) Position() *tokens.Token { return t.Nodes[0].Position() }
 func (t *Template) String() string {
-	return fmt.Sprintf("template(%s)", t.Name)
+	return fmt.Sprintf("template(%s)", t.Identifier)
 }
 
 func (tpl *Template) GetBlocks(name string) []*Wrapper {
