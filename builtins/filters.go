@@ -185,6 +185,11 @@ func filterCapitalize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'capitalize'"))
 	}
+
+	if !in.IsString() {
+		return in
+	}
+
 	if in.Len() <= 0 {
 		return exec.AsValue("")
 	}
