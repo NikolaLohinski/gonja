@@ -360,6 +360,9 @@ func filterFloat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'float'"))
 	}
+	if in.IsNil() {
+		return exec.AsValue(0.0)
+	}
 	return exec.AsValue(in.Float())
 }
 
@@ -461,6 +464,9 @@ func filterInteger(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	}
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'int'"))
+	}
+	if in.IsNil() {
+		return exec.AsValue(0)
 	}
 	return exec.AsValue(in.Integer())
 }

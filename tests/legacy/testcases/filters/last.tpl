@@ -1,5 +1,5 @@
 {{ "Test"|last }}
-{{ complex.comments|last }}
+{{ (complex.comments | last).Text }}
 {{ 5|last }}
 {{ true|last }}
 {{ nothing|last }}
