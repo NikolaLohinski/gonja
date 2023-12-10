@@ -58,7 +58,8 @@ var _ = Context("legacy tests", func() {
 		for _, p := range files {
 			filePath := p
 			name := strings.TrimSuffix(strings.TrimPrefix(filePath, testCasesDir), ".tpl")
-			Context(strings.Join(strings.Split(name, string(filepath.Separator)), " : "), func() {
+			ctx := strings.Join(strings.Split(name, string(filepath.Separator)), " : ")
+			inner := func() {
 				BeforeEach(func() {
 					*loader = loaders.MustNewFileSystemLoader(filepath.Dir(filePath))
 					*identifier = filepath.Base(filePath)
@@ -73,7 +74,12 @@ var _ = Context("legacy tests", func() {
 					diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
 					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
 				})
-			})
+			}
+			if strings.HasSuffix(filePath, ".disabled.tpl") {
+				XContext(strings.TrimSuffix(ctx, ".disabled"), inner)
+			} else {
+				Context(ctx, inner)
+			}
 		}
 	})
 	Context("miscellaneous templates", func() {

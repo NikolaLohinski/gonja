@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/nikolalohinski/gonja/nodes"
 	"github.com/nikolalohinski/gonja/tokens"
 	log "github.com/sirupsen/logrus"
@@ -66,7 +68,7 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 
 	tok := p.Match(tokens.VariableBegin)
 	if tok == nil {
-		return nil, p.Error("'{{' expected here", p.Current())
+		return nil, p.Error(fmt.Sprintf("'%s' expected here", p.Config.VariableStartString), p.Current())
 	}
 
 	node := &nodes.Output{
@@ -106,7 +108,7 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 
 	tok = p.Match(tokens.VariableEnd)
 	if tok == nil {
-		return nil, p.Error("'}}' expected here", p.Current())
+		return nil, p.Error(fmt.Sprintf("'%s' expected here", p.Config.VariableEndString), p.Current())
 	}
 	node.End = tok
 	if data := p.Current(tokens.Data); data != nil {

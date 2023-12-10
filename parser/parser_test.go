@@ -820,6 +820,36 @@ var _ = Context("parser", func() {
 				),
 			},
 		},
+		{
+			"is a getter after an expression",
+			[]string{"{{ (2 is odd).one }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetAttributeNode(
+						MatchTestExpressionNode(
+							MatchIntegerNode(2),
+							MatchTestCall("odd", nil, nil),
+						),
+						"one",
+					),
+				),
+			},
+		},
+		{
+			"is a getter after an expression",
+			[]string{"{{ (2 is odd)[\"one\"] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetItemNode(
+						MatchTestExpressionNode(
+							MatchIntegerNode(2),
+							MatchTestCall("odd", nil, nil),
+						),
+						MatchStringNode("one"),
+					),
+				),
+			},
+		},
 	} {
 		t := testCase
 		Context(fmt.Sprintf("when the input %s", t.description), func() {

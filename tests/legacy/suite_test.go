@@ -8,8 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLegacy(t *testing.T) {
+func init() {
 	rand.Seed(42)
+}
+
+func TestLegacy(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "legacy")
 }

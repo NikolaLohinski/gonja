@@ -64,12 +64,12 @@ func (p *Parser) parseString() (nodes.Expression, error) {
 	return sr, nil
 }
 
-func (p *Parser) parseCollection() (nodes.Expression, error) {
+func (p *Parser) parseCollectionOrExpression() (nodes.Expression, error) {
 	switch p.Current().Type {
 	case tokens.LeftBracket:
 		return p.parseList()
 	case tokens.LeftParenthesis:
-		return p.parseTuple()
+		return p.parseTupleOrExpression()
 	case tokens.LeftBrace:
 		return p.parseDict()
 	default:
@@ -119,7 +119,7 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 	return &nodes.List{t, list}, nil
 }
 
-func (p *Parser) parseTuple() (nodes.Expression, error) {
+func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
 	}).Trace("parseTuple")
@@ -127,14 +127,15 @@ func (p *Parser) parseTuple() (nodes.Expression, error) {
 	if t == nil {
 		return nil, p.Error("Expected (", t)
 	}
-	expr, err := p.ParseExpression()
+	expression, err := p.ParseExpression()
 	if err != nil {
 		return nil, err
 	}
-	list := []nodes.Expression{expr}
+	list := []nodes.Expression{expression}
 
 	trailingComa := false
 
+	// If it's a tuple
 	for p.Match(tokens.Comma) != nil {
 		if p.Current(tokens.RightParenthesis) != nil {
 			// Trailing coma
@@ -153,14 +154,15 @@ func (p *Parser) parseTuple() (nodes.Expression, error) {
 
 	if p.Match(tokens.RightParenthesis) == nil {
 		return nil, p.Error("Unbalanced parenthesis", t)
-		// return nil, p.Error("Expected )", p.Current())
 	}
 
 	if len(list) > 1 || trailingComa {
-		return &nodes.Tuple{t, list}, nil
-	} else {
-		return expr, nil
+		expression = &nodes.Tuple{Location: t, Val: list}
 	}
+	if t := p.Match(tokens.Dot, tokens.LeftBracket); t != nil {
+		return p.ParseGetter(t, expression)
+	}
+	return expression, nil
 }
 
 func (p *Parser) parsePair() (*nodes.Pair, error) {
@@ -255,64 +257,13 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 	var variable nodes.Node = &nodes.Name{t}
 
 	for !p.Stream().EOF() {
-		if dot := p.Match(tokens.Dot); dot != nil {
-			getattr := &nodes.GetAttribute{
-				Location: dot,
-				Node:     variable,
-			}
-			tok := p.Match(tokens.Name, tokens.Integer)
-			switch tok.Type {
-			case tokens.Name:
-				getattr.Attr = tok.Val
-			case tokens.Integer:
-				i, err := strconv.Atoi(tok.Val)
-				if err != nil {
-					return nil, p.Error(err.Error(), tok)
-				}
-				getattr.Index = i
-			default:
-				return nil, p.Error("This token is not allowed within a variable name.", p.Current())
-			}
-			variable = getattr
-			continue
-		} else if bracket := p.Match(tokens.LeftBracket); bracket != nil {
-			tok := p.Match(tokens.String, tokens.Integer)
-			getitem := &nodes.GetItem{
-				Location: bracket,
-				Node:     variable,
-			}
-			if tok != nil {
-				switch tok.Type {
-				case tokens.String:
-					getitem.Arg = &nodes.String{
-						Location: tok,
-						Val:      strings.Trim(tok.Val, "\""),
-					}
-				case tokens.Integer:
-					i, err := strconv.Atoi(tok.Val)
-					if err != nil {
-						return nil, p.Error(err.Error(), tok)
-					}
-					getitem.Arg = &nodes.Integer{
-						Location: tok,
-						Val:      i,
-					}
-				default:
-					return nil, p.Error("This token is not allowed within a variable name.", p.Current())
-				}
-			} else {
-				expression, err := p.ParseExpression()
-				if err != nil {
-					return nil, p.Error("Invalid expression", p.Current())
-				}
-				getitem.Arg = expression
-			}
-			variable = getitem
-			if p.Match(tokens.RightBracket) == nil {
-				return nil, p.Error("Unbalanced bracket", bracket)
+		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
+			var err error
+			variable, err = p.ParseGetter(accessor, variable)
+			if err != nil {
+				return nil, err
 			}
 			continue
-
 		} else if lparen := p.Match(tokens.LeftParenthesis); lparen != nil {
 			call := &nodes.Call{
 				Location: lparen,
@@ -320,9 +271,6 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 				Args:     []nodes.Expression{},
 				Kwargs:   map[string]nodes.Expression{},
 			}
-			// if p.Peek(tokens.VariableEnd) != nil {
-			// 	return nil, p.Error("Filter parameter required after '('.", nil)
-			// }
 
 			for p.Match(tokens.Comma) != nil || p.Match(tokens.RightParenthesis) == nil {
 				// TODO: Handle multiple args and kwargs
@@ -354,6 +302,68 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 	return variable, nil
 }
 
+func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nodes.Expression, error) {
+	if accessor.Type == tokens.Dot {
+		getAttribute := &nodes.GetAttribute{
+			Location: accessor,
+			Node:     from,
+		}
+		tok := p.Match(tokens.Name, tokens.Integer)
+		switch tok.Type {
+		case tokens.Name:
+			getAttribute.Attr = tok.Val
+		case tokens.Integer:
+			i, err := strconv.Atoi(tok.Val)
+			if err != nil {
+				return nil, p.Error(err.Error(), tok)
+			}
+			getAttribute.Index = i
+		default:
+			return nil, p.Error("This token is not allowed within a variable name.", p.Current())
+		}
+		return getAttribute, nil
+	} else if accessor.Type == tokens.LeftBracket {
+		tok := p.Match(tokens.String, tokens.Integer)
+		getitem := &nodes.GetItem{
+			Location: accessor,
+			Node:     from,
+		}
+		if tok != nil {
+			switch tok.Type {
+			case tokens.String:
+				getitem.Arg = &nodes.String{
+					Location: tok,
+					Val:      strings.Trim(tok.Val, "\""),
+				}
+			case tokens.Integer:
+				i, err := strconv.Atoi(tok.Val)
+				if err != nil {
+					return nil, p.Error(err.Error(), tok)
+				}
+				getitem.Arg = &nodes.Integer{
+					Location: tok,
+					Val:      i,
+				}
+			default:
+				return nil, p.Error("This token is not allowed within a variable name.", p.Current())
+			}
+		} else {
+			expression, err := p.ParseExpression()
+			if err != nil {
+				return nil, p.Error("Invalid expression", p.Current())
+			}
+			getitem.Arg = expression
+		}
+		if p.Match(tokens.RightBracket) == nil {
+			return nil, p.Error("Unbalanced bracket", accessor)
+		}
+
+		return getitem, nil
+	}
+
+	return nil, p.Error("unknown accessor for defining a getter", accessor)
+}
+
 // IDENT | IDENT.(IDENT|NUMBER)...
 func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 	log.WithFields(log.Fields{
@@ -374,7 +384,7 @@ func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 		return p.parseString()
 
 	case tokens.LeftParenthesis, tokens.LeftBrace, tokens.LeftBracket:
-		return p.parseCollection()
+		return p.parseCollectionOrExpression()
 
 	case tokens.Name:
 		return p.ParseVariable()

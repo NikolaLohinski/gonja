@@ -1799,7 +1799,7 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() || in.IsNil() {
 		return p.First()
 	}
-	if p.GetKwarg("boolean", false).Bool() && !in.Bool() {
+	if p.GetKwarg("boolean", false).Bool() && !(in.IsBool() && in.Bool()) {
 		return p.First()
 	}
 	return in
