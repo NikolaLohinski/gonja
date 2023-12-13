@@ -5,13 +5,10 @@ package integration_test
 
 import (
 	"bytes"
-	"fmt"
 	osExec "os/exec"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
 	"github.com/nikolalohinski/gonja"
 	"github.com/nikolalohinski/gonja/config"
 	"github.com/nikolalohinski/gonja/exec"
@@ -49,32 +46,29 @@ var _ = Context("version", func() {
 		*returnedResult, *returnedErr = t.Execute(*context)
 	})
 	Context("when using 'gonja.version'", func() {
+		var (
+			version = new(string)
+		)
 		BeforeEach(func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: heredoc.Doc(`
-					{%- if "v" ~ gonja.version != CI_COMMIT_TAG -%}
-					v{{- gonja.version }} != {{ CI_COMMIT_TAG }}
-					{%- else -%}
-					"v" ~ gonja.version == CI_COMMIT_TAG
-					{%- endif %}
+					gonja.version is '{{ gonja.version }}'
 				`),
 			})
 			cmd := osExec.Command("git", "describe", "--tags", "--abbrev=0")
 			buf := new(bytes.Buffer)
 			cmd.Stdout = buf
 			Must(cmd.Run())
-			(*environment).Context.Set("CI_COMMIT_TAG", strings.TrimSpace(buf.String()))
+			*version = strings.TrimSpace(buf.String())
 		})
 		It("should return the expected rendered content", func() {
 			By("not returning any error")
 			Expect(*returnedErr).To(BeNil())
 			By("not returning the correct result")
 			expected := heredoc.Doc(`
-				"v" ~ gonja.version == CI_COMMIT_TAG
+				gonja.version is '` + *version + `'
 			`)
-			edits := myers.ComputeEdits("expected", expected, *returnedResult)
-			diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
-			Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
+			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
 })
