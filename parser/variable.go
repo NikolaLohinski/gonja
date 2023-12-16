@@ -304,34 +304,31 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 
 func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nodes.Expression, error) {
 	if accessor.Type == tokens.Dot {
-		getAttribute := &nodes.GetAttribute{
+		getAttributeNode := &nodes.GetAttribute{
 			Location: accessor,
 			Node:     from,
 		}
 		tok := p.Match(tokens.Name, tokens.Integer)
 		switch tok.Type {
 		case tokens.Name:
-			getAttribute.Attr = tok.Val
+			getAttributeNode.Attr = tok.Val
 		case tokens.Integer:
 			i, err := strconv.Atoi(tok.Val)
 			if err != nil {
 				return nil, p.Error(err.Error(), tok)
 			}
-			getAttribute.Index = i
+			getAttributeNode.Index = i
 		default:
 			return nil, p.Error("This token is not allowed within a variable name.", p.Current())
 		}
-		return getAttribute, nil
+		return getAttributeNode, nil
 	} else if accessor.Type == tokens.LeftBracket {
+		var argument nodes.Node
 		tok := p.Match(tokens.String, tokens.Integer)
-		getitem := &nodes.GetItem{
-			Location: accessor,
-			Node:     from,
-		}
 		if tok != nil {
 			switch tok.Type {
 			case tokens.String:
-				getitem.Arg = &nodes.String{
+				argument = &nodes.String{
 					Location: tok,
 					Val:      strings.Trim(tok.Val, "\""),
 				}
@@ -340,25 +337,73 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 				if err != nil {
 					return nil, p.Error(err.Error(), tok)
 				}
-				getitem.Arg = &nodes.Integer{
+				argument = &nodes.Integer{
 					Location: tok,
 					Val:      i,
 				}
 			default:
 				return nil, p.Error("This token is not allowed within a variable name.", p.Current())
 			}
+		} else if p.Current(tokens.Colon, tokens.RightBracket) != nil {
+			// nothing to do, pass to next parsing block
 		} else {
 			expression, err := p.ParseExpression()
 			if err != nil {
 				return nil, p.Error("Invalid expression", p.Current())
 			}
-			getitem.Arg = expression
+			argument = expression
 		}
-		if p.Match(tokens.RightBracket) == nil {
-			return nil, p.Error("Unbalanced bracket", accessor)
+		if p.Match(tokens.RightBracket) != nil {
+			return &nodes.GetItem{
+				Location: accessor,
+				Node:     from,
+				Arg:      argument,
+			}, nil
 		}
 
-		return getitem, nil
+		if p.Match(tokens.Colon) != nil {
+			tok := p.Match(tokens.String, tokens.Integer)
+			var secondArgument nodes.Node
+			if tok != nil {
+				switch tok.Type {
+				case tokens.String:
+					secondArgument = &nodes.String{
+						Location: tok,
+						Val:      strings.Trim(tok.Val, "\""),
+					}
+				case tokens.Integer:
+					i, err := strconv.Atoi(tok.Val)
+					if err != nil {
+						return nil, p.Error(err.Error(), tok)
+					}
+					secondArgument = &nodes.Integer{
+						Location: tok,
+						Val:      i,
+					}
+				default:
+					return nil, p.Error("This token is not allowed within a variable name.", p.Current())
+				}
+			} else if p.Current(tokens.RightBracket) != nil {
+				// nothing to do, just need to finish
+			} else {
+				expression, err := p.ParseExpression()
+				if err != nil {
+					return nil, p.Error("Invalid expression", p.Current())
+				}
+				secondArgument = expression
+			}
+			if p.Match(tokens.RightBracket) == nil {
+				return nil, p.Error("unbalanced bracket", accessor)
+			}
+			return &nodes.GetSlice{
+				Location: accessor,
+				Node:     from,
+				Start:    argument,
+				End:      secondArgument,
+			}, nil
+		} else {
+			return nil, p.Error("unbalanced bracket", accessor)
+		}
 	}
 
 	return nil, p.Error("unknown accessor for defining a getter", accessor)

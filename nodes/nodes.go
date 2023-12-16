@@ -318,6 +318,18 @@ func (g *GetItem) String() string {
 	return fmt.Sprintf("%s[%s]", g.Node, g.Arg)
 }
 
+type GetSlice struct {
+	Location *tokens.Token
+	Node     Node
+	Start    Node
+	End      Node
+}
+
+func (g *GetSlice) Position() *tokens.Token { return g.Location }
+func (g *GetSlice) String() string {
+	return fmt.Sprintf("%s[%s:%s]", g.Node, g.Start, g.End)
+}
+
 type GetAttribute struct {
 	Location *tokens.Token
 	Node     Node

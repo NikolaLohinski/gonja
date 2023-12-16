@@ -49,9 +49,11 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 	case *nodes.Call:
 		return e.evalCall(n)
 	case *nodes.GetItem:
-		return e.evalGetitem(n)
+		return e.evalGetItem(n)
 	case *nodes.GetAttribute:
-		return e.evalGetattr(n)
+		return e.evalGetAttr(n)
+	case *nodes.GetSlice:
+		return e.evalGetSlice(n)
 	case *nodes.Error:
 		return AsValue(n.Error)
 	case *nodes.Negation:
@@ -269,7 +271,7 @@ func (e *Evaluator) evalName(node *nodes.Name) *Value {
 	return ToValue(val)
 }
 
-func (e *Evaluator) evalGetitem(node *nodes.GetItem) *Value {
+func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
@@ -305,7 +307,47 @@ func (e *Evaluator) evalGetitem(node *nodes.GetItem) *Value {
 	return item
 }
 
-func (e *Evaluator) evalGetattr(node *nodes.GetAttribute) *Value {
+func (e *Evaluator) evalGetSlice(node *nodes.GetSlice) *Value {
+	value := e.Eval(node.Node)
+	if value.IsError() {
+		return AsValue(errors.Wrapf(value, `unable to evaluate target %s`, node.Node))
+	}
+	if !value.CanSlice() {
+		return AsValue(errors.Wrapf(value, `can not slice %s`, node.Node))
+	}
+	start := 0
+	end := value.Len()
+	if node.Start != nil {
+		startValue := e.Eval(node.Start)
+		if startValue.IsError() {
+			return AsValue(errors.Wrapf(value, `unable to slice starting index %s`, node.Start))
+		}
+		if !startValue.IsInteger() {
+			return AsValue(errors.Wrapf(value, `slice starting index is not an integer: %s`, startValue))
+		}
+		start = startValue.Integer()
+		if start < 0 {
+			start = value.Len() + start
+		}
+	}
+	if node.End != nil {
+		endValue := e.Eval(node.End)
+		if endValue.IsError() {
+			return AsValue(errors.Wrapf(value, `unable to slice starting index %s`, node.Start))
+		}
+		if !endValue.IsInteger() {
+			return AsValue(errors.Wrapf(value, `slice starting index is not an integer: %s`, endValue))
+		}
+		end = endValue.Integer()
+		if end < 0 {
+			end = value.Len() + end
+		}
+	}
+
+	return value.Slice(start, end)
+}
+
+func (e *Evaluator) evalGetAttr(node *nodes.GetAttribute) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
