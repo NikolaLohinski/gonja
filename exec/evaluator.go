@@ -274,10 +274,14 @@ func (e *Evaluator) evalName(node *nodes.Name) *Value {
 func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
-		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
+		return AsValue(errors.Wrapf(value, `unable to evaluate target %s`, node.Node))
 	}
 	if node.Arg == nil {
-		return AsValue(errors.Wrapf(value, `Argument not provided %s`, node.Node))
+		if e.Config.StrictUndefined {
+			return AsValue(errors.Wrapf(value, `argument is undefined to access: %s`, node.Node))
+		} else {
+			return AsValue(nil)
+		}
 	}
 
 	argument := e.Eval(node.Arg)
@@ -287,8 +291,10 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 		key = argument.String()
 	case argument != nil && argument.IsInteger():
 		key = argument.Integer()
+	case argument.IsNil() && e.Config.StrictUndefined:
+		return AsValue(errors.Wrapf(value, `argument is undefined to access: %s`, node.Node))
 	default:
-		return AsValue(errors.Wrapf(value, `Argument %s does not evaluate to string or integer in: %s`, node.Arg, node.Node))
+		return AsValue(errors.Wrapf(value, `argument %s does not evaluate to string or integer in: %s`, node.Arg, node.Node))
 	}
 
 	item, found := value.GetItem(key)
@@ -296,11 +302,11 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 		item, found = value.GetAttribute(argument.String())
 	}
 	if !found {
-		if item.IsError() || argument.IsInteger() /* always fail when accessing array indexes */ {
-			return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))
+		if item.IsError() {
+			return AsValue(errors.Wrapf(item, `unable to evaluate %s`, node))
 		}
 		if e.Config.StrictUndefined {
-			return AsValue(errors.Errorf(`Unable to evaluate %s: item '%s' not found`, node, node.Arg))
+			return AsValue(errors.Errorf(`unable to evaluate %s: item '%s' not found`, node, node.Arg))
 		}
 		return AsValue(nil)
 	}

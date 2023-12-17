@@ -38,11 +38,43 @@ var _ = Context("lists", func() {
 		}
 		*returnedResult, *returnedErr = t.Execute(*context)
 	})
+	Context("when getting an item by index", func() {
+		Context("default", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: heredoc.Doc(`
+					[]:    {{ value[]    }}
+					[1]:   {{ value[1]   }}
+					[-2]:  {{ value[-2]  }}
+					[256]: {{ value[256] }}
+					[-99]: {{ value[-99] }}
+				`),
+				})
+				(*environment).Context.Set("value", []interface{}{"1", 2, 3, 4, "five"})
+			})
+
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("not returning the expected result")
+				expected := heredoc.Doc(`
+					[]:    
+					[1]:   2
+					[-2]:  4
+					[256]: 
+					[-99]: 
+				`)
+				AssertPrettyDiff(expected, *returnedResult)
+			})
+		})
+	})
+
 	Context("when getting a slice using the '[...]' syntax", func() {
 		Context("default", func() {
 			BeforeEach(func() {
 				*loader = loaders.MustNewMemoryLoader(map[string]string{
 					*identifier: heredoc.Doc(`
+					[]:    {{ value[]    }}
 					[:]:   {{ value[:]   }}
 					[2:]:  {{ value[2:]  }}
 					[:3]:  {{ value[:3]  }}
@@ -58,6 +90,7 @@ var _ = Context("lists", func() {
 				Expect(*returnedErr).To(BeNil())
 				By("not returning the expected result")
 				expected := heredoc.Doc(`
+					[]:    
 					[:]:   ['1', 2, 3, 4, 'five']
 					[2:]:  [3, 4, 'five']
 					[:3]:  ['1', 2, 3]

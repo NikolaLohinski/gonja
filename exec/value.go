@@ -891,15 +891,23 @@ func (v *Value) GetItem(key interface{}) (*Value, bool) {
 
 	case int:
 		switch val.Kind() {
-		case reflect.String, reflect.Array, reflect.Slice:
+		case reflect.String:
+			if t >= 0 && val.Len() > t {
+				return ToValue(string(val.String()[t])), true
+			} else if t < 0 && val.Len() > -t {
+				return ToValue(string(val.String()[val.Len()+t])), true
+			}
+		case reflect.Array, reflect.Slice:
 			if t >= 0 && val.Len() > t {
 				atIndex := val.Index(t)
 				if atIndex.IsValid() {
 					return ToValue(atIndex), true
 				}
-			} else {
-				// In Django, exceeding the length of a list is just empty.
-				return AsValue(nil), false
+			} else if t < 0 && val.Len() > -t {
+				atIndex := val.Index(val.Len() + t)
+				if atIndex.IsValid() {
+					return ToValue(atIndex), true
+				}
 			}
 		default:
 			return AsValue(errors.Errorf("Can't access an index on type %s (variable %s)", val.Kind().String(), v)), false
