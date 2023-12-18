@@ -324,29 +324,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 		return getAttributeNode, nil
 	} else if accessor.Type == tokens.LeftBracket {
 		var argument nodes.Node
-		tok := p.Match(tokens.String, tokens.Integer)
-		if tok != nil {
-			switch tok.Type {
-			case tokens.String:
-				argument = &nodes.String{
-					Location: tok,
-					Val:      strings.Trim(tok.Val, "\""),
-				}
-			case tokens.Integer:
-				i, err := strconv.Atoi(tok.Val)
-				if err != nil {
-					return nil, p.Error(err.Error(), tok)
-				}
-				argument = &nodes.Integer{
-					Location: tok,
-					Val:      i,
-				}
-			default:
-				return nil, p.Error("This token is not allowed within a variable name.", p.Current())
-			}
-		} else if p.Current(tokens.Colon, tokens.RightBracket) != nil {
-			// nothing to do, pass to next parsing block
-		} else {
+		if p.Current(tokens.Colon, tokens.RightBracket) == nil {
 			expression, err := p.ParseExpression()
 			if err != nil {
 				return nil, p.Error("Invalid expression", p.Current())
@@ -360,32 +338,9 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 				Arg:      argument,
 			}, nil
 		}
-
 		if p.Match(tokens.Colon) != nil {
-			tok := p.Match(tokens.String, tokens.Integer)
 			var secondArgument nodes.Node
-			if tok != nil {
-				switch tok.Type {
-				case tokens.String:
-					secondArgument = &nodes.String{
-						Location: tok,
-						Val:      strings.Trim(tok.Val, "\""),
-					}
-				case tokens.Integer:
-					i, err := strconv.Atoi(tok.Val)
-					if err != nil {
-						return nil, p.Error(err.Error(), tok)
-					}
-					secondArgument = &nodes.Integer{
-						Location: tok,
-						Val:      i,
-					}
-				default:
-					return nil, p.Error("This token is not allowed within a variable name.", p.Current())
-				}
-			} else if p.Current(tokens.RightBracket) != nil {
-				// nothing to do, just need to finish
-			} else {
+			if p.Current(tokens.RightBracket) == nil {
 				expression, err := p.ParseExpression()
 				if err != nil {
 					return nil, p.Error("Invalid expression", p.Current())
@@ -401,9 +356,8 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 				Start:    argument,
 				End:      secondArgument,
 			}, nil
-		} else {
-			return nil, p.Error("unbalanced bracket", accessor)
 		}
+		return nil, p.Error("unbalanced bracket", accessor)
 	}
 
 	return nil, p.Error("unknown accessor for defining a getter", accessor)
