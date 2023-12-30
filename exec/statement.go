@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"github.com/nikolalohinski/gonja/nodes"
+	"github.com/nikolalohinski/gonja/v2/nodes"
 )
 
 type Statement interface {

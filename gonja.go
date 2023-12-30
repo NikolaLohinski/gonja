@@ -1,10 +1,10 @@
 package gonja
 
 import (
-	"github.com/nikolalohinski/gonja/builtins"
-	"github.com/nikolalohinski/gonja/config"
-	"github.com/nikolalohinski/gonja/exec"
-	"github.com/nikolalohinski/gonja/loaders"
+	"github.com/nikolalohinski/gonja/v2/builtins"
+	"github.com/nikolalohinski/gonja/v2/config"
+	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/loaders"
 )
 
 var (

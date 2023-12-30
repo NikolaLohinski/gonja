@@ -11,7 +11,7 @@
 
 Install/update using `go get`:
 ```
-go get github.com/nikolalohinski/gonja
+go get github.com/nikolalohinski/gonja/v2
 ```
 
 ### As a `terraform` provider
@@ -26,7 +26,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/nikolalohinski/gonja"
+	"github.com/nikolalohinski/gonja/v2"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 ## Documentation
 
 * For a details on how the template language works, please refer to [the Jinja documentation](https://jinja.palletsprojects.com) ;
-* `gonja` API documentation is available on [godoc](https://godoc.org/github.com/nikolalohinski/gonja) ;
+* `gonja` API documentation is available on [godoc](https://godoc.org/github.com/nikolalohinski/gonja/v2) ;
 * `filters`: please refer to [`docs/filters.md`](docs/filters.md) ;
 * `statements`: please take a look at [`docs/statements.md`](docs/statements.md) ;
 * `tests`: please see [`docs/tests.md`](docs/tests.md) ;

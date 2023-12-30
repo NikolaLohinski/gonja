@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/nikolalohinski/gonja/nodes"
-	"github.com/nikolalohinski/gonja/tokens"
+	"github.com/nikolalohinski/gonja/v2/nodes"
+	"github.com/nikolalohinski/gonja/v2/tokens"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/nikolalohinski/gonja/nodes"
-	"github.com/nikolalohinski/gonja/tokens"
+	"github.com/nikolalohinski/gonja/v2/nodes"
+	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
 type StatementParser func(parser *Parser, args *Parser) (nodes.Statement, error)

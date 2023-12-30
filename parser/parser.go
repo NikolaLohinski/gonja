@@ -5,10 +5,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/config"
-	"github.com/nikolalohinski/gonja/loaders"
-	"github.com/nikolalohinski/gonja/nodes"
-	"github.com/nikolalohinski/gonja/tokens"
+	"github.com/nikolalohinski/gonja/v2/config"
+	"github.com/nikolalohinski/gonja/v2/loaders"
+	"github.com/nikolalohinski/gonja/v2/nodes"
+	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
 // The parser provides you a comprehensive and easy tool to

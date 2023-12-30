@@ -1,4 +1,4 @@
-module github.com/nikolalohinski/gonja
+module github.com/nikolalohinski/gonja/v2
 
 go 1.20
 

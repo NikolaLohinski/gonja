@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/exec"
+	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
 var Tests = exec.TestSet{

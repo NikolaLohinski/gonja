@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/nikolalohinski/gonja"
-	"github.com/nikolalohinski/gonja/config"
-	"github.com/nikolalohinski/gonja/exec"
-	"github.com/nikolalohinski/gonja/loaders"
+	"github.com/nikolalohinski/gonja/v2"
+	"github.com/nikolalohinski/gonja/v2/config"
+	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/loaders"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

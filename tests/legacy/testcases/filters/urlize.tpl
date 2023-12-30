@@ -7,7 +7,7 @@
 --
 {% filter urlize|safe %}
 Please mail me at demo@example.com or visit mit on:
-- lorem ipsum github.com/nikolalohinski/gonja lorem ipsum
+- lorem ipsum github.com/nikolalohinski/gonja/v2 lorem ipsum
 - lorem ipsum http://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum
@@ -17,7 +17,7 @@ Please mail me at demo@example.com or visit mit on:
 --
 {% filter urlize(target='_blank', rel="nofollow")|safe %}
 Please mail me at demo@example.com or visit mit on:
-- lorem ipsum github.com/nikolalohinski/gonja lorem ipsum
+- lorem ipsum github.com/nikolalohinski/gonja/v2 lorem ipsum
 - lorem ipsum http://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum
@@ -27,7 +27,7 @@ Please mail me at demo@example.com or visit mit on:
 --
 {% filter urlize(15)|safe %}
 Please mail me at demo@example.com or visit mit on:
-- lorem ipsum github.com/nikolalohinski/gonja lorem ipsum
+- lorem ipsum github.com/nikolalohinski/gonja/v2 lorem ipsum
 - lorem ipsum http://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum
 - lorem ipsum https://www.john-doe.de lorem ipsum

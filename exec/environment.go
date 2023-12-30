@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"github.com/nikolalohinski/gonja/parser"
+	"github.com/nikolalohinski/gonja/v2/parser"
 	"github.com/pkg/errors"
 )
 

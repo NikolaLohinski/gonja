@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/nikolalohinski/gonja/tokens"
+	"github.com/nikolalohinski/gonja/v2/tokens"
 	"github.com/pkg/errors"
 )
 

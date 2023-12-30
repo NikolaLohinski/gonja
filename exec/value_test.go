@@ -3,7 +3,7 @@ package exec_test
 import (
 	"fmt"
 
-	"github.com/nikolalohinski/gonja/exec"
+	"github.com/nikolalohinski/gonja/v2/exec"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
