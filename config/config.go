@@ -2,7 +2,6 @@ package config
 
 // Config holds plexer and parser parameters
 type Config struct {
-	Debug bool
 	// The string marking the beginning of a block. Defaults to '{%'
 	BlockStartString string
 	// The string marking the end of a block. Defaults to '%}'.

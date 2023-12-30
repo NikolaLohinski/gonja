@@ -374,7 +374,6 @@ func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 		return nil, p.Error("Unexpected EOF, expected a number, string, keyword or identifier.", p.Current())
 	}
 
-	// Is first part a number or a string, there's nothing to resolve (because there's only to return the value then)
 	switch t.Type {
 	case tokens.Integer, tokens.Float:
 		return p.parseNumber()

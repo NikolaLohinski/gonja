@@ -1385,7 +1385,11 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	linecount := wordsLen/wrapAt + wordsLen%wrapAt
 	lines := make([]string, 0, linecount)
 	for i := 0; i < linecount; i++ {
-		lines = append(lines, strings.Join(words[wrapAt*i:utils.Min(wrapAt*(i+1), wordsLen)], " "))
+		min := wrapAt * (i + 1)
+		if wordsLen < min {
+			min = wordsLen
+		}
+		lines = append(lines, strings.Join(words[wrapAt*i:min], " "))
 	}
 	return exec.AsValue(strings.Join(lines, "\n"))
 }
