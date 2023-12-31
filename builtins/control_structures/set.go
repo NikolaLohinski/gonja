@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -10,26 +10,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SetStmt struct {
+type SetControlStructure struct {
 	location   *tokens.Token
 	target     nodes.Expression
 	expression nodes.Expression
 }
 
-func (stmt *SetStmt) Position() *tokens.Token { return stmt.location }
-func (stmt *SetStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("SetStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *SetControlStructure) Position() *tokens.Token {
+	return controlStructure.location
+}
+func (controlStructure *SetControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("SetControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (controlStructure *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	// Evaluate expression
-	value := r.Eval(stmt.expression)
+	value := r.Eval(controlStructure.expression)
 	if value.IsError() {
 		return value
 	}
 
-	switch n := stmt.target.(type) {
+	switch n := controlStructure.target.(type) {
 	case *nodes.Name:
 		r.Environment.Context.Set(n.Name.Val, value.Interface())
 	case *nodes.GetAttribute:
@@ -59,8 +61,8 @@ func (stmt *SetStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error 
 	return nil
 }
 
-func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &SetStmt{
+func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &SetControlStructure{
 		location: p.Current(),
 	}
 
@@ -71,7 +73,7 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	}
 	switch n := ident.(type) {
 	case *nodes.Name, *nodes.Call, *nodes.GetItem, *nodes.GetAttribute:
-		stmt.target = n
+		controlStructure.target = n
 	default:
 		return nil, errors.Errorf(`Unexpected set target %s`, n)
 	}
@@ -85,14 +87,14 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	stmt.expression = expr
+	controlStructure.expression = expr
 
 	// Remaining arguments
 	if !args.End() {
 		return nil, args.Error("Malformed 'set'-tag args.", args.Current())
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

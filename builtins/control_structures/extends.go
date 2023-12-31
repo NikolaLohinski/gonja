@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -9,27 +9,27 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type ExtendsStmt struct {
+type ExtendsControlStructure struct {
 	location    *tokens.Token
 	filename    string
 	withContext bool
 }
 
-func (stmt *ExtendsStmt) Position() *tokens.Token {
-	return stmt.location
+func (controlStructure *ExtendsControlStructure) Position() *tokens.Token {
+	return controlStructure.location
 }
 
-func (stmt *ExtendsStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("ExtendsStmt(Filename=%s Line=%d Col=%d)", stmt.filename, t.Line, t.Col)
+func (controlStructure *ExtendsControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("ExtendsControlStructure(Filename=%s Line=%d Col=%d)", controlStructure.filename, t.Line, t.Col)
 }
 
-func (node *ExtendsStmt) Execute(r *exec.Renderer) error {
+func (node *ExtendsControlStructure) Execute(r *exec.Renderer) error {
 	return nil
 }
 
-func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &ExtendsStmt{
+func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &ExtendsControlStructure{
 		location: p.Current(),
 	}
 
@@ -39,9 +39,9 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 
 	// var filename nodes.Node
 	if filename := args.Match(tokens.String); filename != nil {
-		stmt.filename = filename.Val
+		controlStructure.filename = filename.Val
 
-		extended, err := p.Extend(stmt.filename)
+		extended, err := p.Extend(controlStructure.filename)
 		if err != nil {
 			return nil, fmt.Errorf("unable to load template '%s': %s", filename, err)
 		}
@@ -53,7 +53,7 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 
 	if tok := args.MatchName("with", "without"); tok != nil {
 		if args.MatchName("context") != nil {
-			stmt.withContext = tok.Val == "with"
+			controlStructure.withContext = tok.Val == "with"
 		} else {
 			args.Stream().Backup()
 		}
@@ -63,7 +63,7 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 		return nil, args.Error("tag 'extends' only takes 1 argument", nil)
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

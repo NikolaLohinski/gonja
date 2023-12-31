@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type IncludeStmt struct {
+type IncludeControlStructure struct {
 	location           *tokens.Token
 	filenameExpression nodes.Expression
 	template           *nodes.Template
@@ -20,22 +20,22 @@ type IncludeStmt struct {
 	isEmpty            bool
 }
 
-func (stmt *IncludeStmt) Position() *tokens.Token {
-	return stmt.location
+func (controlStructure *IncludeControlStructure) Position() *tokens.Token {
+	return controlStructure.location
 }
 
-func (stmt *IncludeStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("IncludeStmt(Filename=%s Line=%d Col=%d)", stmt.filenameExpression, t.Line, t.Col)
+func (controlStructure *IncludeControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("IncludeControlStructure(Filename=%s Line=%d Col=%d)", controlStructure.filenameExpression, t.Line, t.Col)
 }
 
-func (stmt *IncludeStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
-	if stmt.isEmpty {
+func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	if controlStructure.isEmpty {
 		return nil
 	}
 	sub := r.Inherit()
 
-	filenameValue := r.Eval(stmt.filenameExpression)
+	filenameValue := r.Eval(controlStructure.filenameExpression)
 	if filenameValue.IsError() {
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
@@ -48,7 +48,7 @@ func (stmt *IncludeStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) er
 
 	included, err := exec.NewTemplate(filename, r.Config, loader, r.Environment)
 	if err != nil {
-		if stmt.ignoreMissing {
+		if controlStructure.ignoreMissing {
 			return nil
 		} else {
 			return fmt.Errorf("Unable to load template '%s': %s", filename, err)
@@ -59,8 +59,8 @@ func (stmt *IncludeStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) er
 	return sub.Execute()
 }
 
-func includeParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &IncludeStmt{
+func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &IncludeControlStructure{
 		location: p.Current(),
 	}
 
@@ -68,11 +68,11 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 	if err != nil {
 		return nil, err
 	}
-	stmt.filenameExpression = filenameExpression
+	controlStructure.filenameExpression = filenameExpression
 
 	if args.MatchName("ignore") != nil {
 		if args.MatchName("missing") != nil {
-			stmt.ignoreMissing = true
+			controlStructure.ignoreMissing = true
 		} else {
 			args.Stream().Backup()
 		}
@@ -80,7 +80,7 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 
 	if tok := args.MatchName("with", "without"); tok != nil {
 		if args.MatchName("context") != nil {
-			stmt.withContext = tok.Val == "with"
+			controlStructure.withContext = tok.Val == "with"
 		} else {
 			args.Stream().Backup()
 		}
@@ -90,7 +90,7 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, erro
 		return nil, args.Error("Malformed 'include'-tag args.", nil)
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -11,22 +11,24 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type WithStmt struct {
+type WithControlStructure struct {
 	location *tokens.Token
 	pairs    map[string]nodes.Expression
 	wrapper  *nodes.Wrapper
 }
 
-func (stmt *WithStmt) Position() *tokens.Token { return stmt.location }
-func (stmt *WithStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("WithStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *WithControlStructure) Position() *tokens.Token {
+	return controlStructure.location
+}
+func (controlStructure *WithControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("WithControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (stmt *WithStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (controlStructure *WithControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	sub := r.Inherit()
 
-	for key, value := range stmt.pairs {
+	for key, value := range controlStructure.pairs {
 		val := r.Eval(value)
 		if val.IsError() {
 			return errors.Wrapf(val, `unable to evaluate parameter %s`, value)
@@ -34,11 +36,11 @@ func (stmt *WithStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error
 		sub.Environment.Context.Set(key, val)
 	}
 
-	return sub.ExecuteWrapper(stmt.wrapper)
+	return sub.ExecuteWrapper(controlStructure.wrapper)
 }
 
-func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &WithStmt{
+func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &WithControlStructure{
 		location: p.Current(),
 		pairs:    map[string]nodes.Expression{},
 	}
@@ -47,7 +49,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 	if err != nil {
 		return nil, err
 	}
-	stmt.wrapper = wrapper
+	controlStructure.wrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
@@ -65,7 +67,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 		if err != nil {
 			return nil, err
 		}
-		stmt.pairs[key.Val] = value
+		controlStructure.pairs[key.Val] = value
 
 		if args.Match(tokens.Comma) == nil {
 			break
@@ -76,7 +78,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 		return nil, errors.New("")
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

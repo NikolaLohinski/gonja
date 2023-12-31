@@ -13,7 +13,7 @@ import (
 // Interfaces
 //
 // There are 3 main classes of nodes: Expressions and type nodes,
-// statement nodes, and declaration nodes. The node names usually
+// controlStructure nodes, and declaration nodes. The node names usually
 // match the corresponding Go spec production names to which they
 // correspond. The node fields correspond to the individual parts
 // of the respective productions.
@@ -37,8 +37,8 @@ type Expression interface {
 	Node
 }
 
-// Statement represents a statement block "{% %}"
-type Statement interface {
+// ControlStructure represents a controlStructure block "{% %}"
+type ControlStructure interface {
 	Node
 }
 
@@ -389,15 +389,15 @@ type BinOperator struct {
 func (op BinOperator) Position() *tokens.Token { return op.Token }
 func (op BinOperator) String() string          { return op.Token.String() }
 
-type StatementBlock struct {
-	Location *tokens.Token
-	Name     string
-	Stmt     Statement
+type ControlStructureBlock struct {
+	Location         *tokens.Token
+	Name             string
+	ControlStructure ControlStructure
 }
 
-func (s StatementBlock) Position() *tokens.Token { return s.Location }
-func (s StatementBlock) String() string {
-	return fmt.Sprintf("%s %s", s.Name, s.Stmt)
+func (s ControlStructureBlock) Position() *tokens.Token { return s.Location }
+func (s ControlStructureBlock) String() string {
+	return fmt.Sprintf("%s %s", s.Name, s.ControlStructure)
 }
 
 type Wrapper struct {

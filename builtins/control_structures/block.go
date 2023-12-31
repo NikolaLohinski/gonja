@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -12,27 +12,29 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type BlockStmt struct {
+type BlockControlStructure struct {
 	location *tokens.Token
 	name     string
 }
 
-func (stmt *BlockStmt) Position() *tokens.Token { return stmt.location }
-func (stmt *BlockStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("BlockStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *BlockControlStructure) Position() *tokens.Token {
+	return controlStructure.location
+}
+func (controlStructure *BlockControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("BlockControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (stmt *BlockStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
-	blocks := r.RootNode.GetBlocks(stmt.name)
+func (controlStructure *BlockControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	blocks := r.RootNode.GetBlocks(controlStructure.name)
 	block, blocks := blocks[0], blocks[1:]
 
 	if block == nil {
-		return errors.Errorf(`Unable to find block "%s"`, stmt.name)
+		return errors.Errorf(`Unable to find block "%s"`, controlStructure.name)
 	}
 
 	sub := r.Inherit()
-	infos := &BlockInfos{Block: stmt, Renderer: sub, Blocks: blocks}
+	infos := &BlockInfos{Block: controlStructure, Renderer: sub, Blocks: blocks}
 
 	sub.Environment.Context.Set("super", infos.super)
 	sub.Environment.Context.Set("self", exec.Self(sub))
@@ -46,7 +48,7 @@ func (stmt *BlockStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) erro
 }
 
 type BlockInfos struct {
-	Block    *BlockStmt
+	Block    *BlockControlStructure
 	Renderer *exec.Renderer
 	Blocks   []*nodes.Wrapper
 	Root     *nodes.Template
@@ -72,8 +74,8 @@ func (bi *BlockInfos) super() string {
 	return out.String()
 }
 
-func blockParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	block := &BlockStmt{
+func blockParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	block := &BlockControlStructure{
 		location: p.Current(),
 	}
 	if args.End() {

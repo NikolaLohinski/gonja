@@ -6,19 +6,19 @@ type Config struct {
 	BlockStartString string
 	// The string marking the end of a block. Defaults to '%}'.
 	BlockEndString string
-	// The string marking the beginning of a print statement. Defaults to '{{'.
+	// The string marking the beginning of a print controlStructure. Defaults to '{{'.
 	VariableStartString string
-	// The string marking the end of a print statement. Defaults to '}}'.
+	// The string marking the end of a print controlStructure. Defaults to '}}'.
 	VariableEndString string
 	// The string marking the beginning of a comment. Defaults to '{#'.
 	CommentStartString string
 	// The string marking the end of a comment. Defaults to '#}'.
 	CommentEndString string
-	// If given and a string, this will be used as prefix for line based statements.
-	// See also Line Statements.
-	LineStatementPrefix string
+	// If given and a string, this will be used as prefix for line based controlStructures.
+	// See also Line ControlStructures.
+	LineControlStructurePrefix string
 	// If given and a string, this will be used as prefix for line based comments.
-	// See also Line Statements.
+	// See also Line ControlStructures.
 	LineCommentPrefix string
 	// If set to True the XML/HTML autoescaping feature is enabled by default.
 	// For more details about autoescaping see Markup.

@@ -23,9 +23,9 @@ func init() {
 	DefaultLoader = loaders.MustNewFileSystemLoader("")
 	DefaultConfig = config.New()
 	DefaultEnvironment = &exec.Environment{
-		Context:    builtins.Globals,
-		Filters:    builtins.Filters,
-		Tests:      builtins.Tests,
-		Statements: builtins.Statements,
+		Context:           builtins.Globals,
+		Filters:           builtins.Filters,
+		Tests:             builtins.Tests,
+		ControlStructures: builtins.ControlStructures,
 	}
 }

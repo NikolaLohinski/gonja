@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -11,25 +11,25 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type ImportStmt struct {
+type ImportControlStructure struct {
 	location           *tokens.Token
 	filenameExpression nodes.Expression
 	as                 string
 	withContext        bool
 }
 
-func (stmt *ImportStmt) Position() *tokens.Token {
-	return stmt.location
+func (controlStructure *ImportControlStructure) Position() *tokens.Token {
+	return controlStructure.location
 }
 
-func (stmt *ImportStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("ImportStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *ImportControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("ImportControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (stmt *ImportStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (controlStructure *ImportControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 
-	filenameValue := r.Eval(stmt.filenameExpression)
+	filenameValue := r.Eval(controlStructure.filenameExpression)
 	if filenameValue.IsError() {
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
@@ -53,12 +53,12 @@ func (stmt *ImportStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) err
 		}
 		macros[name] = fn
 	}
-	r.Environment.Context.Set(stmt.as, macros)
+	r.Environment.Context.Set(controlStructure.as, macros)
 
 	return nil
 }
 
-type FromImportStmt struct {
+type FromImportControlStructure struct {
 	location           *tokens.Token
 	FilenameExpression nodes.Expression
 	WithContext        bool
@@ -67,18 +67,18 @@ type FromImportStmt struct {
 	Macros             map[string]*nodes.Macro // alias/name -> macro instance
 }
 
-func (stmt *FromImportStmt) Position() *tokens.Token {
-	return stmt.location
+func (controlStructure *FromImportControlStructure) Position() *tokens.Token {
+	return controlStructure.location
 }
 
-func (stmt *FromImportStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("FromImportStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *FromImportControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("FromImportControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (stmt *FromImportStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (controlStructure *FromImportControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 
-	filenameValue := r.Eval(stmt.FilenameExpression)
+	filenameValue := r.Eval(controlStructure.FilenameExpression)
 	if filenameValue.IsError() {
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
@@ -95,7 +95,7 @@ func (stmt *FromImportStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock)
 	}
 
 	imported := template.Macros()
-	for alias, name := range stmt.As {
+	for alias, name := range controlStructure.As {
 		node := imported[name]
 		fn, err := exec.MacroNodeToFunc(node, r)
 		if err != nil {
@@ -106,8 +106,8 @@ func (stmt *FromImportStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock)
 	return nil
 }
 
-func importParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &ImportStmt{
+func importParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &ImportControlStructure{
 		location: p.Current(),
 		// Macros:   map[string]*nodes.Macro{},
 	}
@@ -120,7 +120,7 @@ func importParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error
 	if err != nil {
 		return nil, err
 	}
-	stmt.filenameExpression = expression
+	controlStructure.filenameExpression = expression
 	if args.MatchName("as") == nil {
 		return nil, args.Error(`Expected "as" keyword`, args.Current())
 	}
@@ -129,20 +129,20 @@ func importParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error
 	if alias == nil {
 		return nil, args.Error("Expected macro alias name (identifier)", args.Current())
 	}
-	stmt.as = alias.Val
+	controlStructure.as = alias.Val
 
 	if tok := args.MatchName("with", "without"); tok != nil {
 		if args.MatchName("context") != nil {
-			stmt.withContext = tok.Val == "with"
+			controlStructure.withContext = tok.Val == "with"
 		} else {
 			args.Stream().Backup()
 		}
 	}
-	return stmt, nil
+	return controlStructure, nil
 }
 
-func fromParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &FromImportStmt{
+func fromParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &FromImportControlStructure{
 		location: p.Current(),
 		As:       map[string]string{},
 	}
@@ -155,7 +155,7 @@ func fromParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 	if err != nil {
 		return nil, err
 	}
-	stmt.FilenameExpression = filename
+	controlStructure.FilenameExpression = filename
 
 	if args.MatchName("import") == nil {
 		return nil, args.Error("Expected import keyword", args.Current())
@@ -174,14 +174,14 @@ func fromParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 				return nil, args.Error("Expected macro alias name (identifier).", nil)
 			}
 			// asName = aliasToken.Val
-			stmt.As[alias.Val] = name.Val
+			controlStructure.As[alias.Val] = name.Val
 		} else {
-			stmt.As[name.Val] = name.Val
+			controlStructure.As[name.Val] = name.Val
 		}
 
 		if tok := args.MatchName("with", "without"); tok != nil {
 			if args.MatchName("context") != nil {
-				stmt.WithContext = tok.Val == "with"
+				controlStructure.WithContext = tok.Val == "with"
 				break
 			} else {
 				args.Stream().Backup()
@@ -197,7 +197,7 @@ func fromParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) 
 		}
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -11,19 +11,21 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type IfStmt struct {
+type IfControlStructure struct {
 	location   *tokens.Token
 	conditions []nodes.Expression
 	wrappers   []*nodes.Wrapper
 }
 
-func (stmt *IfStmt) Position() *tokens.Token { return stmt.location }
-func (stmt *IfStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("IfStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *IfControlStructure) Position() *tokens.Token {
+	return controlStructure.location
+}
+func (controlStructure *IfControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("IfControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (node *IfStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (node *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	for i, condition := range node.conditions {
 		result := r.Eval(condition)
 		if result.IsError() {
@@ -41,12 +43,12 @@ func (node *IfStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
 	return nil
 }
 
-func ifParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
+func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
 	log.WithFields(log.Fields{
 		"arg":     args.Current(),
 		"current": p.Current(),
 	}).Trace("ParseIf")
-	ifNode := &IfStmt{
+	ifNode := &IfControlStructure{
 		location: args.Current(),
 	}
 

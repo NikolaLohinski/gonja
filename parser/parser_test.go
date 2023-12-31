@@ -26,7 +26,7 @@ var _ = Context("parser", func() {
 	)
 	JustBeforeEach(func() {
 		stream := tokens.Lex(*input)
-		returnedTemplate, *returnedError = parser.NewParser("tests", stream, config.New(), loaders.MustNewFileSystemLoader(""), builtins.Statements).Parse()
+		returnedTemplate, *returnedError = parser.NewParser("tests", stream, config.New(), loaders.MustNewFileSystemLoader(""), builtins.ControlStructures).Parse()
 	})
 	for _, testCase := range []struct {
 		description  string

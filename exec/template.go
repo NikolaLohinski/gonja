@@ -43,7 +43,7 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 		environment: environment,
 	}
 
-	t.parser = parser.NewParser(identifier, t.tokens, config, loader, environment.Statements)
+	t.parser = parser.NewParser(identifier, t.tokens, config, loader, environment.ControlStructures)
 
 	root, err := t.parser.Parse()
 	if err != nil {
@@ -59,10 +59,10 @@ func (t *Template) Execute(ctx *Context) (string, error) {
 	var output strings.Builder
 
 	renderer := NewRenderer(&Environment{
-		Tests:      t.environment.Tests,
-		Filters:    t.environment.Filters,
-		Statements: t.environment.Statements,
-		Context:    t.environment.Context.Inherit().Update(ctx),
+		Tests:             t.environment.Tests,
+		Filters:           t.environment.Filters,
+		ControlStructures: t.environment.ControlStructures,
+		Context:           t.environment.Context.Inherit().Update(ctx),
 	}, &output, t.config, t.loader, t)
 
 	err := renderer.Execute()

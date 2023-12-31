@@ -6,10 +6,10 @@ import (
 )
 
 type Environment struct {
-	Filters    FilterSet
-	Statements StatementSet
-	Tests      TestSet
-	Context    *Context
+	Filters           FilterSet
+	ControlStructures ControlStructureSet
+	Tests             TestSet
+	Context           *Context
 }
 
 type FilterSet map[string]FilterFunction
@@ -49,10 +49,10 @@ func (fs *FilterSet) Update(other FilterSet) FilterSet {
 	return *fs
 }
 
-type StatementSet map[string]parser.StatementParser
+type ControlStructureSet map[string]parser.ControlStructureParser
 
 // Exists returns true if the given test is already registered
-func (ss StatementSet) Exists(name string) bool {
+func (ss ControlStructureSet) Exists(name string) bool {
 	_, existing := ss[name]
 	return existing
 }
@@ -60,12 +60,12 @@ func (ss StatementSet) Exists(name string) bool {
 // Registers a new tag. You usually want to call this
 // function in the tag's init() function:
 // http://golang.org/doc/effective_go.html#init
-func (ss *StatementSet) Register(name string, parser parser.StatementParser) error {
+func (ss *ControlStructureSet) Register(name string, parser parser.ControlStructureParser) error {
 	if ss.Exists(name) {
-		return errors.Errorf("Statement '%s' is already registered", name)
+		return errors.Errorf("ControlStructure '%s' is already registered", name)
 	}
 	(*ss)[name] = parser
-	// &statement{
+	// &controlStructure{
 	// 	name:   name,
 	// 	parser: parserFn,
 	// }
@@ -74,19 +74,19 @@ func (ss *StatementSet) Register(name string, parser parser.StatementParser) err
 
 // Replaces an already registered tag with a new implementation. Use this
 // function with caution since it allows you to change existing tag behaviour.
-func (ss *StatementSet) Replace(name string, parser parser.StatementParser) error {
+func (ss *ControlStructureSet) Replace(name string, parser parser.ControlStructureParser) error {
 	if !ss.Exists(name) {
-		return errors.Errorf("Statement '%s' does not exist (therefore cannot be overridden)", name)
+		return errors.Errorf("ControlStructure '%s' does not exist (therefore cannot be overridden)", name)
 	}
 	(*ss)[name] = parser
-	// statements[name] = &statement{
+	// controlStructures[name] = &controlStructure{
 	// 	name:   name,
 	// 	parser: parserFn,
 	// }
 	return nil
 }
 
-func (ss *StatementSet) Update(other StatementSet) StatementSet {
+func (ss *ControlStructureSet) Update(other ControlStructureSet) ControlStructureSet {
 	for name, parser := range other {
 		(*ss)[name] = parser
 	}

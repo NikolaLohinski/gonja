@@ -21,9 +21,9 @@ import (
 //
 // (See Token's documentation for more about tokens)
 type Parser struct {
-	identifier string
-	stream     *tokens.Stream
-	statements map[string]StatementParser
+	identifier        string
+	stream            *tokens.Stream
+	controlStructures map[string]ControlStructureParser
 
 	Config   *config.Config
 	Template *nodes.Template
@@ -37,13 +37,13 @@ func (p *Parser) Stream() *tokens.Stream {
 // Creates a new parser to parse tokens.
 // Used inside gonja to parse documents and to provide an easy-to-use
 // parser for tag authors
-func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, statements map[string]StatementParser) *Parser {
+func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, controlStructures map[string]ControlStructureParser) *Parser {
 	return &Parser{
-		identifier: identifier,
-		stream:     stream,
-		statements: statements,
-		Config:     cfg,
-		Loader:     loader,
+		identifier:        identifier,
+		stream:            stream,
+		controlStructures: controlStructures,
+		Config:            cfg,
+		Loader:            loader,
 	}
 }
 
@@ -158,7 +158,7 @@ func (p *Parser) WrapUntil(names ...string) (*nodes.Wrapper, *Parser, error) {
 							data.Trim = data.Trim || len(end.Val) > 0 && end.Val[0] == '-'
 						}
 						stream := tokens.NewStream(args)
-						return wrapper, NewParser(p.identifier, stream, p.Config, p.Loader, p.statements), nil
+						return wrapper, NewParser(p.identifier, stream, p.Config, p.Loader, p.controlStructures), nil
 					}
 					if p.End() || p.Current(tokens.EOF) != nil {
 						return nil, nil, p.Error("Unexpected EOF.", p.Current())
@@ -206,7 +206,7 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 	case tokens.VariableBegin:
 		return p.ParseExpressionNode()
 	case tokens.BlockBegin:
-		return p.ParseStatementBlock()
+		return p.ParseControlStructureBlock()
 	}
 	return nil, p.Error("Unexpected token (only HTML/tags/filters in templates allowed)", t)
 }
@@ -248,11 +248,11 @@ func (p *Parser) Extend(identifier string) (*nodes.Template, error) {
 	}
 
 	parser := &Parser{
-		identifier: identifier,
-		stream:     tokens.Lex(source.String()),
-		statements: p.statements,
-		Config:     p.Config.Inherit(),
-		Loader:     loader,
+		identifier:        identifier,
+		stream:            tokens.Lex(source.String()),
+		controlStructures: p.controlStructures,
+		Config:            p.Config.Inherit(),
+		Loader:            loader,
 	}
 	return parser.Parse()
 }

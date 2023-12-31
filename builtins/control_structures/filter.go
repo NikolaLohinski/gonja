@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	// "bytes"
@@ -15,19 +15,21 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type FilterStmt struct {
+type FilterControlStructure struct {
 	position    *tokens.Token
 	bodyWrapper *nodes.Wrapper
 	filterChain []*nodes.FilterCall
 }
 
-func (stmt *FilterStmt) Position() *tokens.Token { return stmt.position }
-func (stmt *FilterStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("FilterStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *FilterControlStructure) Position() *tokens.Token {
+	return controlStructure.position
+}
+func (controlStructure *FilterControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("FilterControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (node *FilterStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) error {
+func (node *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	var out strings.Builder
 	sub := r.Inherit()
 	sub.Output = &out
@@ -53,8 +55,8 @@ func (node *FilterStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) err
 	return err
 }
 
-func filterParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &FilterStmt{
+func filterParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &FilterControlStructure{
 		position: p.Current(),
 	}
 
@@ -62,7 +64,7 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error
 	if err != nil {
 		return nil, err
 	}
-	stmt.bodyWrapper = wrapper
+	controlStructure.bodyWrapper = wrapper
 
 	for !args.End() {
 		filterCall, err := args.ParseFilter()
@@ -70,7 +72,7 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error
 			return nil, err
 		}
 
-		stmt.filterChain = append(stmt.filterChain, filterCall)
+		controlStructure.filterChain = append(controlStructure.filterChain, filterCall)
 
 		if args.Match(tokens.Pipe) == nil {
 			break
@@ -81,7 +83,7 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error
 		return nil, p.Error("Malformed filter-tag args.", nil)
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {

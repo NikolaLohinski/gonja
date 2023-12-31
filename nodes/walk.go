@@ -71,6 +71,6 @@ func Inspect(node Node, f func(Node) bool) {
 // func (v *NoOpVisitor) Output(node *Output) error {
 // 	return nil
 // }
-// func (v *NoOpVisitor) Statement(node *Statement) error {
+// func (v *NoOpVisitor) ControlStructure(node *ControlStructure) error {
 // 	return nil
 // }

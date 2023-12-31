@@ -37,15 +37,15 @@ type Lexer struct {
 	Line  int    // Current line in the input
 	Col   int    // Current position in the line
 	// Position Position // Current lexing position in the input
-	Config        *config.Config // The lexer configuration
-	Tokens        chan *Token    // channel of scanned tokens.
-	delimiters    []rune
-	RawStatements rawStmt
-	rawEnd        *regexp.Regexp
+	Config               *config.Config // The lexer configuration
+	Tokens               chan *Token    // channel of scanned tokens.
+	delimiters           []rune
+	RawControlStructures rawControlStructure
+	rawEnd               *regexp.Regexp
 }
 
 // TODO: set from env
-type rawStmt map[string]*regexp.Regexp
+type rawControlStructure map[string]*regexp.Regexp
 
 func escape_chars_clashing_regexp(s string) string {
 	s = strings.ReplaceAll(s, "[", "\\[")
@@ -60,7 +60,7 @@ func NewLexer(input string) *Lexer {
 		Input:  input,
 		Tokens: make(chan *Token),
 		Config: cfg,
-		RawStatements: rawStmt{
+		RawControlStructures: rawControlStructure{
 			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escape_chars_clashing_regexp(cfg.BlockStartString))),
 			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escape_chars_clashing_regexp(cfg.BlockStartString))),
 		},
@@ -254,7 +254,7 @@ func (l *Lexer) remaining() string {
 func (l *Lexer) lexRaw() lexFn {
 	loc := l.rawEnd.FindStringIndex(l.remaining())
 	if loc == nil {
-		return l.errorf(`Unable to find raw closing statement`)
+		return l.errorf(`Unable to find raw closing controlStructure`)
 	}
 	l.Pos += loc[0]
 	l.emit(Data)
@@ -307,9 +307,9 @@ func (l *Lexer) lexBlock() lexFn {
 	if len(l.Current()) > 0 {
 		l.emit(Whitespace)
 	}
-	stmt := l.nextIdentifier()
+	controlStructure := l.nextIdentifier()
 	l.emit(Name)
-	re, exists := l.RawStatements[stmt]
+	re, exists := l.RawControlStructures[controlStructure]
 	if exists {
 		l.rawEnd = re
 	}

@@ -39,10 +39,10 @@ func (r *Renderer) Inherit() *Renderer {
 	sub := &Renderer{
 		Config: r.Config.Inherit(),
 		Environment: &Environment{
-			Context:    r.Environment.Context.Inherit(),
-			Tests:      r.Environment.Tests,
-			Filters:    r.Environment.Filters,
-			Statements: r.Environment.Statements,
+			Context:           r.Environment.Context.Inherit(),
+			Tests:             r.Environment.Tests,
+			Filters:           r.Environment.Filters,
+			ControlStructures: r.Environment.ControlStructures,
 		},
 		Template: r.Template,
 		RootNode: r.RootNode,
@@ -99,11 +99,11 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 
 		}
 		return nil, err
-	case *nodes.StatementBlock:
-		stmt, ok := n.Stmt.(Statement)
+	case *nodes.ControlStructureBlock:
+		controlStructure, ok := n.ControlStructure.(ControlStructure)
 		if ok {
-			if err := stmt.Execute(r, n); err != nil {
-				return nil, errors.Wrapf(err, `Unable to execute statement at line %d: %s`, n.Stmt.Position().Line, n.Stmt)
+			if err := controlStructure.Execute(r, n); err != nil {
+				return nil, errors.Wrapf(err, `Unable to execute controlStructure at line %d: %s`, n.ControlStructure.Position().Line, n.ControlStructure)
 			}
 		}
 		return nil, nil

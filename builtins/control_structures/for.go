@@ -1,4 +1,4 @@
-package statements
+package controlStructures
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-type ForStmt struct {
+type ForControlStructure struct {
 	key             string
 	value           string // only for maps: for key, value in map
 	objectEvaluator nodes.Expression
@@ -20,10 +20,12 @@ type ForStmt struct {
 	emptyWrapper *nodes.Wrapper
 }
 
-func (stmt *ForStmt) Position() *tokens.Token { return stmt.bodyWrapper.Position() }
-func (stmt *ForStmt) String() string {
-	t := stmt.Position()
-	return fmt.Sprintf("ForStmt(Line=%d Col=%d)", t.Line, t.Col)
+func (controlStructure *ForControlStructure) Position() *tokens.Token {
+	return controlStructure.bodyWrapper.Position()
+}
+func (controlStructure *ForControlStructure) String() string {
+	t := controlStructure.Position()
+	return fmt.Sprintf("ForControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
 type LoopInfos struct {
@@ -51,7 +53,7 @@ func (li *LoopInfos) Changed(value *exec.Value) bool {
 	return !same
 }
 
-func (node *ForStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) (forError error) {
+func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) (forError error) {
 	obj := r.Eval(node.objectEvaluator)
 	if obj.IsError() {
 		return obj
@@ -162,8 +164,8 @@ func (node *ForStmt) Execute(r *exec.Renderer, tag *nodes.StatementBlock) (forEr
 	return forError
 }
 
-func forParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
-	stmt := &ForStmt{}
+func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	controlStructure := &ForControlStructure{}
 
 	// Arguments parsing
 	var valueToken *tokens.Token
@@ -188,10 +190,10 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	stmt.objectEvaluator = objectEvaluator
-	stmt.key = keyToken.Val
+	controlStructure.objectEvaluator = objectEvaluator
+	controlStructure.key = keyToken.Val
 	if valueToken != nil {
-		stmt.value = valueToken.Val
+		controlStructure.value = valueToken.Val
 	}
 
 	if args.MatchName("if") != nil {
@@ -199,7 +201,7 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 		if err != nil {
 			return nil, err
 		}
-		stmt.ifCondition = ifCondition
+		controlStructure.ifCondition = ifCondition
 	}
 
 	if !args.End() {
@@ -211,26 +213,26 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.Statement, error) {
 	if err != nil {
 		return nil, err
 	}
-	stmt.bodyWrapper = wrapper
+	controlStructure.bodyWrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
 	}
 
 	if wrapper.EndTag == "else" {
-		// if there's an else in the if-statement, we need the else-Block as well
+		// if there's an else in the if-controlStructure, we need the else-Block as well
 		wrapper, endargs, err = p.WrapUntil("endfor")
 		if err != nil {
 			return nil, err
 		}
-		stmt.emptyWrapper = wrapper
+		controlStructure.emptyWrapper = wrapper
 
 		if !endargs.End() {
 			return nil, endargs.Error("Arguments not allowed here.", nil)
 		}
 	}
 
-	return stmt, nil
+	return controlStructure, nil
 }
 
 func init() {
