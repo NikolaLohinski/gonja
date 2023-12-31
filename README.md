@@ -46,10 +46,10 @@ func main() {
 
 * For a details on how the template language works, please refer to [the Jinja documentation](https://jinja.palletsprojects.com) ;
 * `gonja` API documentation is available on [godoc](https://godoc.org/github.com/nikolalohinski/gonja/v2) ;
-* `filters`: please refer to [`docs/filters.md`](docs/filters.md) ;
-* `statements`: please take a look at [`docs/statements.md`](docs/statements.md) ;
-* `tests`: please see [`docs/tests.md`](docs/tests.md) ;
-* `globals`: please browse through [`docs/globals.md`](docs/globals.md).
+* filters: please refer to [`docs/filters.md`](docs/filters.md) ;
+* control structures: please take a look at [`docs/control_structures.md`](docs/control_structures.md) ;
+* tests: please see [`docs/tests.md`](docs/tests.md) ;
+* global functions: please browse through [`docs/global_functions.md`](docs/global_functions.md).
 
 ## Limitations 
 

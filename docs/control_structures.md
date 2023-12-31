@@ -1,19 +1,17 @@
-## Statements
+## Control Structures
 
-This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _statement_  (or _control structure_) is a special keyword that can be used in block to achieve conditional logic in a template.
+This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _control structure_) is a special keyword that can be used in block to achieve conditional logic in a template.
 
-Any statement that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
+The following clickable admonition can be used to browse the `python` dedicated documentation for additional details:
 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-control-structures) |
-| --- |
+| ---------------------------------------------------------------------------------------------- |
 
-Which can be used to browse the `python` dedicated documentation for additional details.
-
-### The `if` statement
+### The `if` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#if) |
-| --- |
+| ---------------------------------------------------------------------- |
 
-The `if` statement in Jinja is comparable with `python`'s `if` statement.
+The `if` control structure in Jinja is comparable with `python`'s `if` control structure.
 
 ```
 {% if kenny.sick %}
@@ -25,9 +23,9 @@ The `if` statement in Jinja is comparable with `python`'s `if` statement.
 {% endif %}
 ```
 
-### The `set` statement
+### The `set` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments) |
-| --- |
+| ------------------------------------------------------------------------------- |
 
 Inside code blocks, you can also assign values to variables:
 
@@ -38,9 +36,9 @@ Inside code blocks, you can also assign values to variables:
 
 For more details on scoping especially within a `for` loop, please refer to the `python` [implementation documentation](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments).
 
-### The `for` statement
+### The `for` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#for) |
-| --- |
+| ----------------------------------------------------------------------- |
 
 Loop over each item in a sequence. For example, to display a list of users provided in a variable called users:
 
@@ -52,7 +50,7 @@ Loop over each item in a sequence. For example, to display a list of users provi
 </ul>
 ```
 
-The `for` statement can also iterate over dictionaries, and return a key/value pair:
+The `for` control structure can also iterate over dictionaries, and return a key/value pair:
 ```html
 <ul>
 {% for key, value in {"one": 1, "two": 2} %}
@@ -65,9 +63,9 @@ For more details on the special variables available within the loop, please refe
 
 
 
-### The `include` statement
+### The `include` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#include) |
-| --- |
+| --------------------------------------------------------------------------- |
 
 The include tag is useful to include a template and return the rendered contents of that file into the current namespace:
 
@@ -77,11 +75,11 @@ The include tag is useful to include a template and return the rendered contents
 {% include 'footer.html' %}
 ```
 
-### The `with` statement
-| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-statement) |
-| --- |
+### The `with` control structure
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-control structure) |
+| ---------------------------------------------------------------------------------- |
 
-The with statement makes it possible to create a new inner scope. Variables set within this scope are not visible outside of the scope.
+The with control structure makes it possible to create a new inner scope. Variables set within this scope are not visible outside of the scope.
 
 ```
 {% with foo = 42 %}
@@ -96,9 +94,9 @@ Which is equivalent to:
 {% endwith %}
 ```
 
-### The `filter` statement
+### The `filter` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#id11) |
-|-------------|
+| ------------------------------------------------------------------------ |
 
 Filter sections allow you to apply regular Jinja filters on a full node of template data. It just wraps the code in the special `filter` section:
 
@@ -109,11 +107,11 @@ Filter sections allow you to apply regular Jinja filters on a full node of templ
 ```
 
 
-### The `raw` statement
+### The `raw` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#escaping) |
-| --- |
+| ---------------------------------------------------------------------------- |
 
-It is sometimes desirable – even necessary – to have Jinja ignore parts it would otherwise handle as variables or blocks and is possible with the `raw` statement:
+It is sometimes desirable – even necessary – to have Jinja ignore parts it would otherwise handle as variables or blocks and is possible with the `raw` control structure:
 ```html
 {% raw %}
     <ul>
@@ -124,9 +122,9 @@ It is sometimes desirable – even necessary – to have Jinja ignore parts it w
 {% endraw %}
 ```
 
-### The `block` and `extends` statements
+### The `block` and `extends` control structures
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#child-template) |
-| --- |
+| ---------------------------------------------------------------------------------- |
 
 The most powerful part of Jinja is template inheritance. Template inheritance allows you to build a base “skeleton” template that contains all the common elements of your site and defines blocks that child templates can override.
 
@@ -173,11 +171,11 @@ A child template might look like this:
 
 The `{% extends %}` tag is the key here. It tells the template engine that this template “extends” another template. When the template system evaluates this template, it first locates the parent. The extends tag should be the first tag in the template. Everything before it is printed out normally and may cause confusion. Also a block will always be filled in regardless of whether the surrounding condition is evaluated to be `True` or `False`.
 
-### The `import` and `macro` statements
+### The `import` and `macro` control structures
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#import) |
-| --- |
+| -------------------------------------------------------------------------- |
 
-Jinja supports putting often used code into macros. Macros are comparable with functions in regular programming languages. They are useful to put often used idioms into reusable functions to not repeat yourself (“DRY”). These macros can go into different templates and get imported from there. This works similarly to the `import` statements in Python.
+Jinja supports putting often used code into macros. Macros are comparable with functions in regular programming languages. They are useful to put often used idioms into reusable functions to not repeat yourself (“DRY”). These macros can go into different templates and get imported from there. This works similarly to the `import` control structures in Python.
 
 
 ```html
@@ -220,8 +218,8 @@ Alternatively, you can `import` specific names from a template into the current 
 ```
 Included templates have access to the variables of the active context by default.
 
-### The `autoescape` statement
+### The `autoescape` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#autoescape-overrides) |
-| --- |
+| ---------------------------------------------------------------------------------------- |
 
 If you want you can activate and deactivate the autoescaping from within the templates.

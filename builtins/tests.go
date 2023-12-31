@@ -1,7 +1,6 @@
 package builtins
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -40,7 +39,6 @@ var Tests = exec.TestSet{
 	"string":      testString,
 	"undefined":   testUndefined,
 	"upper":       testUpper,
-	"empty":       testEmpty,
 }
 
 func testCallable(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -171,12 +169,4 @@ func testUpper(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, e
 		return false, nil
 	}
 	return strings.ToUpper(in.String()) == in.String(), nil
-}
-
-func testEmpty(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	if !in.IsList() && !in.IsDict() && !in.IsString() {
-		return false, exec.AsValue(fmt.Errorf("test 'empty' can only be called for list, map or string"))
-	} else {
-		return in.Len() == 0, nil
-	}
 }

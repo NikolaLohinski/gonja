@@ -1,6 +1,0 @@
-"": True
-"nope": False
-[]: True
-["one"]: False
-{}: True
-{"a": "b"}: False

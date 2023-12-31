@@ -1,4 +1,4 @@
-## Globals
+## Global Functions
 
 Globals (or _global functions_) are helpers available in the global scope by default.
 
@@ -8,22 +8,21 @@ counting {{ index + 1 }}
 {% endfor %}
 ```
 
-Any global function that is also implemented in the `python` version of the Jinja engine will be marked with the following clickable admonition:
+The following clickable admonition can be used to browse the `python` dedicated documentation for additional details:
 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-global-functions) |
-| --- |
+| -------------------------------------------------------------------------------------------- |
 
-Which can be used to browse the `python` dedicated documentation for additional details.
 
 ### The `dict` function      
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.dict) |
-| --- |
+| -------------------------------------------------------------------------------------- |
 
 A convenient alternative to dict literals. `{'foo': 'bar'}` is the same as `dict(foo='bar')`.
 
 ### The `namespace` function 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.namespace) |
-| --- |
+| ------------------------------------------------------------------------------------------- |
 
 Creates a new container that allows attribute assignment using the `{% set %}` tag:
 
@@ -47,13 +46,13 @@ Found item having something: {{ ns.found }}
 
 ### The `range` function     
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.range) |
-| --- |
+| --------------------------------------------------------------------------------------- |
 
 Return a list containing an arithmetic progression of integers. `range(i, j)` returns _[i, i+1, i+2, ..., j-1]_; the `start` (!) defaults to `0`. When a `step` is given, it specifies the increment (or decrement). For example, `range(4)` and `range(0, 4, 1)` return _[0, 1, 2, 3]_.
 
 ### The `cycler` function
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.cycler) |
-| --- |
+| ---------------------------------------------------------------------------------------- |
 
 Cycle through values by yielding them one at a time, then restarting once the end is reached.
 
@@ -73,7 +72,7 @@ Similar to `loop.cycle`, but can be used outside loops or across multiple loops.
 
 ### The `joiner` function    
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.joiner) |
-| --- |
+| ---------------------------------------------------------------------------------------- |
 
 A tiny helper that can be used to “join” multiple sections. A `joiner` is passed a string and will return that string every time it’s called, except the first time (in which case it returns an empty string). You can use this to join things:
 
@@ -86,12 +85,12 @@ A tiny helper that can be used to “join” multiple sections. A `joiner` is pa
     Author: {{ author() }}
 {% endif %}
 {% if can_edit %} {{ pipe() }}
-    <a href="?action=edit">Edit</a>
+    <a href="?action=edit">Edit</a>CreatePipelineService
 {% endif %}
 ```
 
 ### The `lipsum` function    
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.lipsum) |
-| --- |
+| ---------------------------------------------------------------------------------------- |
 
 Generates some lorem ipsum for the template. By default, five paragraphs of HTML are generated with each paragraph between 20 and 100 words. If html is False, regular text is returned. This is useful to generate simple contents for layout testing.
