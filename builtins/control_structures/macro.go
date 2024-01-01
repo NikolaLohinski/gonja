@@ -108,7 +108,3 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 
 	return &MacroControlStructure{controlStructure}, nil
 }
-
-func init() {
-	All.Register("macro", macroParser)
-}

@@ -199,8 +199,3 @@ func fromParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, 
 
 	return controlStructure, nil
 }
-
-func init() {
-	All.Register("import", importParser)
-	All.Register("from", fromParser)
-}

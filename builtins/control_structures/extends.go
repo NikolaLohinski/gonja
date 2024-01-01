@@ -65,7 +65,3 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 
 	return controlStructure, nil
 }
-
-func init() {
-	All.Register("extends", extendsParser)
-}

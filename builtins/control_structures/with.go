@@ -80,7 +80,3 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, 
 
 	return controlStructure, nil
 }
-
-func init() {
-	All.Register("with", withParser)
-}

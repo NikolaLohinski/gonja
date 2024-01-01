@@ -3,7 +3,7 @@
 <h1><code>gonja</code></h1>
 </div>
 
-`gonja` is a pure `go` implementation of the [Jinja template engine](https://jinja.palletsprojects.com/). It aims to be _mostly_ compatible with the original `python` implementation but also provides additional features to compensate the lack of `python` scripting capabilities.
+`gonja` is a pure `go` implementation of the [Jinja template engine](https://jinja.palletsprojects.com/). It aims to be compatible with the original `python` implementation as closely as possible.
 
 ## Usage
 
@@ -27,22 +27,18 @@ import (
 	"fmt"
 
 	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/loaders"
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
 func main() {
-	loader, err := loaders.NewMemoryLoader(map[string]string{"/_": "Hello {{ name | capitalize }}!"})
+	template, err := gonja.FromString("Hello {{ name | capitalize }}!")
 	if err != nil {
 		panic(err)
 	}
 
-	template, err := exec.NewTemplate("/_", gonja.DefaultConfig, loader, gonja.DefaultEnvironment)
-	if err != nil {
-		panic(err)
-	}
-	
-	out, err := template.Execute(exec.NewContext(map[string]interface{}{"name": "bob"}))
+	out, err := template.Execute(exec.NewContext(map[string]interface{}{
+		"name": "bob",
+	}))
 	if err != nil {
 		panic(err)
 	}
@@ -60,10 +56,9 @@ func main() {
 * **tests**: please see [`docs/tests.md`](docs/tests.md) ;
 * **global functions**: please browse through [`docs/global_functions.md`](docs/global_functions.md).
 
-
 ## Migrating from `v1` to `v2`
 
-As this project now aims to reproduce the behavior of the `python` Jinja engine as closely as possible, some backwards incompatible changes have been made from the initial draft and need to be taken into account when upgrading from `v1.X.X`. Therefore, no `v1.X.X` versions will be maintained.
+As this project now aims to reproduce the behavior of the `python` Jinja engine as closely as possible, some backwards incompatible changes have been made from the initial draft and need to be taken into account when upgrading from `v1.X.X`. Moreover, please do note that `v1.X.X` versions are not maintained.
 
 The following steps can be used as general guidelines to migrate from `v1` to `v2`:
 
@@ -72,9 +67,9 @@ The following steps can be used as general guidelines to migrate from `v1` to `v
 	* `DefaultEnv` function is now called `DefaultEnvironment` and its properties have changed. See [gonja.go](./gonja.go) and [exec/environment.go](./exec/environment.go) for details.
 	* `FromCache` function has been removed as caching logic was removed. If required, it can be done by implementing a custom `Loader` (see [`loaders/loader.go`](./loaders/loader.go)).
 	* `Globals` is now referred to as `DefaultContext`
-* What was called a `Statement` is now referred to as `ControlStructure` to be closer to `python`'s Jinja glossary and may require changes
-* What was called `Globals` is now called `GlobalFunctions` to be closer to `python`'s Jinja glossary and may require changes
-
+* What was called a `Statement` is now referred to as `ControlStructure` to be closer to `python`'s Jinja glossary and may require changes in consumer code
+* What was called `Globals` is now called `GlobalFunctions` to be closer to `python`'s Jinja glossary and may require changes in consumer code
+* All non-python built-ins have been removed from `gonja`. They have been moved to the [`terraform-provider-jinja` code base](https://github.com/NikolaLohinski/terraform-provider-jinja). They can be brought back as needed by adding the `github.com/NikolaLohinski/terraform-provider-jinja/lib` dependency, and updating the global variables defined in [`builtins/`](./builtins/) with the available methods for each (see [`exec/environment.go`](./exec/environment.go) for details).
 
 ## Limitations 
 

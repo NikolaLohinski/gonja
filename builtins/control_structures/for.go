@@ -234,7 +234,3 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 
 	return controlStructure, nil
 }
-
-func init() {
-	All.Register("for", forParser)
-}

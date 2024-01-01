@@ -118,7 +118,3 @@ func blockParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 	block.name = name.Val
 	return block, nil
 }
-
-func init() {
-	All.Register("block", blockParser)
-}

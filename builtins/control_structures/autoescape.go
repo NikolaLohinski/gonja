@@ -61,7 +61,3 @@ func autoescapeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStruc
 
 	return controlStructure, nil
 }
-
-func init() {
-	All.Register("autoescape", autoescapeParser)
-}

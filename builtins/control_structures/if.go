@@ -96,7 +96,3 @@ func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, er
 
 	return ifNode, nil
 }
-
-func init() {
-	All.Register("if", ifParser)
-}
