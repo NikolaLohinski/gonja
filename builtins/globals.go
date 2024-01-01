@@ -7,7 +7,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/utils"
 )
 
-var Globals = exec.NewContext(map[string]interface{}{
+var GlobalFunctions = exec.NewContext(map[string]interface{}{
 	"cycler":    Cycler,
 	"dict":      Dict,
 	"joiner":    Joiner,

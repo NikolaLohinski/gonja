@@ -14,12 +14,6 @@ type Config struct {
 	CommentStartString string
 	// The string marking the end of a comment. Defaults to '#}'.
 	CommentEndString string
-	// If given and a string, this will be used as prefix for line based controlStructures.
-	// See also Line ControlStructures.
-	LineControlStructurePrefix string
-	// If given and a string, this will be used as prefix for line based comments.
-	// See also Line ControlStructures.
-	LineCommentPrefix string
 	// If set to True the XML/HTML autoescaping feature is enabled by default.
 	// For more details about autoescaping see Markup.
 	// This can also be a callable that is passed the template name

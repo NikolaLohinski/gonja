@@ -36,3 +36,4 @@ tpl-error.out
 *.error
 /profile
 /coverage.out
+vendor
