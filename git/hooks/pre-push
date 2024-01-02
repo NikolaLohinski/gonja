@@ -5,11 +5,11 @@ do
     case $rref in
         refs/tags/*)
             if echo "$rref" | \
-                grep -qsE '(^refs/tags/v[0-9]+.[0-9]+.[0-9]+$)'
+                grep -qsE '(^refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$)'
             then
                 ginkgo run -tags=version -p ./...
             else
-                echo "'$rref' does not match '^refs/tags/v[0-9]+.[0-9]+.[0-9]+$'"
+                echo "'$rref' does not match '^refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc\.[0-9]+)?$'"
                 exit 1
             fi;;
         *)
