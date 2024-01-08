@@ -502,9 +502,6 @@ func (e *Evaluator) evalVariable(node *nodes.Variable) (*Value, error) {
 							current.Kind().String(), node.String())
 					}
 				case nodes.VarTypeIdent:
-					// debugging:
-					// fmt.Printf("now = %s (kind: %s)\n", part.s, current.Kind().String())
-
 					// Calling a field or key
 					switch current.Kind() {
 					case reflect.Struct:

@@ -128,4 +128,92 @@ var _ = Context("config", func() {
 			})
 		})
 	})
+	Context("when toggling Config.TrimBlocks behavior", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					Some text
+					{%- set block_example = "test" %}
+
+					{{ "The empty line should have been removed" }}
+					
+					The empty line above should stay
+				`),
+			})
+		})
+		Context("when Config.TrimBlock = false", func() {
+			BeforeEach(func() {
+				(*configuration).TrimBlocks = false
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff(heredoc.Doc(`
+					Some text
+
+					The empty line should have been removed
+
+					The empty line above should stay
+				`), *returnedResult)
+			})
+		})
+		Context("when Config.TrimBlocks = true", func() {
+			BeforeEach(func() {
+				(*configuration).TrimBlocks = true
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff(heredoc.Doc(`
+					Some text
+					The empty line should have been removed
+
+					The empty line above should stay
+				`), *returnedResult)
+			})
+		})
+	})
+	Context("when toggling Config.LeftStripBlocks behavior", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					  	{% set _ = "" %}block indented with spaces and tabs
+					-
+					  {{ "variable indented with spaces" }}
+				`),
+			})
+		})
+		Context("when Config.LeftStripBlocks = false", func() {
+			BeforeEach(func() {
+				(*configuration).LeftStripBlocks = false
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff(heredoc.Doc(`
+					  	block indented with spaces and tabs
+					-
+					  variable indented with spaces
+				`), *returnedResult)
+			})
+		})
+		Context("when Config.LeftStripBlocks = true", func() {
+			BeforeEach(func() {
+				(*configuration).LeftStripBlocks = true
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff(heredoc.Doc(`
+					block indented with spaces and tabs
+					-
+					  variable indented with spaces
+				`), *returnedResult)
+			})
+		})
+	})
 })

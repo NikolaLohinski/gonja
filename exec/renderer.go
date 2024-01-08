@@ -59,11 +59,19 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		return nil, nil
 	case *nodes.Data:
 		output := n.Data.Val
+		if n.RemoveFirstLineReturn && output[0:1] == "\n" {
+			output = output[1:]
+		}
 		if n.Trim.Left {
 			output = strings.TrimLeft(output, " \n\t")
 		}
 		if n.Trim.Right {
 			output = strings.TrimRight(output, " \n\t")
+		}
+		if n.RemoveTrailingWhiteSpaceFromLastLine {
+			lines := strings.Split(output, "\n")
+			lines = append(lines[0:len(lines)-1], strings.TrimRight(lines[len(lines)-1], " \n\t"))
+			output = strings.Join(lines, "\n")
 		}
 		_, err := r.Output.WriteString(output)
 		return nil, err

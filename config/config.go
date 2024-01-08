@@ -22,6 +22,10 @@ type Config struct {
 	// Whether to be strict about undefined attribute or item in an object and return error
 	// or return a nil value on missing data and ignore it entirely
 	StrictUndefined bool
+	// If is set to true, the first newline after a block is removed (block, not variable !tag)
+	TrimBlocks bool
+	// If is set to true, the leading spaces and tabes are stripped from the start of a line to a block
+	LeftStripBlocks bool
 }
 
 func New() *Config {
@@ -34,18 +38,22 @@ func New() *Config {
 		CommentEndString:    "#}",
 		AutoEscape:          false,
 		StrictUndefined:     false,
+		TrimBlocks:          false,
+		LeftStripBlocks:     false,
 	}
 }
 
-func (cfg *Config) Inherit() *Config {
+func (c *Config) Inherit() *Config {
 	return &Config{
-		BlockStartString:    cfg.BlockStartString,
-		BlockEndString:      cfg.BlockEndString,
-		VariableStartString: cfg.VariableStartString,
-		VariableEndString:   cfg.VariableEndString,
-		CommentStartString:  cfg.CommentStartString,
-		CommentEndString:    cfg.CommentEndString,
-		AutoEscape:          cfg.AutoEscape,
-		StrictUndefined:     cfg.StrictUndefined,
+		BlockStartString:    c.BlockStartString,
+		BlockEndString:      c.BlockEndString,
+		VariableStartString: c.VariableStartString,
+		VariableEndString:   c.VariableEndString,
+		CommentStartString:  c.CommentStartString,
+		CommentEndString:    c.CommentEndString,
+		AutoEscape:          c.AutoEscape,
+		StrictUndefined:     c.StrictUndefined,
+		TrimBlocks:          c.TrimBlocks,
+		LeftStripBlocks:     c.LeftStripBlocks,
 	}
 }

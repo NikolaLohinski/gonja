@@ -125,12 +125,13 @@ var Names = map[Type]string{
 
 // Token represents a unit of lexing
 type Token struct {
-	Type Type
-	Val  string
-	Pos  int
-	Line int
-	Col  int
-	Trim bool
+	Type                  Type
+	Val                   string
+	Pos                   int
+	Line                  int
+	Col                   int
+	Trim                  bool
+	RemoveFirstLineReturn bool
 }
 
 func (t Token) String() string {

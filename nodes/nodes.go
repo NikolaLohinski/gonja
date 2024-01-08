@@ -76,8 +76,10 @@ type Trim struct {
 }
 
 type Data struct {
-	Data *tokens.Token
-	Trim Trim
+	Data                                 *tokens.Token
+	Trim                                 Trim
+	RemoveFirstLineReturn                bool
+	RemoveTrailingWhiteSpaceFromLastLine bool
 }
 
 func (d *Data) Position() *tokens.Token { return d.Data }

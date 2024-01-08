@@ -186,7 +186,8 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 	switch t.Type {
 	case tokens.Data:
 		n := &nodes.Data{
-			Data: t,
+			Data:                  t,
+			RemoveFirstLineReturn: t.RemoveFirstLineReturn,
 			Trim: nodes.Trim{
 				Left: t.Trim,
 			},
@@ -194,6 +195,11 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 		if next := p.Peek(tokens.VariableBegin, tokens.CommentBegin, tokens.BlockBegin); next != nil {
 			if len(next.Val) > 0 && next.Val[len(next.Val)-1] == '-' {
 				n.Trim.Right = true
+			}
+		}
+		if p.Config.LeftStripBlocks {
+			if next := p.Peek(tokens.BlockBegin); next != nil {
+				n.RemoveTrailingWhiteSpaceFromLastLine = true
 			}
 		}
 		p.Consume()
