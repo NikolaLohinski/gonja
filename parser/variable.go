@@ -309,6 +309,9 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 			Node:     from,
 		}
 		tok := p.Match(tokens.Name, tokens.Integer)
+		if tok == nil {
+			return nil, p.Error("expected name or integer", p.Current())
+		}
 		switch tok.Type {
 		case tokens.Name:
 			getAttributeNode.Attr = tok.Val
@@ -319,7 +322,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 			}
 			getAttributeNode.Index = i
 		default:
-			return nil, p.Error("This token is not allowed within a variable name.", p.Current())
+			return nil, p.Error("this token is not allowed within a variable name", p.Current())
 		}
 		return getAttributeNode, nil
 	} else if accessor.Type == tokens.LeftBracket {
@@ -327,7 +330,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 		if p.Current(tokens.Colon, tokens.RightBracket) == nil {
 			expression, err := p.ParseExpression()
 			if err != nil {
-				return nil, p.Error("Invalid expression", p.Current())
+				return nil, p.Error("invalid expression", p.Current())
 			}
 			argument = expression
 		}

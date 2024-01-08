@@ -67,4 +67,18 @@ var _ = Context("dicts", func() {
 			})
 		})
 	})
+
+	Context("when doing an invalid access with ..", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "{{ data..test }}",
+			})
+			(*environment).Context.Set("data", map[string]interface{}{})
+		})
+
+		It("should return the expected error", func() {
+			By("returning an error")
+			Expect(*returnedErr).ToNot(BeNil())
+		})
+	})
 })
