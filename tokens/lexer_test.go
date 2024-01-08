@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/tokens"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -431,7 +432,7 @@ var _ = Context("lexer", func() {
 			t := testCase
 			Context(fmt.Sprintf("when the input %s", t.description), func() {
 				BeforeEach(func() {
-					*lexer = tokens.NewLexer(t.input)
+					*lexer = tokens.NewLexer(t.input, config.New())
 				})
 				elements := make(Elements)
 				for index, fields := range t.tokenMatcher {
@@ -448,14 +449,16 @@ var _ = Context("lexer", func() {
 	})
 	Context("when overriding the default delimiters", func() {
 		BeforeEach(func() {
-			*lexer = tokens.NewLexer(`<@ block @>{$ variable $}(### comment ###)`)
+			config := config.New()
 
-			(*lexer).Config.BlockStartString = "<@"
-			(*lexer).Config.BlockEndString = "@>"
-			(*lexer).Config.VariableStartString = "{$"
-			(*lexer).Config.VariableEndString = "$}"
-			(*lexer).Config.CommentStartString = "(###"
-			(*lexer).Config.CommentEndString = "###)"
+			config.BlockStartString = "<@"
+			config.BlockEndString = "@>"
+			config.VariableStartString = "{$"
+			config.VariableEndString = "$}"
+			config.CommentStartString = "(###"
+			config.CommentEndString = "###)"
+
+			*lexer = tokens.NewLexer(`<@ block @>{$ variable $}(### comment ###)`, config)
 		})
 		It("should return the expected tokens", func() {
 			Expect(*returnedTokens).To(MatchAllElementsWithIndex(

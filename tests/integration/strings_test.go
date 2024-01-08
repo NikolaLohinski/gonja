@@ -3,7 +3,6 @@ package integration_test
 import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/loaders"
 
@@ -16,7 +15,6 @@ var _ = Context("strings", func() {
 		identifier = new(string)
 
 		environment = new(*exec.Environment)
-		config      = new(*config.Config)
 		loader      = new(loaders.Loader)
 
 		context = new(*exec.Context)
@@ -27,12 +25,11 @@ var _ = Context("strings", func() {
 	BeforeEach(func() {
 		*identifier = "/test"
 		*environment = gonja.DefaultEnvironment
-		*config = gonja.DefaultConfig
 		*loader = loaders.MustNewMemoryLoader(nil)
 	})
 	JustBeforeEach(func() {
 		var t *exec.Template
-		t, *returnedErr = exec.NewTemplate(*identifier, *config, *loader, *environment)
+		t, *returnedErr = exec.NewTemplate(*identifier, gonja.DefaultConfig, *loader, *environment)
 		if *returnedErr != nil {
 			return
 		}
@@ -56,7 +53,7 @@ var _ = Context("strings", func() {
 			It("should return the expected rendered content", func() {
 				By("not returning any error")
 				Expect(*returnedErr).To(BeNil())
-				By("not returning the expected result")
+				By("returning the expected result")
 				expected := heredoc.Doc(`
 					[]:    
 					[4]:   i
@@ -87,7 +84,7 @@ var _ = Context("strings", func() {
 			It("should return the expected rendered content", func() {
 				By("not returning any error")
 				Expect(*returnedErr).To(BeNil())
-				By("not returning the expected result")
+				By("returning the expected result")
 				expected := heredoc.Doc(`
 					[]:    
 					[:]:   testing is fun!

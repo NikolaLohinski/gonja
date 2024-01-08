@@ -10,7 +10,6 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/loaders"
 
@@ -23,7 +22,6 @@ var _ = Context("version", func() {
 		identifier = new(string)
 
 		environment = new(*exec.Environment)
-		config      = new(*config.Config)
 		loader      = new(loaders.Loader)
 
 		context = new(*exec.Context)
@@ -34,12 +32,11 @@ var _ = Context("version", func() {
 	BeforeEach(func() {
 		*identifier = "/test"
 		*environment = gonja.DefaultEnvironment
-		*config = gonja.DefaultConfig
 		*loader = loaders.MustNewMemoryLoader(nil)
 	})
 	JustBeforeEach(func() {
 		var t *exec.Template
-		t, *returnedErr = exec.NewTemplate(*identifier, *config, *loader, *environment)
+		t, *returnedErr = exec.NewTemplate(*identifier, gonja.DefaultConfig, *loader, *environment)
 		if *returnedErr != nil {
 			return
 		}
@@ -64,7 +61,7 @@ var _ = Context("version", func() {
 		It("should return the expected rendered content", func() {
 			By("not returning any error")
 			Expect(*returnedErr).To(BeNil())
-			By("not returning the correct result")
+			By("returning the correct result")
 			expected := heredoc.Doc(`
 				gonja.version is '` + *version + `'
 			`)

@@ -247,11 +247,13 @@ func (p *Parser) Extend(identifier string) (*nodes.Template, error) {
 		return nil, fmt.Errorf("failed to inherit loader: %s", err)
 	}
 
+	config := p.Config.Inherit()
+
 	parser := &Parser{
 		identifier:        identifier,
-		stream:            tokens.Lex(source.String()),
+		stream:            tokens.Lex(source.String(), config),
 		controlStructures: p.controlStructures,
-		Config:            p.Config.Inherit(),
+		Config:            config,
 		Loader:            loader,
 	}
 	return parser.Parse()

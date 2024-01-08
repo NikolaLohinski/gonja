@@ -54,21 +54,20 @@ func escape_chars_clashing_regexp(s string) string {
 }
 
 // NewLexer creates a new scanner for the input string.
-func NewLexer(input string) *Lexer {
-	cfg := config.New()
+func NewLexer(input string, config *config.Config) *Lexer {
 	return &Lexer{
 		Input:  input,
 		Tokens: make(chan *Token),
-		Config: cfg,
+		Config: config,
 		RawControlStructures: rawControlStructure{
-			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escape_chars_clashing_regexp(cfg.BlockStartString))),
-			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escape_chars_clashing_regexp(cfg.BlockStartString))),
+			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escape_chars_clashing_regexp(config.BlockStartString))),
+			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escape_chars_clashing_regexp(config.BlockStartString))),
 		},
 	}
 }
 
-func Lex(input string) *Stream {
-	l := NewLexer(input)
+func Lex(input string, config *config.Config) *Stream {
+	l := NewLexer(input, config)
 	go l.Run()
 	return NewStream(l.Tokens)
 }
