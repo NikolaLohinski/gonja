@@ -1,4 +1,4 @@
-## Filters
+# Filters
 
 Variables can be modified by filters. Filters are separated from the variable by a pipe symbol (|) and may have optional arguments in parentheses. Multiple filters can be chained. The output of one filter is applied to the next.
 
@@ -12,24 +12,24 @@ Variables can be modified by filters. Filters are separated from the variable by
 {% endfor %}
 ```
 
-The following clickable admonition can be used to browse the `python` dedicated documentation for additional details for each filter:
+The following clickable admonition can be used to browse the `python` dedicated documentation for additional details on each filter:
 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#builtin-filters) |
 | ----------------------------------------------------------------------------------- |
 
-### The `abs` filter
+## The `abs` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.abs) |
 | ------------------------------------------------------------------------------------- |
 
 Return the absolute value of the integer or float passed.
 
-### The `attr` filter
+## The `attr` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.attr) |
 | -------------------------------------------------------------------------------------- |
 
 Get an attribute of an object. However, items are not looked up.
 
-### The `batch` filter
+## The `batch` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.batch) |
 | --------------------------------------------------------------------------------------- |
 
@@ -46,19 +46,19 @@ A filter that batches items. It returns a list of lists with the given number of
 </table>
 ```
 
-### The `capitalize` filter
+## The `capitalize` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.capitalize) |
 | -------------------------------------------------------------------------------------------- |
 
 Capitalize a value. The first character will be uppercase, all others lowercase.
 
-### The `center` filter
+## The `center` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.center) |
 | ---------------------------------------------------------------------------------------- |
 
 Centers the value in a field of a given width.
 
-### The `default` or `d` filter
+## The `default` or `d` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.default) |
 | ----------------------------------------------------------------------------------------- |
 
@@ -67,43 +67,43 @@ If the value is undefined it will return the passed default value, otherwise the
 {{ my_variable | d('my_variable is not defined') }}
 ```
 
-### The `dictsort` filter
+## The `dictsort` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.dictsort) |
 | ------------------------------------------------------------------------------------------ |
 
 Sort a dict and yield (key, value) pairs. Dictionaries may not be in the order you want to display them in, so sort them first.
 
-### The `escape` or `e` filter
+## The `escape` or `e` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.escape) |
 | ---------------------------------------------------------------------------------------- |
 
 Replace the characters &, <, >, ', and " in the string with HTML-safe sequences. Use this if you need to display text that might contain such characters in HTML.
 
-### The `filesizeformat` filter
+## The `filesizeformat` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.filesizeformat) |
 | ------------------------------------------------------------------------------------------------ |
 
 Format the value like a ‘human-readable’ file size (i.e. 13 kB, 4.1 MB, 102 Bytes, etc).
 
-### The `first` filter
+## The `first` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.first) |
 | --------------------------------------------------------------------------------------- |
 
 Return the first item of a sequence.
 
-### The `float` filter
+## The `float` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.float) |
 | --------------------------------------------------------------------------------------- |
 
 Convert the value into a floating point number
 
-### The `forceescape` filter
+## The `forceescape` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.forceescape) |
 | --------------------------------------------------------------------------------------------- |
 
 Enforce HTML escaping. This will probably double escape variables.
 
-### The `format` filter
+## The `format` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.format) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -113,7 +113,7 @@ Apply the given values to a printf-style format string, like string % values.
 Hello, World!
 ```
 
-### The `groupby` filter
+## The `groupby` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.groupby) |
 | ----------------------------------------------------------------------------------------- |
 
@@ -131,49 +131,49 @@ For example, a list of User objects with a city attribute can be rendered in gro
 {% endfor %}</ul>
 ```
 
-### The `indent` filter
+## The `indent` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.indent) |
 | ---------------------------------------------------------------------------------------- |
 
 Return a copy of the string with each line indented by 4 spaces. The first line and blank lines are not indented by default.
 
-### The `int` filter
+## The `int` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.int) |
 | ------------------------------------------------------------------------------------- |
 
 Convert the value into an integer.
 
-### The `join` filter
+## The `join` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.join) |
 | -------------------------------------------------------------------------------------- |
 
 Return a string which is the concatenation of the strings in the sequence. The separator between elements is an empty string per default,
 
-### The `last` filter
+## The `last` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.last) |
 | -------------------------------------------------------------------------------------- |
 
 Return the last item of a sequence.
 
-### The `length` filter
+## The `length` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.length) |
 | ---------------------------------------------------------------------------------------- |
 
 Return the number of items in a container.
 
-### The `list` filter
+## The `list` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.list) |
 | -------------------------------------------------------------------------------------- |
 
 Convert the value into a list. If it was a string the returned list will be a list of characters.
 
-### The `lower` filter
+## The `lower` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.lower) |
 | --------------------------------------------------------------------------------------- |
 
 Convert a value to lowercase.
 
-### The `map` filter
+## The `map` filter
 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.map) |
 | ------------------------------------------------------------------------------------- |
@@ -186,31 +186,31 @@ The basic usage is mapping on an attribute. Imagine you have a list of users but
 Users on this page: {{ users | map(attribute='username') | join(', ') }}
 ```
 
-### The `max` filter
+## The `max` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.max) |
 | ------------------------------------------------------------------------------------- |
 
 Return the largest item from the sequence.
 
-### The `min` filter
+## The `min` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.min) |
 | ------------------------------------------------------------------------------------- |
 
 Return the smallest item from the sequence.
 
-### The `pprint` filter
+## The `pprint` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.pprint) |
 | ---------------------------------------------------------------------------------------- |
 
 Pretty print a variable.
 
-### The `random` filter
+## The `random` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.random) |
 | ---------------------------------------------------------------------------------------- |
 
 Return a random item from the sequence.
 
-### The `rejectattr` filter
+## The `rejectattr` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.rejectattr) |
 | -------------------------------------------------------------------------------------------- |
 
@@ -223,7 +223,7 @@ If no test is specified, the attribute’s value will be evaluated as a boolean.
 {{ users | rejectattr("email", "none") }}
 ```
 
-### The `reject` filter
+## The `reject` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.reject) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -237,19 +237,19 @@ Example usage:
 {{ numbers|reject("odd") }}
 ```
 
-### The `replace` filter
+## The `replace` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.replace) |
 | ----------------------------------------------------------------------------------------- |
 
 Return a copy of the value with all occurrences of a substring replaced with a new one.
 
-### The `reverse` filter
+## The `reverse` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.reverse) |
 | ----------------------------------------------------------------------------------------- |
 
 Reverse the object or return an iterator that iterates over it the other way round.
 
-### The `round` filter
+## The `round` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.round) |
 | --------------------------------------------------------------------------------------- |
 
@@ -261,13 +261,13 @@ Round the number to a given precision. The first parameter specifies the precisi
 
 If you don’t specify a method `common` is used.
 
-### The `safe` filter
+## The `safe` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.safe) |
 | -------------------------------------------------------------------------------------- |
 
 Mark the value as safe which means that in an environment with automatic escaping enabled this variable will not be escaped.
 
-### The `selectattr` filter
+## The `selectattr` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.selectattr) |
 | -------------------------------------------------------------------------------------------- |
 
@@ -280,7 +280,7 @@ If no test is specified, the attribute’s value will be evaluated as a boolean.
 {{ users | selectattr("email", "none") }}
 ```
 
-### The `select` filter
+## The `select` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.select) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -296,7 +296,7 @@ If no test is specified, each object will be evaluated as a boolean.
 {{ strings | select("equalto", "mystring") }}
 ```
 
-### The `slice` filter
+## The `slice` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.slice) |
 | --------------------------------------------------------------------------------------- |
 
@@ -316,25 +316,25 @@ Slice an iterator and return a list of lists containing those items. Useful if y
 
 If you pass it a second argument it’s used to fill missing values on the last iteration.
 
-### The `sort` filter
+## The `sort` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.sort) |
 | -------------------------------------------------------------------------------------- |
 
 Sort an iterable input.
 
-### The `string` filter
+## The `string` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.string) |
 | ---------------------------------------------------------------------------------------- |
 
 Convert an object to a string if it isn’t already.
 
-### The `striptags` filter
+## The `striptags` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.striptags) |
 | ------------------------------------------------------------------------------------------- |
 
 Strip SGML/XML tags and replace adjacent whitespace by one space.
 
-### The `sum` filter
+## The `sum` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.sum) |
 | ------------------------------------------------------------------------------------- |
 
@@ -346,31 +346,31 @@ It is also possible to sum up only certain attributes:
 Total: {{ items | sum(attribute='price') }}
 ```
 
-### The `title` filter
+## The `title` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.title) |
 | --------------------------------------------------------------------------------------- |
 
 Return a titlecased version of the value. I.e. words will start with uppercase letters, all remaining characters are lowercase.
 
-### The `tojson` filter
+## The `tojson` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.tojson) |
 | ---------------------------------------------------------------------------------------- |
 
 Serialize an object to a string of JSON. It takes an `indent` parameter to do pretty printing.
 
-### The `trim` filter
+## The `trim` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.trim) |
 | -------------------------------------------------------------------------------------- |
 
 Strip leading and trailing characters, by default whitespace.
 
-### The `truncate` filter
+## The `truncate` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.truncate) |
 | ------------------------------------------------------------------------------------------ |
 
 Return a truncated copy of the string. The length is specified with the first parameter which defaults to 255.
 
-### The `unique` filter
+## The `unique` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.unique) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -388,37 +388,37 @@ Parameters:
 * case_sensitive (default: false): Treat upper and lower case strings as distinct.
 * attribute (default: None): Filter objects with unique values for this attribute.
 
-### The `upper` filter
+## The `upper` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.upper) |
 | --------------------------------------------------------------------------------------- |
 
 Convert a value to uppercase.
 
-### The `urlencode` filter
+## The `urlencode` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.urlencode) |
 | ------------------------------------------------------------------------------------------- |
 
 Quote data for use in a URL path or query using UTF-8.
 
-### The `urlize` filter
+## The `urlize` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.urlize) |
 | ---------------------------------------------------------------------------------------- |
 
 Convert URLs in text into clickable links.
 
-### The `wordcount` filter
+## The `wordcount` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.wordcount) |
 | ------------------------------------------------------------------------------------------- |
 
 Count the words in that string.
 
-### The `wordwrap` filter
+## The `wordwrap` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.wordwrap) |
 | ------------------------------------------------------------------------------------------ |
 
 Wrap a string to the given width. Existing newlines are treated as paragraphs to be wrapped separately.
 
-### The `xmlattr` filter
+## The `xmlattr` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.xmlattr) |
 | ----------------------------------------------------------------------------------------- |
 

@@ -12,30 +12,16 @@ import (
 )
 
 var (
-	version = "0.0.0+trunk"
-
-	DefaultLoader      loaders.Loader
-	DefaultConfig      *config.Config
-	DefaultEnvironment *exec.Environment
-	DefaultContext     = exec.NewContext(map[string]interface{}{
-		"gonja": map[string]interface{}{
-			"version": version,
-		},
-	})
-)
-
-func init() {
-	DefaultContext.Update(builtins.GlobalFunctions)
-
-	DefaultLoader = loaders.MustNewFileSystemLoader("")
-	DefaultConfig = config.New()
+	DefaultLoader      = loaders.MustNewFileSystemLoader("")
+	DefaultConfig      = config.New()
+	DefaultContext     = exec.EmptyContext().Update(builtins.GlobalFunctions).Update(builtins.GlobalVariables)
 	DefaultEnvironment = &exec.Environment{
 		Context:           DefaultContext,
 		Filters:           builtins.Filters,
 		Tests:             builtins.Tests,
 		ControlStructures: builtins.ControlStructures,
 	}
-}
+)
 
 func FromString(source string) (*exec.Template, error) {
 	return FromBytes([]byte(source))

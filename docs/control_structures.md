@@ -1,4 +1,4 @@
-## Control Structures
+# Control Structures
 
 This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _control structure_) is a special keyword that can be used in block to achieve conditional logic in a template.
 
@@ -7,7 +7,7 @@ The following clickable admonition can be used to browse the `python` dedicated 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-control-structures) |
 | ---------------------------------------------------------------------------------------------- |
 
-### The `if` control structure
+## The `if` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#if) |
 | ---------------------------------------------------------------------- |
 
@@ -23,7 +23,7 @@ The `if` control structure in Jinja is comparable with `python`'s `if` control s
 {% endif %}
 ```
 
-### The `set` control structure
+## The `set` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments) |
 | ------------------------------------------------------------------------------- |
 
@@ -36,7 +36,7 @@ Inside code blocks, you can also assign values to variables:
 
 For more details on scoping especially within a `for` loop, please refer to the `python` [implementation documentation](https://jinja.palletsprojects.com/en/3.0.x/templates/#assignments).
 
-### The `for` control structure
+## The `for` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#for) |
 | ----------------------------------------------------------------------- |
 
@@ -63,7 +63,7 @@ For more details on the special variables available within the loop, please refe
 
 
 
-### The `include` control structure
+## The `include` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#include) |
 | --------------------------------------------------------------------------- |
 
@@ -75,7 +75,7 @@ The include tag is useful to include a template and return the rendered contents
 {% include 'footer.html' %}
 ```
 
-### The `with` control structure
+## The `with` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-control structure) |
 | ---------------------------------------------------------------------------------- |
 
@@ -94,7 +94,7 @@ Which is equivalent to:
 {% endwith %}
 ```
 
-### The `filter` control structure
+## The `filter` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#id11) |
 | ------------------------------------------------------------------------ |
 
@@ -107,7 +107,7 @@ Filter sections allow you to apply regular Jinja filters on a full node of templ
 ```
 
 
-### The `raw` control structure
+## The `raw` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#escaping) |
 | ---------------------------------------------------------------------------- |
 
@@ -122,7 +122,7 @@ It is sometimes desirable – even necessary – to have Jinja ignore parts it w
 {% endraw %}
 ```
 
-### The `block` and `extends` control structures
+## The `block` and `extends` control structures
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#child-template) |
 | ---------------------------------------------------------------------------------- |
 
@@ -171,7 +171,7 @@ A child template might look like this:
 
 The `{% extends %}` tag is the key here. It tells the template engine that this template “extends” another template. When the template system evaluates this template, it first locates the parent. The extends tag should be the first tag in the template. Everything before it is printed out normally and may cause confusion. Also a block will always be filled in regardless of whether the surrounding condition is evaluated to be `True` or `False`.
 
-### The `import` and `macro` control structures
+## The `import` and `macro` control structures
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#import) |
 | -------------------------------------------------------------------------- |
 
@@ -218,7 +218,7 @@ Alternatively, you can `import` specific names from a template into the current 
 ```
 Included templates have access to the variables of the active context by default.
 
-### The `autoescape` control structure
+## The `autoescape` control structure
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#autoescape-overrides) |
 | ---------------------------------------------------------------------------------------- |
 

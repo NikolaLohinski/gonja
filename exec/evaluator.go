@@ -51,7 +51,7 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 	case *nodes.GetItem:
 		return e.evalGetItem(n)
 	case *nodes.GetAttribute:
-		return e.evalGetAttr(n)
+		return e.evalGetAttribute(n)
 	case *nodes.GetSlice:
 		return e.evalGetSlice(n)
 	case *nodes.Error:
@@ -353,7 +353,7 @@ func (e *Evaluator) evalGetSlice(node *nodes.GetSlice) *Value {
 	return value.Slice(start, end)
 }
 
-func (e *Evaluator) evalGetAttr(node *nodes.GetAttribute) *Value {
+func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
@@ -410,6 +410,9 @@ func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 
 	if t.NumIn() == 1 && t.In(0) == reflect.TypeOf(&VarArgs{}) {
 		params, err = e.evalVarArgs(node)
+	} else if t.NumIn() == 2 && t.In(0) == reflect.TypeOf(&Evaluator{}) && t.In(1) == reflect.TypeOf(&VarArgs{}) {
+		params, err = e.evalVarArgs(node)
+		params = append([]reflect.Value{reflect.ValueOf(e)}, params...)
 	} else {
 		params, err = e.evalParams(node, fn)
 	}
@@ -607,17 +610,22 @@ func (e *Evaluator) evalVarArgs(node *nodes.Call) ([]reflect.Value, error) {
 		}
 		params.KwArgs[key] = value
 	}
-	// va := AsValue(VarArgs{})
 	return []reflect.Value{reflect.ValueOf(params)}, nil
 }
 
 func (e *Evaluator) evalParams(node *nodes.Call, fn *Value) ([]reflect.Value, error) {
+	// TODO: add the ability to detect the function signature and see if it wants a pointer to the evaluator
+
 	args := node.Args
 	t := fn.Val.Type()
 
 	if len(args) != t.NumIn() && !(len(args) >= t.NumIn()-1 && t.IsVariadic()) {
-		msg := "Function input argument count (%d) of '%s' must be equal to the calling argument count (%d)."
-		return nil, errors.Errorf(msg, t.NumIn(), node.String(), len(args))
+		return nil, errors.Errorf(
+			"function input argument count (%d) of '%s' must be equal to the calling argument count (%d)",
+			t.NumIn(),
+			node.String(),
+			len(args),
+		)
 	}
 
 	// Output arguments
@@ -631,51 +639,52 @@ func (e *Evaluator) evalParams(node *nodes.Call, fn *Value) ([]reflect.Value, er
 
 	numArgs := t.NumIn()
 	isVariadic := t.IsVariadic()
-	var fnArg reflect.Type
+	var functionArgument reflect.Type
 
-	for idx, arg := range args {
-		pv := e.Eval(arg)
-		if pv.IsError() {
-			return nil, pv
+	for index, argument := range args {
+		evaluatedArgument := e.Eval(argument)
+		if evaluatedArgument.IsError() {
+			return nil, evaluatedArgument
 		}
 
 		if isVariadic {
-			if idx >= numArgs-1 {
-				fnArg = t.In(numArgs - 1).Elem()
+			if index >= numArgs-1 {
+				functionArgument = t.In(numArgs - 1).Elem()
 			} else {
-				fnArg = t.In(idx)
+				functionArgument = t.In(index)
 			}
 		} else {
-			fnArg = t.In(idx)
+			functionArgument = t.In(index)
 		}
 
-		if fnArg != typeOfValuePtr {
+		if functionArgument != typeOfValuePtr {
 			// Function's argument is not a *gonja.Value, then we have to check whether input argument is of the same type as the function's argument
-			if !isVariadic {
-				if fnArg != reflect.TypeOf(pv.Interface()) && fnArg.Kind() != reflect.Interface {
-					msg := "Function input argument %d of '%s' must be of type %s or *gonja.Value (not %T)."
-					return nil, errors.Errorf(msg, idx, node.String(), fnArg.String(), pv.Interface())
-				}
-				// Function's argument has another type, using the interface-value
-				parameters = append(parameters, reflect.ValueOf(pv.Interface()))
-			} else {
-				if fnArg != reflect.TypeOf(pv.Interface()) && fnArg.Kind() != reflect.Interface {
-					msg := "Function variadic input argument of '%s' must be of type %s or *gonja.Value (not %T)."
-					return nil, errors.Errorf(msg, node.String(), fnArg.String(), pv.Interface())
-				}
-				// Function's argument has another type, using the interface-value
-				parameters = append(parameters, reflect.ValueOf(pv.Interface()))
+			if !isVariadic && functionArgument != reflect.TypeOf(evaluatedArgument.Interface()) && functionArgument.Kind() != reflect.Interface {
+				return nil, errors.Errorf(
+					"function input argument %d of '%s' must be of type %s or *gonja.Value (not %T)",
+					index,
+					node.String(),
+					functionArgument.String(),
+					evaluatedArgument.Interface(),
+				)
+			} else if functionArgument != reflect.TypeOf(evaluatedArgument.Interface()) && functionArgument.Kind() != reflect.Interface {
+				return nil, errors.Errorf(
+					"function variadic input argument of '%s' must be of type %s or *gonja.Value (not %T)",
+					node.String(),
+					functionArgument.String(),
+					evaluatedArgument.Interface(),
+				)
 			}
+			parameters = append(parameters, reflect.ValueOf(evaluatedArgument.Interface()))
 		} else {
-			// Function's argument is a *gonja.Value
-			parameters = append(parameters, reflect.ValueOf(pv))
+			parameters = append(parameters, reflect.ValueOf(evaluatedArgument))
 		}
 	}
 
 	// Check if any of the values are invalid
 	for _, p := range parameters {
 		if p.Kind() == reflect.Invalid {
-			return nil, errors.Errorf("Calling a function using an invalid parameter")
+			return nil, errors.Errorf("calling a function using an invalid parameter")
 		}
 	}
 

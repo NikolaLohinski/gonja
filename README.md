@@ -55,6 +55,7 @@ func main() {
 * **control structures**: please take a look at [`docs/control_structures.md`](docs/control_structures.md) ;
 * **tests**: please see [`docs/tests.md`](docs/tests.md) ;
 * **global functions**: please browse through [`docs/global_functions.md`](docs/global_functions.md).
+* **global variables**: please browse through [`docs/global_variables.md`](docs/global_variables.md).
 
 ## Migrating from `v1` to `v2`
 
@@ -73,8 +74,8 @@ The following steps can be used as general guidelines to migrate from `v1` to `v
 
 ## Limitations 
 
-* **format**: `format` does **not** take Python's string format syntax as a parameter, instead it takes Go's. Essentially `{{ 3.14|stringformat:"pi is %.2f" }}` is `fmt.Sprintf("pi is %.2f", 3.14)`.
-* **escape** / **force_escape**: Unlike Jinja's behavior, the `escape`-filter is applied immediately. Therefore there is no need for a `force_escape`-filter yet.
+* **format**: `format` does **not** take Python's string format syntax as a parameter, instead it takes Go's. Essentially `{{ 3.14|stringformat:"pi is %.2f" }}` is `fmt.Sprintf("pi is %.2f", 3.14)`
+* **escape** / **force_escape**: Unlike Jinja's behavior, the `escape`-filter is applied immediately. Therefore there is no need for a `force_escape` filter
 
 ## Tribute
 

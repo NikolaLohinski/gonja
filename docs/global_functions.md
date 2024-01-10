@@ -1,4 +1,4 @@
-## Global Functions
+# Global Functions
 
 Globals (or _global functions_) are helpers available in the global scope by default.
 
@@ -14,13 +14,13 @@ The following clickable admonition can be used to browse the `python` dedicated 
 | -------------------------------------------------------------------------------------------- |
 
 
-### The `dict` function      
+## The `dict` function      
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.dict) |
 | -------------------------------------------------------------------------------------- |
 
 A convenient alternative to dict literals. `{'foo': 'bar'}` is the same as `dict(foo='bar')`.
 
-### The `namespace` function 
+## The `namespace` function 
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.namespace) |
 | ------------------------------------------------------------------------------------------- |
 
@@ -44,13 +44,13 @@ The main purpose of this is to allow carrying a value from within a loop body to
 Found item having something: {{ ns.found }}
 ```
 
-### The `range` function     
+## The `range` function     
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.range) |
 | --------------------------------------------------------------------------------------- |
 
 Return a list containing an arithmetic progression of integers. `range(i, j)` returns _[i, i+1, i+2, ..., j-1]_; the `start` (!) defaults to `0`. When a `step` is given, it specifies the increment (or decrement). For example, `range(4)` and `range(0, 4, 1)` return _[0, 1, 2, 3]_.
 
-### The `cycler` function
+## The `cycler` function
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.cycler) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -70,7 +70,7 @@ Similar to `loop.cycle`, but can be used outside loops or across multiple loops.
 </ul>
 ```
 
-### The `joiner` function    
+## The `joiner` function    
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.joiner) |
 | ---------------------------------------------------------------------------------------- |
 
@@ -89,7 +89,7 @@ A tiny helper that can be used to “join” multiple sections. A `joiner` is pa
 {% endif %}
 ```
 
-### The `lipsum` function    
+## The `lipsum` function    
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-globals.lipsum) |
 | ---------------------------------------------------------------------------------------- |
 

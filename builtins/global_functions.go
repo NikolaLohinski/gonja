@@ -8,48 +8,46 @@ import (
 )
 
 var GlobalFunctions = exec.NewContext(map[string]interface{}{
-	"cycler":    Cycler,
-	"dict":      Dict,
-	"joiner":    Joiner,
-	"lipsum":    Lipsum,
-	"namespace": Namespace,
-	"range":     Range,
+	"cycler":    cyclerFunction,
+	"dict":      dictFunction,
+	"joiner":    joinerFunction,
+	"lipsum":    lipsumFunction,
+	"namespace": namespaceFunction,
+	"range":     rangeFunction,
 })
 
-func Range(va *exec.VarArgs) <-chan int {
+func rangeFunction(_ *exec.Evaluator, arguments *exec.VarArgs) (<-chan int, error) {
 	var (
 		start = 0
 		stop  = -1
 		step  = 1
 	)
-	switch len(va.Args) {
+	switch len(arguments.Args) {
 	case 1:
-		stop = va.Args[0].Integer()
+		stop = arguments.Args[0].Integer()
 	case 2:
-		start = va.Args[0].Integer()
-		stop = va.Args[1].Integer()
+		start = arguments.Args[0].Integer()
+		stop = arguments.Args[1].Integer()
 	case 3:
-		start = va.Args[0].Integer()
-		stop = va.Args[1].Integer()
-		step = va.Args[2].Integer()
-		// default:
-		// 	return nil, errors.New("range expect signature range([start, ]stop[, step])")
+		start = arguments.Args[0].Integer()
+		stop = arguments.Args[1].Integer()
+		step = arguments.Args[2].Integer()
+	default:
+		return nil, errors.New("range expect signature range([start, ]stop[, step])")
 	}
-	chnl := make(chan int)
+	channel := make(chan int)
 	go func() {
 		for i := start; i < stop; i += step {
-			chnl <- i
+			channel <- i
 		}
-
-		// Ensure that at the end of the loop we close the channel!
-		close(chnl)
+		close(channel)
 	}()
-	return chnl
+	return channel, nil
 }
 
-func Dict(va *exec.VarArgs) *exec.Value {
+func dictFunction(_ *exec.Evaluator, arguments *exec.VarArgs) *exec.Value {
 	dict := exec.NewDict()
-	for key, value := range va.KwArgs {
+	for key, value := range arguments.KwArgs {
 		dict.Pairs = append(dict.Pairs, &exec.Pair{
 			Key:   exec.AsValue(key),
 			Value: value,
@@ -79,9 +77,9 @@ func (c *cycler) Next() string {
 	return value
 }
 
-func Cycler(va *exec.VarArgs) *exec.Value {
+func cyclerFunction(_ *exec.Evaluator, arguments *exec.VarArgs) *exec.Value {
 	c := &cycler{}
-	for _, arg := range va.Args {
+	for _, arg := range arguments.Args {
 		c.values = append(c.values, arg.String())
 	}
 	c.getters = map[string]interface{}{
@@ -105,8 +103,8 @@ func (j *joiner) String() string {
 	return j.sep
 }
 
-func Joiner(va *exec.VarArgs) *exec.Value {
-	p := va.ExpectKwArgs([]*exec.KwArg{{"sep", ","}})
+func joinerFunction(_ *exec.Evaluator, arguments *exec.VarArgs) *exec.Value {
+	p := arguments.ExpectKwArgs([]*exec.KwArg{{Name: "sep", Default: ","}})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrapf(p, `wrong signature for 'joiner'`))
 	}
@@ -115,22 +113,20 @@ func Joiner(va *exec.VarArgs) *exec.Value {
 	return exec.AsValue(j.String)
 }
 
-// type namespace map[string]interface{}
-
-func Namespace(va *exec.VarArgs) map[string]interface{} {
+func namespaceFunction(_ *exec.Evaluator, arguments *exec.VarArgs) map[string]interface{} {
 	ns := map[string]interface{}{}
-	for key, value := range va.KwArgs {
+	for key, value := range arguments.KwArgs {
 		ns[key] = value
 	}
 	return ns
 }
 
-func Lipsum(va *exec.VarArgs) *exec.Value {
-	p := va.ExpectKwArgs([]*exec.KwArg{
-		{"n", 5},
-		{"html", true},
-		{"min", 20},
-		{"max", 100},
+func lipsumFunction(_ *exec.Evaluator, arguments *exec.VarArgs) *exec.Value {
+	p := arguments.ExpectKwArgs([]*exec.KwArg{
+		{Name: "n", Default: 5},
+		{Name: "html", Default: true},
+		{Name: "min", Default: 20},
+		{Name: "max", Default: 100},
 	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrapf(p, `wrong signature for 'lipsum'`))
