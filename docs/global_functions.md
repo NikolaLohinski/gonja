@@ -1,6 +1,6 @@
 # Global Functions
 
-Globals (or _global functions_) are helpers available in the global scope by default.
+Globals functions are helpers available in the global scope by default.
 
 ```
 {% for index in range(10) %}
