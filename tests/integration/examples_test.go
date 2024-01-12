@@ -14,7 +14,7 @@ var _ = Context("examples", func() {
 			template, err := gonja.FromString("Hello {{ name | capitalize }}!")
 			Expect(err).To(BeNil())
 
-			out, err := template.Execute(exec.NewContext(map[string]interface{}{"name": "bob"}))
+			out, err := template.ExecuteToString(exec.NewContext(map[string]interface{}{"name": "bob"}))
 			Expect(err).To(BeNil())
 
 			Expect(out).To(Equal("Hello Bob!"))

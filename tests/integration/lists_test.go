@@ -33,7 +33,7 @@ var _ = Context("lists", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("when getting an item by index", func() {
 		Context("default", func() {

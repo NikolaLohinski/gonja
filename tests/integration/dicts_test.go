@@ -33,7 +33,7 @@ var _ = Context("dicts", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("when getting an item", func() {
 		Context("default", func() {

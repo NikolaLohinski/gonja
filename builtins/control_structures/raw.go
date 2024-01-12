@@ -2,6 +2,7 @@ package controlStructures
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/nodes"
@@ -22,7 +23,7 @@ func (controlStructure *RawControlStructure) String() string {
 }
 
 func (controlStructure *RawControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	_, err := r.Output.WriteString(controlStructure.data.Data.Val)
+	_, err := io.WriteString(r.Output, controlStructure.data.Data.Val)
 	return err
 }
 

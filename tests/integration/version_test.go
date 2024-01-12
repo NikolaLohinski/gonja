@@ -40,7 +40,7 @@ var _ = Context("version", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("when using 'gonja.version'", func() {
 		var (

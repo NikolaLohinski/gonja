@@ -29,7 +29,7 @@ var _ = Context("helpers", func() {
 		It("should return the expected template object", func() {
 			Expect(*returnedErr).To(BeNil())
 			Expect(*returnedTemplate).ToNot(BeNil())
-			executeResult, *returnedErr = (*returnedTemplate).Execute(nil)
+			executeResult, *returnedErr = (*returnedTemplate).ExecuteToString(nil)
 			Expect(*returnedErr).To(BeNil())
 			Expect(executeResult).To(Equal("Hello Bob!"))
 		})
@@ -42,7 +42,7 @@ var _ = Context("helpers", func() {
 		It("should return the expected template object", func() {
 			Expect(*returnedErr).To(BeNil())
 			Expect(*returnedTemplate).ToNot(BeNil())
-			executeResult, *returnedErr = (*returnedTemplate).Execute(nil)
+			executeResult, *returnedErr = (*returnedTemplate).ExecuteToString(nil)
 			Expect(*returnedErr).To(BeNil())
 			Expect(executeResult).To(Equal("Hello Bob!"))
 		})
@@ -65,7 +65,7 @@ var _ = Context("helpers", func() {
 		It("should return the expected template object", func() {
 			Expect(*returnedErr).To(BeNil())
 			Expect(*returnedTemplate).ToNot(BeNil())
-			executeResult, *returnedErr = (*returnedTemplate).Execute(nil)
+			executeResult, *returnedErr = (*returnedTemplate).ExecuteToString(nil)
 			Expect(*returnedErr).To(BeNil())
 			Expect(executeResult).To(Equal("Hello Bob!"))
 		})

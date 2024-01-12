@@ -33,7 +33,7 @@ var _ = Context("control structure 'block'", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("when defining two blocks and accessing each one using the 'self' object", func() {
 		BeforeEach(func() {

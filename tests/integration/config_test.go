@@ -36,7 +36,7 @@ var _ = Context("config", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("when toggling Config.StrictUndefined behavior", func() {
 		BeforeEach(func() {

@@ -71,6 +71,7 @@ The following steps can be used as general guidelines to migrate from `v1` to `v
 * What was called a `Statement` is now referred to as `ControlStructure` to be closer to `python`'s Jinja glossary and may require changes in consumer code
 * What was called `Globals` is now called `GlobalFunctions` to be closer to `python`'s Jinja glossary and may require changes in consumer code
 * All non-python built-ins have been removed from `gonja`. They have been moved to the [`terraform-provider-jinja` code base](https://github.com/NikolaLohinski/terraform-provider-jinja). They can be brought back as needed by adding the `github.com/NikolaLohinski/terraform-provider-jinja/lib` dependency, and updating the global variables defined in [`builtins/`](./builtins/) with the available methods for each (see [`exec/environment.go`](./exec/environment.go) for details).
+* The `Execute` method of the `*exec.Template` object now requires a `io.Writer` to be passed, to be closer to Golang's `template` package interface. However, the `ExecuteToString` method now exists and behaves exactly as the `Execute` method used to, so it can be used as drop-in replacement.
 
 ## Limitations 
 

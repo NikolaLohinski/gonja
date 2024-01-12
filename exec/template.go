@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -24,6 +25,7 @@ type Template struct {
 	root        *nodes.Template
 }
 
+// Create a gonja template instance that can be executed with a given context later on
 func NewTemplate(identifier string, config *config.Config, loader loaders.Loader, environment *Environment) (*Template, error) {
 	input, err := loader.Read(identifier)
 	if err != nil {
@@ -54,25 +56,50 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 	return t, nil
 }
 
-// Executes the template and returns the rendered template as a string
-func (t *Template) Execute(ctx *Context) (string, error) {
-	var output strings.Builder
+// Executes the template and return the rendered content in the provided writer
+func (t *Template) Execute(wr io.Writer, data *Context) error {
+	if data == nil {
+		data = EmptyContext()
+	}
 
 	renderer := NewRenderer(&Environment{
 		Tests:             t.environment.Tests,
 		Filters:           t.environment.Filters,
 		ControlStructures: t.environment.ControlStructures,
-		Context:           t.environment.Context.Inherit().Update(ctx),
-	}, &output, t.config, t.loader, t)
+		Context:           t.environment.Context.Inherit().Update(data),
+	}, wr, t.config, t.loader, t)
 
 	err := renderer.Execute()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to execute template")
+		return errors.Wrap(err, "unable to execute template")
+	}
+
+	return nil
+}
+
+// Executes the template and return the rendered content as a string
+func (t *Template) ExecuteToString(data *Context) (string, error) {
+	output := bytes.NewBufferString("")
+
+	if err := t.Execute(output, data); err != nil {
+		return "", err
 	}
 
 	return output.String(), nil
 }
 
+// Executes the template and return the rendered content as bytes
+func (t *Template) ExecuteToBytes(data *Context) ([]byte, error) {
+	output := bytes.NewBuffer(nil)
+
+	if err := t.Execute(output, data); err != nil {
+		return nil, err
+	}
+
+	return output.Bytes(), nil
+}
+
+// Return all macros available to the template
 func (t *Template) Macros() map[string]*nodes.Macro {
 	return t.root.Macros
 }

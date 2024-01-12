@@ -5,6 +5,7 @@ import (
 
 	// "github.com/nikolalohinski/gonja/v2/exec"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ func (node *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.Control
 		}
 	}
 
-	_, err = r.Output.WriteString(value.String())
+	_, err = io.WriteString(r.Output, value.String())
 
 	return err
 }

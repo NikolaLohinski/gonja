@@ -51,7 +51,7 @@ var _ = Context("legacy tests", func() {
 		if *returnedErr != nil {
 			return
 		}
-		*returnedResult, *returnedErr = t.Execute(*context)
+		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("nominal", func() {
 		files := MustReturn(filepathx.Glob(path.Join(testCasesDir, "**/*.tpl"))).([]string)

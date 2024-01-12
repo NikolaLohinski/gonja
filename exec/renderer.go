@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"io"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -17,17 +18,17 @@ type Renderer struct {
 	Loader      loaders.Loader
 	Template    *Template
 	RootNode    *nodes.Template
-	Output      *strings.Builder
+	Output      io.Writer
 }
 
 // NewRenderer initialize a new renderer
-func NewRenderer(environment *Environment, output *strings.Builder, config *config.Config, loader loaders.Loader, template *Template) *Renderer {
+func NewRenderer(environment *Environment, wr io.Writer, config *config.Config, loader loaders.Loader, template *Template) *Renderer {
 	r := &Renderer{
 		Config:      config.Inherit(),
 		Environment: environment,
 		Template:    template,
 		RootNode:    template.root,
-		Output:      output,
+		Output:      wr,
 		Loader:      loader,
 	}
 	r.Environment.Context.Set("self", Self(r))
@@ -73,7 +74,7 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 			lines = append(lines[0:len(lines)-1], strings.TrimRight(lines[len(lines)-1], " \n\t"))
 			output = strings.Join(lines, "\n")
 		}
-		_, err := r.Output.WriteString(output)
+		_, err := io.WriteString(r.Output, output)
 		return nil, err
 	case *nodes.Output:
 		var value *Value
@@ -101,9 +102,9 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		}
 		var err error
 		if r.Config.AutoEscape && value.IsString() && !value.Safe {
-			_, err = r.Output.WriteString(value.Escaped())
+			_, err = io.WriteString(r.Output, value.Escaped())
 		} else {
-			_, err = r.Output.WriteString(value.String())
+			_, err = io.WriteString(r.Output, value.String())
 
 		}
 		return nil, err
