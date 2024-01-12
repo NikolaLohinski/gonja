@@ -1,6 +1,7 @@
 package gonja
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"path"
@@ -28,14 +29,18 @@ func FromString(source string) (*exec.Template, error) {
 }
 
 func FromBytes(source []byte) (*exec.Template, error) {
-	path := fmt.Sprintf("/%s", string(sha256.New().Sum(source)))
+	rootID := fmt.Sprintf("root-%s", string(sha256.New().Sum(source)))
 
-	loader, err := loaders.NewMemoryLoader(map[string]string{path: string(source)})
+	loader, err := loaders.NewFileSystemLoader("")
+	if err != nil {
+		return nil, err
+	}
+	shiftedLoader, err := loaders.NewShiftedLoader(rootID, bytes.NewReader(source), loader)
 	if err != nil {
 		return nil, err
 	}
 
-	return exec.NewTemplate(path, DefaultConfig, loader, DefaultEnvironment)
+	return exec.NewTemplate(rootID, DefaultConfig, shiftedLoader, DefaultEnvironment)
 }
 
 func FromFile(filepath string) (*exec.Template, error) {
