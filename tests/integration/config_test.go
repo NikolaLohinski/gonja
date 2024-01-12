@@ -162,16 +162,45 @@ var _ = Context("config", func() {
 			BeforeEach(func() {
 				(*configuration).TrimBlocks = true
 			})
-			It("should return the expected rendered content", func() {
-				By("not returning any error")
-				Expect(*returnedErr).To(BeNil())
-				By("returning the expected result")
-				AssertPrettyDiff(heredoc.Doc(`
-					Some text
-					The empty line should have been removed
+			Context("default", func() {
+				It("should return the expected rendered content", func() {
+					By("not returning any error")
+					Expect(*returnedErr).To(BeNil())
+					By("returning the expected result")
+					AssertPrettyDiff(heredoc.Doc(`
+						Some text
+						The empty line should have been removed
 
-					The empty line above should stay
-				`), *returnedResult)
+						The empty line above should stay
+					`), *returnedResult)
+				})
+			})
+			Context("when block trimming is disabled locally", func() {
+				BeforeEach(func() {
+					*loader = loaders.MustNewMemoryLoader(map[string]string{
+						*identifier: heredoc.Doc(`
+							Some text
+							{%- set block_example = "test" +%}
+
+							{{ "The empty line should have been removed" }}
+
+							The empty line above should stay
+						`),
+					})
+				})
+
+				It("should return the expected rendered content", func() {
+					By("not returning any error")
+					Expect(*returnedErr).To(BeNil())
+					By("returning the expected result")
+					AssertPrettyDiff(heredoc.Doc(`
+						Some text
+
+						The empty line should have been removed
+
+						The empty line above should stay
+					`), *returnedResult)
+				})
 			})
 		})
 	})
@@ -204,15 +233,38 @@ var _ = Context("config", func() {
 			BeforeEach(func() {
 				(*configuration).LeftStripBlocks = true
 			})
-			It("should return the expected rendered content", func() {
-				By("not returning any error")
-				Expect(*returnedErr).To(BeNil())
-				By("returning the expected result")
-				AssertPrettyDiff(heredoc.Doc(`
-					block indented with spaces and tabs
-					-
-					  variable indented with spaces
-				`), *returnedResult)
+			Context("default", func() {
+				It("should return the expected rendered content", func() {
+					By("not returning any error")
+					Expect(*returnedErr).To(BeNil())
+					By("returning the expected result")
+					AssertPrettyDiff(heredoc.Doc(`
+						block indented with spaces and tabs
+						-
+						  variable indented with spaces
+					`), *returnedResult)
+				})
+			})
+			Context("when left stripping is disabled locally", func() {
+				BeforeEach(func() {
+					*loader = loaders.MustNewMemoryLoader(map[string]string{
+						*identifier: heredoc.Doc(`
+							  	{%+ set _ = "" %}block indented with spaces and tabs
+							-
+							  {{ "variable indented with spaces" }}
+						`),
+					})
+				})
+				It("should return the expected rendered content", func() {
+					By("not returning any error")
+					Expect(*returnedErr).To(BeNil())
+					By("returning the expected result")
+					AssertPrettyDiff(heredoc.Doc(`
+						  	block indented with spaces and tabs
+						-
+						  variable indented with spaces
+					`), *returnedResult)
+				})
 			})
 		})
 	})

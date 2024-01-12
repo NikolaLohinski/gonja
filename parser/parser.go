@@ -199,7 +199,9 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 		}
 		if p.Config.LeftStripBlocks {
 			if next := p.Peek(tokens.BlockBegin); next != nil {
-				n.RemoveTrailingWhiteSpaceFromLastLine = true
+				if len(next.Val) == 0 || next.Val[len(next.Val)-1] != '+' {
+					n.RemoveTrailingWhiteSpaceFromLastLine = true
+				}
 			}
 		}
 		p.Consume()

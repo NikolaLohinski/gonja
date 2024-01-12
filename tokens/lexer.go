@@ -299,6 +299,7 @@ func (l *Lexer) lexVariableEnd() lexFn {
 func (l *Lexer) lexBlock() lexFn {
 	l.Pos += len(l.Config.BlockStartString)
 	l.accept("-")
+	l.accept("+")
 	l.emit(BlockBegin)
 	for isSpace(l.peek()) {
 		l.next()
@@ -317,6 +318,7 @@ func (l *Lexer) lexBlock() lexFn {
 
 func (l *Lexer) lexBlockEnd() lexFn {
 	l.accept("-")
+	l.accept("+")
 	l.Pos += len(l.Config.BlockEndString)
 	l.emit(BlockEnd)
 	if l.rawEnd != nil {
@@ -352,7 +354,12 @@ func (l *Lexer) lexExpression() lexFn {
 		case r == '|':
 			l.emit(Pipe)
 		case r == '+':
-			l.emit(Addition)
+			if l.hasPrefix(l.Config.BlockEndString) {
+				l.backup()
+				return l.lexBlockEnd
+			} else {
+				l.emit(Addition)
+			}
 		case r == '-':
 			if l.hasPrefix(l.Config.BlockEndString) {
 				l.backup()
