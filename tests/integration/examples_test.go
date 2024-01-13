@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"bytes"
+
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/exec"
 
@@ -14,10 +16,11 @@ var _ = Context("examples", func() {
 			template, err := gonja.FromString("Hello {{ name | capitalize }}!")
 			Expect(err).To(BeNil())
 
-			out, err := template.ExecuteToString(exec.NewContext(map[string]interface{}{"name": "bob"}))
+			out := bytes.NewBufferString("")
+			err = template.Execute(out, exec.NewContext(map[string]interface{}{"name": "bob"}))
 			Expect(err).To(BeNil())
 
-			Expect(out).To(Equal("Hello Bob!"))
+			Expect(out.String()).To(Equal("Hello Bob!"))
 		})
 	})
 })

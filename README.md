@@ -24,6 +24,7 @@ This `gonja` library has been packaged as a `terraform` provider. For more infor
 package main
 
 import (
+	"os"
 	"fmt"
 
 	"github.com/nikolalohinski/gonja/v2"
@@ -36,14 +37,13 @@ func main() {
 		panic(err)
 	}
 
-	out, err := template.Execute(exec.NewContext(map[string]interface{}{
+	data := exec.NewContext(map[string]interface{}{
 		"name": "bob",
-	}))
-	if err != nil {
+	})
+	
+	if err = template.Execute(os.Stdout, data); err != nil { // Prints: Hello Bob!
 		panic(err)
 	}
-
-	fmt.Println(out) // Prints: Hello Bob!
 }
 ```
 
