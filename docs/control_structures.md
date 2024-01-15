@@ -76,7 +76,7 @@ The include tag is useful to include a template and return the rendered contents
 ```
 
 ## The `with` control structure
-| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-control structure) |
+| [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#with-statement) |
 | ---------------------------------------------------------------------------------- |
 
 The with control structure makes it possible to create a new inner scope. Variables set within this scope are not visible outside of the scope.
