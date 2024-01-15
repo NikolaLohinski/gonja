@@ -52,7 +52,7 @@ var _ = Context("helpers", func() {
 			filepath = new(string)
 		)
 		BeforeEach(func() {
-			file := MustReturn(os.CreateTemp("", "helpers.*.tpl")).(*os.File)
+			file := MustReturn(os.CreateTemp("", "helpers.*.tpl"))
 			MustReturn(file.WriteString("Hello {{ 'bob' | capitalize  }}!"))
 			*filepath = file.Name()
 		})

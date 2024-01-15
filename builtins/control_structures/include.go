@@ -33,7 +33,6 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 	if controlStructure.isEmpty {
 		return nil
 	}
-	sub := r.Inherit()
 
 	filenameValue := r.Eval(controlStructure.filenameExpression)
 	if filenameValue.IsError() {
@@ -43,7 +42,11 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 	filename := filenameValue.String()
 	loader, err := r.Loader.Inherit(filename)
 	if err != nil {
-		return errors.Errorf("failed to inherit loader: %s", err)
+		if controlStructure.ignoreMissing {
+			return nil
+		} else {
+			return errors.Errorf("failed to inherit loader: %s", err)
+		}
 	}
 
 	included, err := exec.NewTemplate(filename, r.Config, loader, r.Environment)
@@ -51,12 +54,11 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 		if controlStructure.ignoreMissing {
 			return nil
 		} else {
-			return fmt.Errorf("Unable to load template '%s': %s", filename, err)
+			return fmt.Errorf("unable to load template '%s': %s", filename, err)
 		}
 	}
-	sub = exec.NewRenderer(r.Environment, r.Output, r.Config.Inherit(), loader, included)
 
-	return sub.Execute()
+	return exec.NewRenderer(r.Environment, r.Output, r.Config.Inherit(), loader, included).Execute()
 }
 
 func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
