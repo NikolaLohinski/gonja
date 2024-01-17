@@ -382,10 +382,34 @@ func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 		return p.parseNumber()
 
 	case tokens.String:
-		return p.parseString()
+		str, err := p.parseString()
+		if err != nil {
+			return nil, err
+		}
+		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
+			var err error
+			getter, err := p.ParseGetter(accessor, str)
+			if err != nil {
+				return nil, err
+			}
+			return getter, nil
+		}
+		return str, nil
 
 	case tokens.LeftParenthesis, tokens.LeftBrace, tokens.LeftBracket:
-		return p.parseCollectionOrExpression()
+		collectionOrExpression, err := p.parseCollectionOrExpression()
+		if err != nil {
+			return nil, err
+		}
+		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
+			var err error
+			getter, err := p.ParseGetter(accessor, collectionOrExpression)
+			if err != nil {
+				return nil, err
+			}
+			return getter, nil
+		}
+		return collectionOrExpression, nil
 
 	case tokens.Name:
 		return p.ParseVariable()

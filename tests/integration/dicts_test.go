@@ -67,6 +67,19 @@ var _ = Context("dicts", func() {
 			})
 		})
 	})
+	Context("when accessing a raw dict", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: `{{ {"foo": "bar"}["foo"] }}`,
+			})
+		})
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			AssertPrettyDiff("bar", *returnedResult)
+		})
+	})
 
 	Context("when doing an invalid access with ..", func() {
 		BeforeEach(func() {

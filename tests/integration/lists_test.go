@@ -99,4 +99,17 @@ var _ = Context("lists", func() {
 		})
 
 	})
+	Context("when accessing a raw list literal", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: `{{ [1,2,3][0:1] }}`,
+			})
+		})
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			AssertPrettyDiff("[1]", *returnedResult)
+		})
+	})
 })

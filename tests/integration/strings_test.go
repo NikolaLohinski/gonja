@@ -97,5 +97,18 @@ var _ = Context("strings", func() {
 			})
 		})
 
+		Context("when accessing a raw string literal", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: `{{ "testing is fun!"[0:4] }}`,
+				})
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff("test", *returnedResult)
+			})
+		})
 	})
 })
