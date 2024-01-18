@@ -127,6 +127,9 @@ func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
 	if t == nil {
 		return nil, p.Error("Expected (", t)
 	}
+	if p.Match(tokens.RightParenthesis) != nil {
+		return &nodes.Tuple{Location: t, Val: []nodes.Expression{}}, nil
+	}
 	expression, err := p.ParseExpression()
 	if err != nil {
 		return nil, err
@@ -254,52 +257,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 		return br, nil
 	}
 
-	var variable nodes.Node = &nodes.Name{t}
-
-	for !p.Stream().EOF() {
-		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
-			var err error
-			variable, err = p.ParseGetter(accessor, variable)
-			if err != nil {
-				return nil, err
-			}
-			continue
-		} else if lparen := p.Match(tokens.LeftParenthesis); lparen != nil {
-			call := &nodes.Call{
-				Location: lparen,
-				Func:     variable,
-				Args:     []nodes.Expression{},
-				Kwargs:   map[string]nodes.Expression{},
-			}
-
-			for p.Match(tokens.Comma) != nil || p.Match(tokens.RightParenthesis) == nil {
-				// TODO: Handle multiple args and kwargs
-				v, err := p.ParseExpression()
-				if err != nil {
-					return nil, err
-				}
-
-				if p.Match(tokens.Assign) != nil {
-					key := v.Position().Val
-					value, errValue := p.ParseExpression()
-					if errValue != nil {
-						return nil, errValue
-					}
-					call.Kwargs[key] = value
-				} else {
-					call.Args = append(call.Args, v)
-				}
-			}
-			variable = call
-			// We're done parsing the function call, next variable part
-			continue
-		}
-
-		// No dot or function call? Then we're done with the variable parsing
-		break
-	}
-
-	return variable, nil
+	return &nodes.Name{Name: t}, nil
 }
 
 func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nodes.Expression, error) {
@@ -314,7 +272,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 		}
 		switch tok.Type {
 		case tokens.Name:
-			getAttributeNode.Attr = tok.Val
+			getAttributeNode.Attribute = tok.Val
 		case tokens.Integer:
 			i, err := strconv.Atoi(tok.Val)
 			if err != nil {
@@ -374,47 +332,67 @@ func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
 	t := p.Current()
 
 	if t == nil {
-		return nil, p.Error("Unexpected EOF, expected a number, string, keyword or identifier.", p.Current())
+		return nil, p.Error("unexpected EOF, expected a number, string, keyword or identifier.", p.Current())
 	}
-
+	var ident nodes.Node
+	var err error
 	switch t.Type {
 	case tokens.Integer, tokens.Float:
-		return p.parseNumber()
-
+		ident, err = p.parseNumber()
 	case tokens.String:
-		str, err := p.parseString()
-		if err != nil {
-			return nil, err
-		}
-		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
-			var err error
-			getter, err := p.ParseGetter(accessor, str)
-			if err != nil {
-				return nil, err
-			}
-			return getter, nil
-		}
-		return str, nil
-
+		ident, err = p.parseString()
 	case tokens.LeftParenthesis, tokens.LeftBrace, tokens.LeftBracket:
-		collectionOrExpression, err := p.parseCollectionOrExpression()
-		if err != nil {
-			return nil, err
-		}
+		ident, err = p.parseCollectionOrExpression()
+	case tokens.Name:
+		ident, err = p.ParseVariable()
+	default:
+		return nil, p.Error("expected either a number, string, keyword or identifier.", t)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var parent nodes.Node
+	for !p.Stream().EOF() {
 		if accessor := p.Match(tokens.Dot, tokens.LeftBracket); accessor != nil {
-			var err error
-			getter, err := p.ParseGetter(accessor, collectionOrExpression)
+			getter, err := p.ParseGetter(accessor, ident)
 			if err != nil {
 				return nil, err
 			}
-			return getter, nil
+			parent = ident
+			ident = getter
+			continue
+		} else if leftParenthesis := p.Match(tokens.LeftParenthesis); leftParenthesis != nil {
+			call := &nodes.Call{
+				Location: leftParenthesis,
+				Func:     ident,
+				Args:     []nodes.Expression{},
+				Kwargs:   map[string]nodes.Expression{},
+				Parent:   parent,
+			}
+
+			for p.Match(tokens.Comma) != nil || p.Match(tokens.RightParenthesis) == nil {
+				v, err := p.ParseExpression()
+				if err != nil {
+					return nil, err
+				}
+
+				if p.Match(tokens.Assign) != nil {
+					key := v.Position().Val
+					value, errValue := p.ParseExpression()
+					if errValue != nil {
+						return nil, errValue
+					}
+					call.Kwargs[key] = value
+				} else {
+					call.Args = append(call.Args, v)
+				}
+			}
+			ident = call
+			continue
 		}
-		return collectionOrExpression, nil
-
-	case tokens.Name:
-		return p.ParseVariable()
-
-	default:
-		return nil, p.Error("Expected either a number, string, keyword or identifier.", t)
+		break
 	}
+
+	return ident, nil
 }

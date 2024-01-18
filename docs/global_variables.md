@@ -1,6 +1,6 @@
 # Global Variables
 
-Global variables are jinja variables available in the root scope by default.
+Global variables are runtime variables available in the root scope by default.
 
 ```
 {{ gonja.version }}

@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"strings"
@@ -359,17 +360,17 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
 	}
 
-	if node.Attr != "" {
-		attr, found := value.GetAttribute(node.Attr)
+	if node.Attribute != "" {
+		attr, found := value.GetAttribute(node.Attribute)
 		if !found {
-			attr, found = value.GetItem(node.Attr)
+			attr, found = value.GetItem(node.Attribute)
 		}
 		if !found {
 			if attr.IsError() {
 				return AsValue(errors.Wrapf(attr, `Unable to evaluate %s`, node))
 			}
 			if e.Config.StrictUndefined {
-				return AsValue(errors.Errorf(`Unable to evaluate %s: attribute '%s' not found`, node, node.Attr))
+				return AsValue(errors.Errorf(`Unable to evaluate %s: attribute '%s' not found`, node, node.Attribute))
 			}
 			return AsValue(nil)
 		}
@@ -389,17 +390,96 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 	}
 }
 
+func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []nodes.Expression, kwargs map[string]nodes.Expression) *Value {
+	parent := e.Eval(parentNode)
+	if parent.IsError() {
+		return AsValue(errors.Wrapf(parent, `unable to evaluate '%s'`, parentNode))
+	}
+	parameters := NewVarArgs()
+	for _, param := range args {
+		value := e.Eval(param)
+		if value.IsError() {
+			return AsValue(errors.Wrapf(value, `Unable to evaluate parameter %s`, param))
+		}
+		parameters.Args = append(parameters.Args, value)
+	}
+
+	for key, param := range kwargs {
+		value := e.Eval(param)
+		if value.IsError() {
+			return AsValue(errors.Wrapf(value, `Unable to evaluate parameter %s=%s`, key, param))
+		}
+		parameters.KwArgs[key] = value
+	}
+	var result interface{}
+	err := fmt.Errorf("unknown method '%s' for '%s'", method, parent.String())
+	switch {
+	case parent.IsString():
+		if e.Environment.Methods.Str.Exists(method) {
+			result, err = e.Environment.Methods.Str[method](parent.String(), parent, parameters)
+		}
+	case parent.IsBool():
+		if e.Environment.Methods.Bool.Exists(method) {
+			result, err = e.Environment.Methods.Bool[method](parent.Bool(), parent, parameters)
+		}
+	case parent.IsFloat():
+		if e.Environment.Methods.Float.Exists(method) {
+			result, err = e.Environment.Methods.Float[method](parent.Float(), parent, parameters)
+		}
+	case parent.IsInteger():
+		if e.Environment.Methods.Int.Exists(method) {
+			result, err = e.Environment.Methods.Int[method](parent.Integer(), parent, parameters)
+		}
+	case parent.IsDict():
+		if e.Environment.Methods.Dict.Exists(method) {
+			dict := parent.ToGoSimpleType(false)
+			if err, ok := dict.(error); err != nil && ok {
+				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
+			}
+			goMap, ok := dict.(map[string]interface{})
+			if !ok {
+				return AsValue(fmt.Errorf("failed to cast '%s' to map[string]interface{}: %s", parent.String(), err))
+			}
+			result, err = e.Environment.Methods.Dict[method](goMap, parent, parameters)
+		}
+	case parent.IsList():
+		if e.Environment.Methods.List.Exists(method) {
+			list := parent.ToGoSimpleType(false)
+			if err, ok := list.(error); err != nil && ok {
+				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
+			}
+			goList, ok := list.([]interface{})
+			if !ok {
+				return AsValue(fmt.Errorf("failed to cast '%s' to []interface{}: %s", parent.String(), err))
+			}
+			result, err = e.Environment.Methods.List[method](goList, parent, parameters)
+		}
+	default:
+		err = AsValue(errors.Errorf(`'%s' is not callable on %s`, method, parent))
+	}
+	if err != nil {
+		return AsValue(err)
+	}
+	if n, ok := parentNode.(*nodes.Name); ok && e.Environment.Context.Has(n.Name.Val) {
+		e.Environment.Context.Set(n.Name.Val, parent.Interface())
+	}
+
+	return AsValue(result)
+}
+
 func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 	fn := e.Eval(node.Func)
 	if fn.IsError() {
-		return AsValue(errors.Wrapf(fn, `Unable to evaluate function "%s"`, node.Func))
+		return AsValue(errors.Wrapf(fn, `unable to evaluate function '%s'`, node.Func))
 	}
 
 	if !fn.IsCallable() {
-		return AsValue(errors.Errorf(`%s is not callable`, node.Func))
+		getAttributeNode, ok := node.Func.(*nodes.GetAttribute)
+		if node.Parent == nil || !ok {
+			return AsValue(errors.Errorf(`%s is not callable`, node.Func))
+		}
+		return e.evalMethod(node.Parent, getAttributeNode.Attribute, node.Args, node.Kwargs)
 	}
-
-	// current := reflect.ValueOf(fn) // Get the initial value
 
 	var current reflect.Value
 	var isSafe bool
@@ -417,7 +497,7 @@ func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 		params, err = e.evalParams(node, fn)
 	}
 	if err != nil {
-		return AsValue(errors.Wrapf(err, `Unable to evaluate parameters`))
+		return AsValue(errors.Wrapf(err, `unable to evaluate parameters`))
 	}
 
 	// Call it and get first return parameter back

@@ -111,4 +111,69 @@ var _ = Context("strings", func() {
 			})
 		})
 	})
+	Context("when using native python methods", func() {
+		var (
+			shouldRender = func(template, result string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected rendered content", func() {
+						By("not returning any error")
+						Expect(*returnedErr).To(BeNil())
+						By("returning the expected result")
+						AssertPrettyDiff(result, *returnedResult)
+					})
+				})
+			}
+			shouldFail = func(template, err string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected error", func() {
+						Expect(*returnedErr).ToNot(BeNil())
+						Expect((*returnedErr).Error()).To(MatchRegexp(err))
+					})
+				})
+			}
+		)
+		Context("upper", func() {
+			shouldRender("{{ 'test'.upper() }}", "TEST")
+			shouldFail("{{ 'test'.upper('unexpected') }}", "wrong signature for 'test.upper': received 1 unexpected positional argument")
+			shouldFail("{{ 'test'.upper(unexpected='even more') }}", "wrong signature for 'test.upper': received 1 unexpected keyword argument: 'unexpected'")
+		})
+		Context("startswith", func() {
+			shouldRender("{{ 'test123'.startswith('test') }}", "True")
+			shouldRender("{{ 'test123'.startswith('foo') }}", "False")
+			shouldRender("{{ 'test123'.startswith('123', 4) }}", "True")
+			shouldRender("{{ 'test123'.startswith('st', 2, 4) }}", "True")
+			shouldRender("{{ 'test123'.startswith('st123', 2, 4) }}", "False")
+			shouldRender("{{ 'test123'.startswith('23', -2) }}", "True")
+			shouldRender("{{ 'test123'.startswith('23', -2, 56) }}", "True")
+			shouldRender("{{ 'test123'.startswith('test', -42, 56) }}", "True")
+			shouldRender("{{ 'test123'.startswith('st', 2, -1) }}", "True")
+			shouldRender("{{ 'test123'.startswith('st', 2, -54) }}", "False")
+			shouldRender("{{ 'test123'.startswith('', 1, 3) }}", "True")
+			shouldRender("{{ 'test123'.startswith('', 3, 1) }}", "False")
+			shouldRender("{{ 'test123'.startswith(()) }}", "False")
+			shouldRender("{{ 'test123'.startswith([]) }}", "False")
+			shouldRender("{{ 'test123'.startswith(('test')) }}", "True")
+			shouldRender("{{ 'test123'.startswith(['test']) }}", "True")
+			shouldRender("{{ 'test123'.startswith(['foo', 'test']) }}", "True")
+			shouldFail("{{ 'test123'.startswith(prefix='') }}", "wrong signature for 'test123.startswith': missing required 1st positional argument 'prefix'")
+		})
+		Context("encode", func() {
+			shouldRender("{{ 'test123'.encode() }}", "b'test123'")
+			shouldRender("{{ 'test123'.encode(encoding='utf8') }}", "b'test123'")
+			shouldRender("{{ 'test123'.encode('latin_1') }}", "b'test123'")
+			shouldRender("{{ 'test123'.encode(errors='ignore') }}", "b'test123'")
+			shouldRender("{{ 'test123'.encode('iso8859-1', 'ignore') }}", "b'test123'")
+			shouldFail("{{ 'test123'.encode('iso8859-1', encoding='utf8') }}", "wrong signature for 'test123.encode': received 1 unexpected keyword argument: 'encoding'")
+		})
+	})
 })

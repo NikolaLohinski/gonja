@@ -112,4 +112,51 @@ var _ = Context("lists", func() {
 			AssertPrettyDiff("[1]", *returnedResult)
 		})
 	})
+	Context("when using native python methods", func() {
+		var (
+			shouldRender = func(template, result string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected rendered content", func() {
+						By("not returning any error")
+						Expect(*returnedErr).To(BeNil())
+						By("returning the expected result")
+						AssertPrettyDiff(result, *returnedResult)
+					})
+				})
+			}
+			shouldFail = func(template, err string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected error", func() {
+						Expect(*returnedErr).ToNot(BeNil())
+						Expect((*returnedErr).Error()).To(MatchRegexp(err))
+					})
+				})
+			}
+		)
+		Context("copy", func() {
+			shouldRender("{{ ['one','two'].copy() }}", "['one', 'two']")
+			shouldFail("{{ [].copy('nope') }}", "wrong signature for '\\[\\].copy': received 1 unexpected positional argument")
+		})
+		Context("append", func() {
+			shouldRender("{{ ['one','two'].append('three') }}", "")
+			shouldRender("{% set l = ['one','two'] %}{{ l.append('three') }}{{ l }}", "['one', 'two', 'three']")
+			shouldRender("{% set d = {'nested': ['one','two']} %}{{ d.nested.append('three') }}{{ d.nested }}", "['one', 'two', 'three']")
+			shouldFail("{{ [].append('yolo', foo='bar') }}", "wrong signature for '\\[\\].append': received 1 unexpected keyword argument: 'foo'")
+		})
+		Context("reverse", func() {
+			shouldRender("{{ ['one','two'].reverse() }}", "")
+			shouldRender("{% set l = ['one','two','three'] %}{{ l.reverse() }}{{ l }}", "['three', 'two', 'one']")
+			shouldFail("{{ [].reverse('yolo') }}", "wrong signature for '\\[\\].reverse': received 1 unexpected positional argument")
+		})
+	})
 })

@@ -67,6 +67,7 @@ func (t *Template) Execute(wr io.Writer, data *Context) error {
 		Filters:           t.environment.Filters,
 		ControlStructures: t.environment.ControlStructures,
 		Context:           t.environment.Context.Inherit().Update(data),
+		Methods:           t.environment.Methods,
 	}, wr, t.config, t.loader, t)
 
 	err := renderer.Execute()

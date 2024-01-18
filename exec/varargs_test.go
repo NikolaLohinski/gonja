@@ -47,7 +47,7 @@ var _ = Context("varargs", func() {
 			*fallback = "not found"
 		})
 		JustBeforeEach(func() {
-			returnedValue = varargs.GetKwarg(*key, *fallback)
+			returnedValue = varargs.GetKeywordArgument(*key, *fallback)
 		})
 		Context("default if missing", func() {
 			It("should return the correct value", func() {
@@ -86,19 +86,19 @@ var _ = Context("varargs", func() {
 				{
 					"got an argument",
 					&exec.VarArgs{Args: []*exec.Value{exec.AsValue(42)}},
-					`Unexpected argument '42'`,
+					`unexpected argument '42'`,
 				},
 				{
 					"got multiples arguments",
 					&exec.VarArgs{Args: []*exec.Value{exec.AsValue(42), exec.AsValue(7)}},
-					`Unexpected arguments '42, 7'`,
+					`unexpected arguments '42, 7'`,
 				},
 				{
 					"got a keyword argument",
 					&exec.VarArgs{KwArgs: map[string]*exec.Value{
 						"key": exec.AsValue(42),
 					}},
-					`Unexpected keyword argument 'key=42'`,
+					`unexpected keyword argument 'key=42'`,
 				},
 				{
 					"got multiple keyword arguments",
@@ -106,7 +106,7 @@ var _ = Context("varargs", func() {
 						"key":   exec.AsValue(42),
 						"other": exec.AsValue(7),
 					}},
-					`Unexpected keyword arguments 'key=42, other=7'`,
+					`unexpected keyword arguments 'key=42, other=7'`,
 				},
 				{
 					"got one of each",
@@ -116,7 +116,7 @@ var _ = Context("varargs", func() {
 							"key": exec.AsValue(42),
 						},
 					},
-					`Unexpected arguments '42, key=42'`,
+					`unexpected arguments '42, key=42'`,
 				},
 			} {
 				Context(t.desc, func() {
@@ -151,19 +151,19 @@ var _ = Context("varargs", func() {
 					"got less arguments",
 					&exec.VarArgs{Args: []*exec.Value{exec.AsValue(42)}},
 					2,
-					`Expected 2 arguments, got 1`,
+					`expected 2 arguments, got 1`,
 				},
 				{
 					"got less arguments (singular)",
 					&exec.VarArgs{},
 					1,
-					`Expected an argument, got 0`,
+					`expected an argument, got 0`,
 				},
 				{
 					"got more arguments",
 					&exec.VarArgs{Args: []*exec.Value{exec.AsValue(42), exec.AsValue(7)}},
 					1,
-					`Unexpected argument '7'`,
+					`unexpected argument '7'`,
 				},
 				{
 					"got a keyword argument",
@@ -174,7 +174,7 @@ var _ = Context("varargs", func() {
 						},
 					},
 					1,
-					`Unexpected keyword argument 'key=42'`,
+					`unexpected keyword argument 'key=42'`,
 				},
 			} {
 				Context(t.desc, func() {
@@ -221,7 +221,7 @@ var _ = Context("varargs", func() {
 						{"key", "default key"},
 						{"other", "default other"},
 					},
-					`Unexpected argument 'unexpected'`,
+					`unexpected argument 'unexpected'`,
 				},
 				{
 					"got an unexpected keyword argument",
@@ -232,7 +232,7 @@ var _ = Context("varargs", func() {
 						{"key", "default key"},
 						{"other", "default other"},
 					},
-					`Unexpected keyword argument 'unknown=42'`,
+					`unexpected keyword argument 'unknown=42'`,
 				},
 				{
 					"got multiple keyword arguments",
@@ -244,7 +244,7 @@ var _ = Context("varargs", func() {
 						{"key", "default key"},
 						{"other", "default other"},
 					},
-					`Unexpected keyword arguments 'seven=7, unknown=42'`,
+					`unexpected keyword arguments 'seven=7, unknown=42'`,
 				},
 			} {
 				Context(t.desc, func() {
@@ -357,7 +357,7 @@ var _ = Context("varargs", func() {
 							"other": exec.AsValue(7),
 						},
 					},
-					`Keyword 'key' has been submitted twice`,
+					`keyword 'key' has been submitted twice`,
 				},
 			} {
 				Context(t.desc, func() {

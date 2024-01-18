@@ -188,8 +188,8 @@ func MatchGetAttributeNode(node types.GomegaMatcher, attribute interface{}) type
 		BeAssignableToTypeOf(nodes.GetAttribute{}),
 		Or(
 			MatchFields(IgnoreExtras, Fields{
-				"Node": PointTo(node),
-				"Attr": Equal(attribute),
+				"Node":      PointTo(node),
+				"Attribute": Equal(attribute),
 			}),
 			MatchFields(IgnoreExtras, Fields{
 				"Node":  PointTo(node),

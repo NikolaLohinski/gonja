@@ -177,7 +177,7 @@ type String struct {
 }
 
 func (s *String) Position() *tokens.Token { return s.Location }
-func (s *String) String() string          { return s.Location.Val }
+func (s *String) String() string          { return fmt.Sprintf("'%s'", s.Location.Val) }
 
 type Integer struct {
 	Location *tokens.Token
@@ -301,6 +301,7 @@ type Call struct {
 	Location *tokens.Token
 	Func     Node
 	Args     []Expression
+	Parent   Node
 	Kwargs   map[string]Expression
 }
 
@@ -333,17 +334,17 @@ func (g *GetSlice) String() string {
 }
 
 type GetAttribute struct {
-	Location *tokens.Token
-	Node     Node
-	Attr     string
-	Index    int
+	Location  *tokens.Token
+	Node      Node
+	Attribute string
+	Index     int
 }
 
 func (g *GetAttribute) Position() *tokens.Token { return g.Location }
 func (g *GetAttribute) String() string {
 	var param string
-	if g.Attr != "" {
-		param = g.Attr
+	if g.Attribute != "" {
+		param = g.Attribute
 	} else {
 		param = strconv.Itoa(g.Index)
 	}

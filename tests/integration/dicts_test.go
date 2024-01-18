@@ -94,4 +94,41 @@ var _ = Context("dicts", func() {
 			Expect(*returnedErr).ToNot(BeNil())
 		})
 	})
+	Context("when using native python methods", func() {
+		var (
+			shouldRender = func(template, result string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected rendered content", func() {
+						By("not returning any error")
+						Expect(*returnedErr).To(BeNil())
+						By("returning the expected result")
+						AssertPrettyDiff(result, *returnedResult)
+					})
+				})
+			}
+			shouldFail = func(template, err string) {
+				Context(template, func() {
+					BeforeEach(func() {
+						*loader = loaders.MustNewMemoryLoader(map[string]string{
+							*identifier: template,
+						})
+					})
+					It("should return the expected error", func() {
+						Expect(*returnedErr).ToNot(BeNil())
+						Expect((*returnedErr).Error()).To(MatchRegexp(err))
+					})
+				})
+			}
+		)
+		Context("keys", func() {
+			shouldRender("{{ {'foo': 'bar', 'yolo': 1}.keys() }}", "['foo', 'yolo']")
+			shouldFail("{{ {}.keys('nope') }}", "wrong signature for '{}.keys': received 1 unexpected positional argument")
+		})
+	})
+
 })

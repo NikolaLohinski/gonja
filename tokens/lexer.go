@@ -507,20 +507,21 @@ func (l *Lexer) lexNumber() lexFn {
 	for {
 		switch r := l.next(); {
 		case isNumeric(r):
-			// abosrb
+			continue
 		case r == '.':
-			if tokType != Float {
-				tokType = Float
-			} else {
-				l.errorf("two dots in numeric token")
+			if n := l.peek(); isNumeric(n) || isSpace(n) {
+				if tokType != Float {
+					tokType = Float
+					continue
+				}
+				return l.errorf("two dots in numeric token")
 			}
 		case isAlphaNumeric(r) && tokType == Integer:
 			return l.lexIdentifier
-		default:
-			l.backup()
-			l.emit(tokType)
-			return l.lexExpression
 		}
+		l.backup()
+		l.emit(tokType)
+		return l.lexExpression
 	}
 }
 
