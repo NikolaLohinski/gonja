@@ -1,6 +1,6 @@
 # Control Structures
 
-This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _statement_) is a special keyword that can be used in block to achieve conditional logic in a template.
+This section describes the syntax and semantics of the template engine and will be most useful as reference to those creating Jinja templates. A _control structure_  (or _statement_) is a special keyword that can be used through blocks in order to achieve conditional logic in a template.
 
 The following clickable admonition can be used to browse the `python` dedicated documentation for additional details:
 

@@ -1032,7 +1032,7 @@ func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if p.IsError() || !in.IsString() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'trim'"))
 	}
-	chars := p.GetKwarg(charsParam.Name, charsParam.Default).String()
+	chars := p.GetKeywordArgument(charsParam.Name, charsParam.Default).String()
 	return exec.AsValue(strings.Trim(in.String(), chars))
 }
 
@@ -1341,13 +1341,13 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		Name:    "boolean",
 		Default: false,
 	}})
-	if p.IsError() || !p.GetKwarg("boolean", false).IsBool() {
+	if p.IsError() || !p.GetKeywordArgument("boolean", false).IsBool() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
 	}
 	if in.IsError() || in.IsNil() {
 		return p.First()
 	}
-	if p.GetKwarg("boolean", false).Bool() && !(in.IsBool() && in.Bool()) {
+	if p.GetKeywordArgument("boolean", false).Bool() && !(in.IsBool() && in.Bool()) {
 		return p.First()
 	}
 	return in

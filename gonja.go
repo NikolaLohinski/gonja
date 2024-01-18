@@ -21,6 +21,7 @@ var (
 		Filters:           builtins.Filters,
 		Tests:             builtins.Tests,
 		ControlStructures: builtins.ControlStructures,
+		Methods:           builtins.Methods,
 	}
 )
 

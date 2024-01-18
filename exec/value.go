@@ -241,13 +241,25 @@ func (v *Value) String() string {
 		}
 	case reflect.Slice, reflect.Array:
 		var out strings.Builder
-		length := v.Len()
+		// Special case for []byte
+		if resolved.Type().Elem().Kind() == reflect.Uint8 {
+			out.WriteString("b'")
+			for _, b := range resolved.Bytes() {
+				out.WriteByte(b)
+			}
+			out.WriteString("'")
+			return out.String()
+		}
 		out.WriteByte('[')
+		length := v.Len()
 		for i := 0; i < length; i++ {
 			if i > 0 {
 				out.WriteString(", ")
 			}
-			item := ToValue(v.Index(i).Val)
+			item, ok := v.Index(i).Val.Interface().(*Value)
+			if !ok {
+				item = ToValue(v.Index(i).Val)
+			}
 			if item.IsString() {
 				out.WriteString(fmt.Sprintf(`'%s'`, item.String()))
 			} else {

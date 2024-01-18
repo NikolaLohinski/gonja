@@ -10,6 +10,7 @@ type Environment struct {
 	ControlStructures ControlStructureSet
 	Tests             TestSet
 	Context           *Context
+	Methods           Methods
 }
 
 type FilterSet map[string]FilterFunction
@@ -129,4 +130,22 @@ func (ts *TestSet) Update(other TestSet) TestSet {
 		(*ts)[name] = test
 	}
 	return *ts
+}
+
+type Method[I interface{}] func(self I, selfValue *Value, arguments *VarArgs) (interface{}, error)
+
+type Methods struct {
+	Bool  MethodSet[bool]
+	Int   MethodSet[int]
+	Float MethodSet[float64]
+	Str   MethodSet[string]
+	Dict  MethodSet[map[string]interface{}]
+	List  MethodSet[[]interface{}]
+}
+
+type MethodSet[I interface{}] map[string]Method[I]
+
+func (m MethodSet[I]) Exists(name string) bool {
+	_, existing := m[name]
+	return existing
 }

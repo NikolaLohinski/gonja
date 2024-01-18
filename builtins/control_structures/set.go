@@ -39,8 +39,8 @@ func (controlStructure *SetControlStructure) Execute(r *exec.Renderer, tag *node
 		if target.IsError() {
 			return errors.Wrapf(target, `Unable to evaluate target %s`, n)
 		}
-		if err := target.Set(exec.AsValue(n.Attr), value.Interface()); err != nil {
-			return errors.Wrapf(err, `Unable to set value on "%s"`, n.Attr)
+		if err := target.Set(exec.AsValue(n.Attribute), value.Interface()); err != nil {
+			return errors.Wrapf(err, `Unable to set value on "%s"`, n.Attribute)
 		}
 	case *nodes.GetItem:
 		target := r.Eval(n.Node)
@@ -67,15 +67,15 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	}
 
 	// Parse variable name
-	ident, err := args.ParseVariable()
+	ident, err := args.ParseVariableOrLiteral()
 	if err != nil {
-		return nil, errors.Wrap(err, `Unable to parse identifier`)
+		return nil, errors.Wrap(err, `unable to parse identifier`)
 	}
 	switch n := ident.(type) {
 	case *nodes.Name, *nodes.Call, *nodes.GetItem, *nodes.GetAttribute:
 		controlStructure.target = n
 	default:
-		return nil, errors.Errorf(`Unexpected set target %s`, n)
+		return nil, errors.Errorf(`unexpected set target %s`, n)
 	}
 
 	if args.Match(tokens.Assign) == nil {
