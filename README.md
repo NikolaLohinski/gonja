@@ -80,6 +80,25 @@ The following steps can be used as general guidelines to migrate from `v1` to `v
 * **escape** / **force_escape**: Unlike Jinja's behavior, the `escape`-filter is applied immediately. Therefore there is no need for a `force_escape` filter
 * Only subsets of native `python` types (`bool`, `int`, `float`, `str`, `dict` and `list`) methods have been re-implemented in Go and can slightly differ from the original ones
 
+## Development
+
+### Guidelines
+
+Please read through the [contribution guidelines](./CONTRIBUTING.md) before diving into any work.
+
+### Requirements
+
+- Install go `>= 1.21` by following the [official documentation](https://go.dev/doc/install) ;
+- Install `ginkgo` by [any means you see fit](https://onsi.github.io/ginkgo/).
+
+### Tests
+
+The unit tests can be run using:
+
+```sh
+ginkgo run -p ./...
+```
+
 ## Tribute
 
 A massive thank you to the original author [@noirbizarre](https://github.com/noirbizarre) for doing the initial work in https://github.com/noirbizarre/gonja which this project was forked from.
