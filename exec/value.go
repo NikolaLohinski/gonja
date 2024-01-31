@@ -281,7 +281,7 @@ func (v *Value) String() string {
 			for value.Kind() == reflect.Interface {
 				value = reflect.ValueOf(value.Interface())
 			}
-			valueLabel := value.String()
+			valueLabel := ToValue(value).String()
 			if value.Kind() == reflect.String {
 				valueLabel = fmt.Sprintf(`'%s'`, valueLabel)
 			}
