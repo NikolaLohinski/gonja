@@ -1,0 +1,17 @@
+name: release
+on:
+  push:
+    branches: [release/*]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run tests with ginkgo
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+      - uses: actions/checkout@v4
+      - run: go vet ./...
+      - run: go run github.com/onsi/ginkgo/v2/ginkgo run -r -tags=version --randomize-all --randomize-suites --race --trace --keep-going
+
