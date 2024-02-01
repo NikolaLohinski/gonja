@@ -88,7 +88,7 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 
 	if p.Match(tokens.RightBracket) != nil {
 		// Empty list
-		return &nodes.List{t, []nodes.Expression{}}, nil
+		return &nodes.List{Location: t, Val: []nodes.Expression{}}, nil
 	}
 
 	expr, err := p.ParseExpression()
@@ -116,7 +116,7 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 		return nil, p.Error("Expected ]", p.Current())
 	}
 
-	return &nodes.List{t, list}, nil
+	return &nodes.List{Location: t, Val: list}, nil
 }
 
 func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
