@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: go mod tidy && git diff --exit-code go.mod go.sum
   build:
-    name: Build the binary
+    name: Build the library
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
