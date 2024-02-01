@@ -389,21 +389,23 @@ func filterIndent(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "width", Default: 4},
-		{Name: "first", Default: false},
-		{Name: "blank", Default: false},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'indent'"))
+	var (
+		width int
+		first bool
+		blank bool
+	)
+	if err := params.Take(
+		exec.KeywordArgument("width", exec.AsValue(4), exec.IntArgument(&width)),
+		exec.KeywordArgument("first", exec.AsValue(false), exec.BoolArgument(&first)),
+		exec.KeywordArgument("blank", exec.AsValue(false), exec.BoolArgument(&blank)),
+	); err != nil {
+		return exec.AsValue(exec.InvalidFilterCallError(err))
 	}
-	width := p.KwArgs["width"].Integer()
-	first := p.KwArgs["first"].Bool()
-	blank := p.KwArgs["blank"].Bool()
+	if !in.IsString() {
+		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+	}
 	indent := strings.Repeat(" ", width)
 	lines := strings.Split(in.String(), "\n")
-	// start := 1
-	// if first {start = 0}
 	var out strings.Builder
 	for idx, line := range lines {
 		if line == "" && !blank {

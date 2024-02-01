@@ -163,6 +163,19 @@ func (r *ReducedVarArgs) Error() string {
 
 type ArgumentTransmuter func(*Value) error
 
+func BoolArgument(output *bool) func(*Value) error {
+	return func(v *Value) error {
+		if !v.IsBool() {
+			return fmt.Errorf("%s is not a boolean", v.String())
+		}
+		if output == nil {
+			return errors.New("received nil pointer to string in BoolArgument transposer")
+		}
+		*output = v.Bool()
+		return nil
+	}
+}
+
 func StringArgument(output *string) func(*Value) error {
 	return func(v *Value) error {
 		if !v.IsString() {
@@ -196,7 +209,7 @@ func StringEnumArgument(output *string, options []string) func(v *Value) error {
 			return fmt.Errorf("%s is not a string", v.String())
 		}
 		if output == nil {
-			return errors.New("received nil pointer to string in StringArgument transposer")
+			return errors.New("received nil pointer to string in StringEnumArgument transposer")
 		}
 		value := v.String()
 		for _, option := range options {

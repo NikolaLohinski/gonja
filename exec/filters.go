@@ -1,10 +1,14 @@
 package exec
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
 )
+
+type InvalidFilterCallError error
 
 // FilterFunction is the type filter functions must fulfil
 type FilterFunction func(e *Evaluator, in *Value, params *VarArgs) *Value
@@ -16,7 +20,7 @@ func (e *Evaluator) EvaluateFiltered(expr *nodes.FilteredExpression) *Value {
 	for _, filter := range expr.Filters {
 		value = e.ExecuteFilter(filter, value)
 		if value.IsError() {
-			return AsValue(errors.Wrapf(value, `Unable to evaluate filter %s`, filter))
+			return AsValue(errors.Wrapf(value, "unable to evaluate filter %s", filter))
 		}
 	}
 
@@ -30,7 +34,7 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 	for _, param := range fc.Args {
 		value := e.Eval(param)
 		if value.IsError() {
-			return AsValue(errors.Wrapf(value, `Unable to evaluate parameter %s`, param))
+			return AsValue(errors.Wrapf(value, "unable to evaluate parameter %s", param))
 		}
 		params.Args = append(params.Args, value)
 	}
@@ -38,7 +42,7 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 	for key, param := range fc.Kwargs {
 		value := e.Eval(param)
 		if value.IsError() {
-			return AsValue(errors.Wrapf(value, `Unable to evaluate parameter %s=%s`, key, param))
+			return AsValue(errors.Wrapf(value, "unable to evaluate parameter %s=%s", key, param))
 		}
 		params.KwArgs[key] = value
 	}
@@ -47,10 +51,17 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 
 // ExecuteFilterByName execute a filter given its name
 func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs) *Value {
-	if !e.Environment.Filters.Exists(name) {
-		return AsValue(errors.Errorf(`Filter "%s" not found`, name))
+	filter, ok := (e.Environment.Filters)[name]
+	if !e.Environment.Filters.Exists(name) || !ok {
+		return AsValue(errors.Errorf("filter '%s' not found", name))
 	}
-	fn, _ := (e.Environment.Filters)[name]
+	returnedValue := filter(e, in, params)
+	if returnedValue.IsError() {
+		err, ok := returnedValue.Interface().(InvalidFilterCallError)
+		if ok {
+			return AsValue(fmt.Errorf("invalid call to filter '%s': %s", name, err.Error()))
+		}
+	}
 
-	return fn(e, in, params)
+	return returnedValue
 }
