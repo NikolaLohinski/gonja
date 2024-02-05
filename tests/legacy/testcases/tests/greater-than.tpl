@@ -8,5 +8,3 @@
 {{ 42.0 is gt 42 }}
 {{ 42 is gt 51 }}
 {{ 42.0 is gt 51 }}
-{{ 'test' is gt 42 }}
-{{ 42 is gt 'test' }}

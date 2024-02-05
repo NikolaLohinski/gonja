@@ -1,6 +1,8 @@
 package exec
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
@@ -44,17 +46,16 @@ func (e *Evaluator) ExecuteTest(tc *nodes.TestCall, v *Value) *Value {
 }
 
 func (e *Evaluator) ExecuteTestByName(name string, in *Value, params *VarArgs) *Value {
-	if !e.Environment.Tests.Exists(name) {
-		return AsValue(errors.Errorf(`Test "%s" not found`, name))
-	}
 	test, ok := e.Environment.Tests[name]
-	if !ok {
-		return AsValue(errors.Errorf(`Test "%s" not found`, name))
+	if !e.Environment.Tests.Exists(name) || !ok {
+		return AsValue(errors.Errorf("test '%s' not found", name))
 	}
 
 	result, err := test(e.Environment.Context, in, params)
-	if err != nil {
-		return AsValue(errors.Wrapf(err, `Unable to execute test %s`, name))
+	if callErr, ok := err.(ErrInvalidCall); ok && err != nil {
+		return AsValue(fmt.Errorf("invalid call to test '%s': %s", name, callErr.Error()))
+	} else if err != nil {
+		return AsValue(fmt.Errorf("unable to execute test '%s': %s", name, err.Error()))
 	} else {
 		return AsValue(result)
 	}

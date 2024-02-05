@@ -144,8 +144,8 @@ var _ = Context("strings", func() {
 		)
 		Context("upper", func() {
 			shouldRender("{{ 'test'.upper() }}", "TEST")
-			shouldFail("{{ 'test'.upper('unexpected') }}", "wrong signature for 'test.upper': received 1 unexpected positional argument")
-			shouldFail("{{ 'test'.upper(unexpected='even more') }}", "wrong signature for 'test.upper': received 1 unexpected keyword argument: 'unexpected'")
+			shouldFail("{{ 'test'.upper('unexpected') }}", "received 1 unexpected positional argument")
+			shouldFail("{{ 'test'.upper(unexpected='even more') }}", "received 1 unexpected keyword argument: 'unexpected'")
 		})
 		Context("startswith", func() {
 			shouldRender("{{ 'test123'.startswith('test') }}", "True")
@@ -165,7 +165,7 @@ var _ = Context("strings", func() {
 			shouldRender("{{ 'test123'.startswith(('test')) }}", "True")
 			shouldRender("{{ 'test123'.startswith(['test']) }}", "True")
 			shouldRender("{{ 'test123'.startswith(['foo', 'test']) }}", "True")
-			shouldFail("{{ 'test123'.startswith(prefix='') }}", "wrong signature for 'test123.startswith': missing required 1st positional argument 'prefix'")
+			shouldFail("{{ 'test123'.startswith(prefix='') }}", "missing required 1st positional argument 'prefix'")
 		})
 		Context("encode", func() {
 			shouldRender("{{ 'test123'.encode() }}", "b'test123'")
@@ -173,7 +173,7 @@ var _ = Context("strings", func() {
 			shouldRender("{{ 'test123'.encode('latin_1') }}", "b'test123'")
 			shouldRender("{{ 'test123'.encode(errors='ignore') }}", "b'test123'")
 			shouldRender("{{ 'test123'.encode('iso8859-1', 'ignore') }}", "b'test123'")
-			shouldFail("{{ 'test123'.encode('iso8859-1', encoding='utf8') }}", "wrong signature for 'test123.encode': received 1 unexpected keyword argument: 'encoding'")
+			shouldFail("{{ 'test123'.encode('iso8859-1', encoding='utf8') }}", "received 1 unexpected keyword argument: 'encoding'")
 		})
 	})
 })

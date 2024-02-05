@@ -12,7 +12,7 @@ import (
 var strMethods = MethodSet[string]{
 	"upper": func(self string, _ *Value, arguments *VarArgs) (interface{}, error) {
 		if err := arguments.Take(); err != nil {
-			return nil, fmt.Errorf("wrong signature for '%s.upper': %s", self, err)
+			return nil, ErrInvalidCall(err)
 		}
 		return strings.ToUpper(self), nil
 	},
@@ -31,7 +31,7 @@ var strMethods = MethodSet[string]{
 			PositionalArgument("start", AsValue(0), IntArgument(&start)),
 			PositionalArgument("end", AsValue(len(self)), IntArgument(&end)),
 		); err != nil {
-			return nil, fmt.Errorf("wrong signature for '%s.startswith': %s", self, err)
+			return nil, ErrInvalidCall(err)
 		}
 		if start >= len(self) {
 			return false, nil
@@ -81,7 +81,7 @@ var strMethods = MethodSet[string]{
 				// "backslashreplace",
 			})),
 		); err != nil {
-			return nil, fmt.Errorf("wrong signature for '%s.encode': %s", self, err)
+			return nil, ErrInvalidCall(err)
 		}
 
 		switch encoding {
@@ -95,7 +95,7 @@ var strMethods = MethodSet[string]{
 			}
 			return result, nil
 		default:
-			return nil, fmt.Errorf("unsupported 'encoding=%s' in '%s.encode'", encoding, self)
+			return nil, ErrInvalidCall(fmt.Errorf("unsupported encoding '%s'", encoding))
 		}
 	},
 }

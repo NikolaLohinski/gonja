@@ -145,18 +145,18 @@ var _ = Context("lists", func() {
 		)
 		Context("copy", func() {
 			shouldRender("{{ ['one','two'].copy() }}", "['one', 'two']")
-			shouldFail("{{ [].copy('nope') }}", "wrong signature for '\\[\\].copy': received 1 unexpected positional argument")
+			shouldFail("{{ [].copy('nope') }}", "received 1 unexpected positional argument")
 		})
 		Context("append", func() {
 			shouldRender("{{ ['one','two'].append('three') }}", "")
 			shouldRender("{% set l = ['one','two'] %}{{ l.append('three') }}{{ l }}", "['one', 'two', 'three']")
 			shouldRender("{% set d = {'nested': ['one','two']} %}{{ d.nested.append('three') }}{{ d.nested }}", "['one', 'two', 'three']")
-			shouldFail("{{ [].append('yolo', foo='bar') }}", "wrong signature for '\\[\\].append': received 1 unexpected keyword argument: 'foo'")
+			shouldFail("{{ [].append('yolo', foo='bar') }}", "received 1 unexpected keyword argument: 'foo'")
 		})
 		Context("reverse", func() {
 			shouldRender("{{ ['one','two'].reverse() }}", "")
 			shouldRender("{% set l = ['one','two','three'] %}{{ l.reverse() }}{{ l }}", "['three', 'two', 'one']")
-			shouldFail("{{ [].reverse('yolo') }}", "wrong signature for '\\[\\].reverse': received 1 unexpected positional argument")
+			shouldFail("{{ [].reverse('yolo') }}", "received 1 unexpected positional argument")
 		})
 	})
 })

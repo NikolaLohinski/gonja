@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Context("floats", func() {
+var _ = Context("functions", func() {
 	var (
 		identifier = new(string)
 
@@ -62,14 +62,12 @@ var _ = Context("floats", func() {
 		}
 		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
-	Context("when defining a float with multiple dots", func() {
-		shouldFail("{{ 32.32.32 }}", "two dots in numeric token")
+	Context("joiner", func() {
+		shouldRender(`{% set pipe = joiner("|") -%}{% for i in [0, 1, 2] %}{{ pipe() }}{{ i }}{% endfor %}`, "0|1|2")
+		shouldFail("{% set pipe = joiner(True) -%}", "invalid call to function 'joiner': failed to validate argument 'sep': True is not a string")
 	})
-	Context("when using native python methods", func() {
-		Context("is_integer", func() {
-			shouldRender("{{ 42.32.is_integer() }}", "False")
-			shouldRender("{{ 42.00.is_integer() }}", "True")
-			shouldFail("{{ 42.35.is_integer('nope') }}", "received 1 unexpected positional argument")
-		})
+	Context("range", func() {
+		shouldRender(`{% for i in range(10) %}{{ i }}{% endfor %}`, "0123456789")
+		shouldFail("{% set invalid = range(True) -%}", "invalid call to function 'range': expected signature is \\[start, ]stop\\[, step] where all arguments are integers")
 	})
 })

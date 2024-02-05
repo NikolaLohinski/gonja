@@ -235,6 +235,32 @@ func IntArgument(output *int) func(v *Value) error {
 	}
 }
 
+func FloatArgument(output *float64) func(v *Value) error {
+	return func(v *Value) error {
+		if !v.IsFloat() {
+			return fmt.Errorf("%s is not a float", v.String())
+		}
+		if output == nil {
+			return errors.New("received nil pointer to int in FloatArgument transposer")
+		}
+		*output = v.Float()
+		return nil
+	}
+}
+
+func NumberArgument(output *float64) func(v *Value) error {
+	return func(v *Value) error {
+		if !v.IsNumber() {
+			return fmt.Errorf("%s is not a number", v.String())
+		}
+		if output == nil {
+			return errors.New("received nil pointer to int in NumberArgument transposer")
+		}
+		*output = v.Float()
+		return nil
+	}
+}
+
 func AnyArgument(output *interface{}) func(*Value) error {
 	return func(v *Value) error {
 		if output == nil {

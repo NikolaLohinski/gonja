@@ -8,8 +8,6 @@ import (
 	"github.com/nikolalohinski/gonja/v2/nodes"
 )
 
-type InvalidFilterCallError error
-
 // FilterFunction is the type filter functions must fulfil
 type FilterFunction func(e *Evaluator, in *Value, params *VarArgs) *Value
 
@@ -57,7 +55,7 @@ func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs)
 	}
 	returnedValue := filter(e, in, params)
 	if returnedValue.IsError() {
-		err, ok := returnedValue.Interface().(InvalidFilterCallError)
+		err, ok := returnedValue.Interface().(ErrInvalidCall)
 		if ok {
 			return AsValue(fmt.Errorf("invalid call to filter '%s': %s", name, err.Error()))
 		}

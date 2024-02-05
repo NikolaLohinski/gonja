@@ -68,12 +68,12 @@ var _ = Context("bools", func() {
 		Context("bit_count", func() {
 			shouldRender("{{ True.bit_count() }}", "1")
 			shouldRender("{{ False.bit_count() }}", "0")
-			shouldFail("{{ True.bit_count('nope') }}", "wrong signature for 'true.bit_count': received 1 unexpected positional argument")
+			shouldFail("{{ True.bit_count('nope') }}", "received 1 unexpected positional argument")
 		})
 		Context("bit_length", func() {
 			shouldRender("{{ True.bit_length() }}", "1")
 			shouldRender("{{ False.bit_length() }}", "0")
-			shouldFail("{{ False.bit_length('nope') }}", "wrong signature for 'false.bit_length': received 1 unexpected positional argument")
+			shouldFail("{{ False.bit_length('nope') }}", "received 1 unexpected positional argument")
 		})
 	})
 })

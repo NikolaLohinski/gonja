@@ -399,10 +399,10 @@ func filterIndent(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		exec.KeywordArgument("first", exec.AsValue(false), exec.BoolArgument(&first)),
 		exec.KeywordArgument("blank", exec.AsValue(false), exec.BoolArgument(&blank)),
 	); err != nil {
-		return exec.AsValue(exec.InvalidFilterCallError(err))
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsString() {
-		return exec.AsValue(exec.InvalidFilterCallError(fmt.Errorf("%s is not a string", in.String())))
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
 	indent := strings.Repeat(" ", width)
 	lines := strings.Split(in.String(), "\n")

@@ -127,7 +127,7 @@ var _ = Context("dicts", func() {
 		)
 		Context("keys", func() {
 			shouldRender("{{ {'foo': 'bar', 'yolo': 1}.keys() }}", "['foo', 'yolo']")
-			shouldFail("{{ {}.keys('nope') }}", "wrong signature for '{}.keys': received 1 unexpected positional argument")
+			shouldFail("{{ {}.keys('nope') }}", "received 1 unexpected positional argument")
 		})
 	})
 

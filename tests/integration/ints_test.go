@@ -67,7 +67,7 @@ var _ = Context("ints", func() {
 		)
 		Context("is_integer", func() {
 			shouldRender("{{ 42.is_integer() }}", "True")
-			shouldFail("{{ 42.is_integer('nope') }}", "wrong signature for '42.is_integer': received 1 unexpected positional argument")
+			shouldFail("{{ 42.is_integer('nope') }}", "received 1 unexpected positional argument")
 		})
 	})
 })

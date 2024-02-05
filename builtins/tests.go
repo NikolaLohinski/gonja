@@ -78,11 +78,16 @@ func testGreaterEqual(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (
 }
 
 func testGreaterThan(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	param := params.Args[0]
-	if !in.IsNumber() || !param.IsNumber() {
-		return false, nil
+	var (
+		to float64
+	)
+	if err := params.Take(
+		exec.PositionalArgument("to", nil, exec.NumberArgument(&to)),
+	); err != nil {
+		return false, exec.ErrInvalidCall(err)
 	}
-	return in.Float() > param.Float(), nil
+
+	return in.Float() > to, nil
 }
 
 func testIn(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
