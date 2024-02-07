@@ -120,6 +120,11 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			// Result will be a float
 			return AsValue(left.Float() + right.Float())
 		}
+
+		if left.IsString() || right.IsString() {
+			return AsValue(left.String() + right.String())
+		}
+
 		// Result will be an integer
 		return AsValue(left.Integer() + right.Integer())
 	case tokens.Subtraction:
