@@ -175,5 +175,18 @@ var _ = Context("strings", func() {
 			shouldRender("{{ 'test123'.encode('iso8859-1', 'ignore') }}", "b'test123'")
 			shouldFail("{{ 'test123'.encode('iso8859-1', encoding='utf8') }}", "received 1 unexpected keyword argument: 'encoding'")
 		})
+		Context("when concatenating strings with the '+' operator", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: `{{ "one" + " " + "two" }}`,
+				})
+			})
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				AssertPrettyDiff("one two", *returnedResult)
+			})
+		})
 	})
 })
