@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./docs/logo.svg" width="250px"/>
+<img src="docs/logo.png" />
 <h1><code>gonja</code></h1>
 </div>
 
