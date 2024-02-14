@@ -34,7 +34,11 @@ func (controlStructure *ImportControlStructure) Execute(r *exec.Renderer, tag *n
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
 
-	filename := filenameValue.String()
+	filename, err := r.Loader.Resolve(filenameValue.String())
+	if err != nil {
+		return errors.Errorf("failed to resolve filename: %s", err)
+	}
+
 	loader, err := r.Loader.Inherit(filename)
 	if err != nil {
 		return fmt.Errorf("failed to inherit loader from '%s': %s", filename, r.Loader)

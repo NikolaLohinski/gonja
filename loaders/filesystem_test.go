@@ -35,7 +35,7 @@ var _ = Context("filesystem", func() {
 			reader = new(io.Reader)
 		)
 		BeforeEach(func() {
-			file = MustReturn(os.CreateTemp("", "*.filesystem")).(*os.File)
+			file = MustReturn(os.CreateTemp("", "*.filesystem"))
 			MustReturn(file.WriteString("content"))
 			*path = file.Name()
 		})
@@ -59,7 +59,7 @@ var _ = Context("filesystem", func() {
 			BeforeEach(func() {
 				os.Remove(file.Name())
 
-				file = MustReturn(os.CreateTemp("", "*.filesystem")).(*os.File)
+				file = MustReturn(os.CreateTemp("", "*.filesystem"))
 				MustReturn(file.WriteString("content"))
 				*path = file.Name()
 			})
@@ -74,7 +74,7 @@ var _ = Context("filesystem", func() {
 		})
 		Context("when root is defined", func() {
 			BeforeEach(func() {
-				*root = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
+				*root = MustReturn(os.MkdirTemp("", "*.filesystem"))
 			})
 			AfterEach(func() {
 				os.RemoveAll(*root)
@@ -91,7 +91,7 @@ var _ = Context("filesystem", func() {
 			})
 			Context("when path is relative", func() {
 				BeforeEach(func() {
-					relativeFile := MustReturn(os.CreateTemp(*root, "*.filesystem")).(*os.File)
+					relativeFile := MustReturn(os.CreateTemp(*root, "*.filesystem"))
 					MustReturn(relativeFile.WriteString("content"))
 
 					*path = filepath.Base(relativeFile.Name())
@@ -115,7 +115,7 @@ var _ = Context("filesystem", func() {
 			returnedPath = new(string)
 		)
 		BeforeEach(func() {
-			file = MustReturn(os.CreateTemp("", "*.filesystem")).(*os.File)
+			file = MustReturn(os.CreateTemp("", "*.filesystem"))
 			MustReturn(file.WriteString("content"))
 			*path = file.Name()
 		})
@@ -137,7 +137,7 @@ var _ = Context("filesystem", func() {
 			BeforeEach(func() {
 				os.Remove(file.Name())
 
-				file = MustReturn(os.CreateTemp("", "*.filesystem")).(*os.File)
+				file = MustReturn(os.CreateTemp("", "*.filesystem"))
 				MustReturn(file.WriteString("content"))
 				*path = file.Name()
 			})
@@ -150,7 +150,7 @@ var _ = Context("filesystem", func() {
 		})
 		Context("when root is defined", func() {
 			BeforeEach(func() {
-				*root = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
+				*root = MustReturn(os.MkdirTemp("", "*.filesystem"))
 			})
 			AfterEach(func() {
 				os.RemoveAll(*root)
@@ -168,7 +168,7 @@ var _ = Context("filesystem", func() {
 					relativeFile = new(os.File)
 				)
 				BeforeEach(func() {
-					relativeFile = MustReturn(os.CreateTemp(*root, "*.filesystem")).(*os.File)
+					relativeFile = MustReturn(os.CreateTemp(*root, "*.filesystem"))
 					MustReturn(relativeFile.WriteString("content"))
 
 					*path = filepath.Base(relativeFile.Name())
@@ -193,9 +193,9 @@ var _ = Context("filesystem", func() {
 		BeforeEach(func() {
 			*newIdentifier = ""
 
-			*root = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
+			*root = MustReturn(os.MkdirTemp("", "*.filesystem"))
 
-			file = MustReturn(os.CreateTemp(*root, "*.filesystem")).(*os.File)
+			file = MustReturn(os.CreateTemp(*root, "*.filesystem"))
 			MustReturn(file.WriteString("content"))
 		})
 		AfterEach(func() {
@@ -218,9 +218,9 @@ var _ = Context("filesystem", func() {
 				newRoot = new(string)
 			)
 			BeforeEach(func() {
-				*newRoot = MustReturn(os.MkdirTemp("", "*.filesystem")).(string)
+				*newRoot = MustReturn(os.MkdirTemp("", "*.filesystem"))
 
-				file = MustReturn(os.CreateTemp(*newRoot, "*.filesystem")).(*os.File)
+				file = MustReturn(os.CreateTemp(*newRoot, "*.filesystem"))
 				MustReturn(file.WriteString("content"))
 				*newIdentifier = file.Name()
 			})

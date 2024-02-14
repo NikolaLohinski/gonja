@@ -3,6 +3,8 @@ package loaders_test
 import (
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/nikolalohinski/gonja/v2/loaders"
 
@@ -70,6 +72,31 @@ var _ = Context("shifted", func() {
 				Expect(*returnedErr).ToNot(BeNil())
 			})
 		})
+		Context("when using in conjunction with the file system loader", Ordered, func() {
+			var (
+				directory = new(string)
+			)
+			BeforeAll(func() {
+				*directory = MustReturn(os.MkdirTemp("", ""))
+				Must(os.MkdirAll(filepath.Join(*directory, "nested"), os.ModePerm))
+				file := MustReturn(os.CreateTemp(filepath.Join(*directory, "nested"), ""))
+				*path = "./nested/" + filepath.Base(file.Name())
+				MustReturn(file.WriteString("content"))
+			})
+			AfterAll(func() {
+				Must(os.RemoveAll(*directory))
+			})
+			BeforeEach(func() {
+				*rootContent = bytes.NewBufferString("root content")
+				*subLoader = loaders.MustNewFileSystemLoader(*directory)
+			})
+			It("should retrieve the expected path", func() {
+				By("not returning an error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the correct path")
+				Expect(string(*returnedPath)).To(Equal(filepath.Join(*directory, *path)))
+			})
+		})
 	})
 	Context("Read", func() {
 		var (
@@ -89,7 +116,7 @@ var _ = Context("shifted", func() {
 				Expect(*returnedErr).To(BeNil())
 				By("returning the correct content")
 				Expect(*returnedContent).ToNot(BeNil())
-				Expect(string(MustReturn(io.ReadAll(*returnedContent)).([]byte))).To(Equal("root content"))
+				Expect(string(MustReturn(io.ReadAll(*returnedContent)))).To(Equal("root content"))
 			})
 		})
 		Context("when the path is valid in the sub-loader", func() {
@@ -101,7 +128,7 @@ var _ = Context("shifted", func() {
 				Expect(*returnedErr).To(BeNil())
 				By("returning the correct content")
 				Expect(*returnedContent).ToNot(BeNil())
-				Expect(string(MustReturn(io.ReadAll(*returnedContent)).([]byte))).To(Equal("bar"))
+				Expect(string(MustReturn(io.ReadAll(*returnedContent)))).To(Equal("bar"))
 			})
 		})
 		Context("when the path is not valid in the sub-loader", func() {

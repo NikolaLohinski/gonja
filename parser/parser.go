@@ -245,6 +245,11 @@ func (p *Parser) Extend(identifier string) (*nodes.Template, error) {
 		return nil, fmt.Errorf("failed to reader template '%s': %s", identifier, err)
 	}
 
+	identifier, err = p.Loader.Resolve(identifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve identifier '%s': %s", identifier, err)
+	}
+
 	source := new(strings.Builder)
 	if _, err := io.Copy(source, input); err != nil {
 		return nil, fmt.Errorf("failed to copy '%s' to string buffer: %s", source, err)

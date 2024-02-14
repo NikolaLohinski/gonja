@@ -39,7 +39,15 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
 
-	filename := filenameValue.String()
+	filename, err := r.Loader.Resolve(filenameValue.String())
+	if err != nil {
+		if controlStructure.ignoreMissing {
+			return nil
+		} else {
+			return errors.Errorf("failed to resolve filename: %s", err)
+		}
+	}
+
 	loader, err := r.Loader.Inherit(filename)
 	if err != nil {
 		if controlStructure.ignoreMissing {

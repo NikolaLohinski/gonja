@@ -18,7 +18,7 @@ func Must(err error) {
 	}
 }
 
-func MustReturn(returned interface{}, err error) interface{} {
+func MustReturn[T interface{}](returned T, err error) T {
 	if err != nil {
 		panic(err)
 	}
