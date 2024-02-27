@@ -57,10 +57,10 @@ func (ctx *Context) Inherit() *Context {
 
 // Update updates this context with the key/value pairs from a map.
 func (ctx *Context) Update(other *Context) *Context {
-	ctx.lock.Lock()
 	if other == nil {
 		return ctx
 	}
+	ctx.lock.Lock()
 	for k, v := range other.data {
 		ctx.data[k] = v
 	}
