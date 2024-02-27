@@ -11,6 +11,10 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
+type ControlStructureGetter interface {
+	Get(name string) (ControlStructureParser, bool)
+}
+
 // The parser provides you a comprehensive and easy tool to
 // work with the template document and arguments provided by
 // the user for your custom tag.
@@ -23,7 +27,7 @@ import (
 type Parser struct {
 	identifier        string
 	stream            *tokens.Stream
-	controlStructures map[string]ControlStructureParser
+	controlStructures ControlStructureGetter
 
 	Config   *config.Config
 	Template *nodes.Template
@@ -37,7 +41,7 @@ func (p *Parser) Stream() *tokens.Stream {
 // Creates a new parser to parse tokens.
 // Used inside gonja to parse documents and to provide an easy-to-use
 // parser for tag authors
-func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, controlStructures map[string]ControlStructureParser) *Parser {
+func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, controlStructures ControlStructureGetter) *Parser {
 	return &Parser{
 		identifier:        identifier,
 		stream:            stream,

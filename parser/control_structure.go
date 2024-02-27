@@ -28,7 +28,7 @@ func (p *Parser) ParseControlStructureBlock() (*nodes.ControlStructureBlock, err
 		return nil, p.Error("Expected a controlStructure name here", p.Current())
 	}
 
-	controlStructureParser, exists := p.controlStructures[name.Val]
+	controlStructureParser, exists := p.controlStructures.Get(name.Val)
 	if !exists {
 		return nil, p.Error(fmt.Sprintf("ControlStructure '%s' not found (or beginning not provided)", name.Val), name)
 	}

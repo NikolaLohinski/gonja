@@ -6,7 +6,7 @@ import (
 	. "github.com/nikolalohinski/gonja/v2/exec"
 )
 
-var dictMethods = MethodSet[map[string]interface{}]{
+var dictMethods = NewMethodSet[map[string]interface{}](map[string]Method[map[string]interface{}]{
 	"keys": func(self map[string]interface{}, selfValue *Value, arguments *VarArgs) (interface{}, error) {
 		if err := arguments.Take(); err != nil {
 			return nil, ErrInvalidCall(err)
@@ -18,4 +18,4 @@ var dictMethods = MethodSet[map[string]interface{}]{
 		sort.Strings(keys)
 		return keys, nil
 	},
-}
+})

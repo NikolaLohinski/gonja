@@ -110,23 +110,23 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 	err := fmt.Errorf("unknown method '%s' for '%s'", method, parent.String())
 	switch {
 	case parent.IsString():
-		if e.Environment.Methods.Str.Exists(method) {
-			result, err = e.Environment.Methods.Str[method](parent.String(), parent, parameters)
+		if method, ok := e.Environment.Methods.Str.Get(method); ok {
+			result, err = method(parent.String(), parent, parameters)
 		}
 	case parent.IsBool():
-		if e.Environment.Methods.Bool.Exists(method) {
-			result, err = e.Environment.Methods.Bool[method](parent.Bool(), parent, parameters)
+		if method, ok := e.Environment.Methods.Bool.Get(method); ok {
+			result, err = method(parent.Bool(), parent, parameters)
 		}
 	case parent.IsFloat():
-		if e.Environment.Methods.Float.Exists(method) {
-			result, err = e.Environment.Methods.Float[method](parent.Float(), parent, parameters)
+		if method, ok := e.Environment.Methods.Float.Get(method); ok {
+			result, err = method(parent.Float(), parent, parameters)
 		}
 	case parent.IsInteger():
-		if e.Environment.Methods.Int.Exists(method) {
-			result, err = e.Environment.Methods.Int[method](parent.Integer(), parent, parameters)
+		if method, ok := e.Environment.Methods.Int.Get(method); ok {
+			result, err = method(parent.Integer(), parent, parameters)
 		}
 	case parent.IsDict():
-		if e.Environment.Methods.Dict.Exists(method) {
+		if method, ok := e.Environment.Methods.Dict.Get(method); ok {
 			dict := parent.ToGoSimpleType(false)
 			if err, ok := dict.(error); err != nil && ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
@@ -135,10 +135,10 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 			if !ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to map[string]interface{}: %s", parent.String(), err))
 			}
-			result, err = e.Environment.Methods.Dict[method](goMap, parent, parameters)
+			result, err = method(goMap, parent, parameters)
 		}
 	case parent.IsList():
-		if e.Environment.Methods.List.Exists(method) {
+		if method, ok := e.Environment.Methods.List.Get(method); ok {
 			list := parent.ToGoSimpleType(false)
 			if err, ok := list.(error); err != nil && ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
@@ -147,7 +147,7 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 			if !ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to []interface{}: %s", parent.String(), err))
 			}
-			result, err = e.Environment.Methods.List[method](goList, parent, parameters)
+			result, err = method(goList, parent, parameters)
 		}
 	default:
 		err = AsValue(errors.Errorf(`'%s' is not callable on %s`, method, parent))

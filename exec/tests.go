@@ -46,7 +46,7 @@ func (e *Evaluator) ExecuteTest(tc *nodes.TestCall, v *Value) *Value {
 }
 
 func (e *Evaluator) ExecuteTestByName(name string, in *Value, params *VarArgs) *Value {
-	test, ok := e.Environment.Tests[name]
+	test, ok := e.Environment.Tests.Get(name)
 	if !e.Environment.Tests.Exists(name) || !ok {
 		return AsValue(errors.Errorf("test '%s' not found", name))
 	}

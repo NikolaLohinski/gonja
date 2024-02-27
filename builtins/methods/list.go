@@ -6,7 +6,7 @@ import (
 	. "github.com/nikolalohinski/gonja/v2/exec"
 )
 
-var listMethods = MethodSet[[]interface{}]{
+var listMethods = NewMethodSet[[]interface{}](map[string]Method[[]interface{}]{
 	"append": func(_ []interface{}, selfValue *Value, arguments *VarArgs) (interface{}, error) {
 		var (
 			x interface{}
@@ -41,4 +41,4 @@ var listMethods = MethodSet[[]interface{}]{
 		}
 		return self, nil
 	},
-}
+})

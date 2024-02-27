@@ -7,7 +7,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
-var Tests = exec.TestSet{
+var Tests = exec.NewTestSet(map[string]exec.TestFunction{
 	"callable":    testCallable,
 	"defined":     testDefined,
 	"divisibleby": testDivisibleby,
@@ -39,7 +39,7 @@ var Tests = exec.TestSet{
 	"string":      testString,
 	"undefined":   testUndefined,
 	"upper":       testUpper,
-}
+})
 
 func testCallable(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	return in.IsCallable(), nil

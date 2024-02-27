@@ -9,7 +9,7 @@ import (
 	. "github.com/nikolalohinski/gonja/v2/exec"
 )
 
-var strMethods = MethodSet[string]{
+var strMethods = NewMethodSet[string](map[string]Method[string]{
 	"upper": func(self string, _ *Value, arguments *VarArgs) (interface{}, error) {
 		if err := arguments.Take(); err != nil {
 			return nil, ErrInvalidCall(err)
@@ -98,4 +98,4 @@ var strMethods = MethodSet[string]{
 			return nil, ErrInvalidCall(fmt.Errorf("unsupported encoding '%s'", encoding))
 		}
 	},
-}
+})

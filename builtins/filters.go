@@ -19,7 +19,7 @@ import (
 )
 
 // Filters export all builtin filters
-var Filters = exec.FilterSet{
+var Filters = exec.NewFilterSet(map[string]exec.FilterFunction{
 	"abs":            filterAbs,
 	"attr":           filterAttr,
 	"batch":          filterBatch,
@@ -72,7 +72,7 @@ var Filters = exec.FilterSet{
 	"wordcount":      filterWordcount,
 	"wordwrap":       filterWordwrap,
 	"xmlattr":        filterXMLAttr,
-}
+})
 
 func filterAbs(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if in.IsError() {

@@ -49,7 +49,7 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 
 // ExecuteFilterByName execute a filter given its name
 func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs) *Value {
-	filter, ok := (e.Environment.Filters)[name]
+	filter, ok := e.Environment.Filters.Get(name)
 	if !e.Environment.Filters.Exists(name) || !ok {
 		return AsValue(errors.Errorf("filter '%s' not found", name))
 	}
