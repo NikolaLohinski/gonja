@@ -69,5 +69,17 @@ var _ = Context("ints", func() {
 			shouldRender("{{ 42.is_integer() }}", "True")
 			shouldFail("{{ 42.is_integer('nope') }}", "received 1 unexpected positional argument")
 		})
+		Context("bit_length", func() {
+			shouldRender("{{ 42.bit_length() }}", "6")
+			shouldFail("{{ 42.bit_length('nope') }}", "received 1 unexpected positional argument")
+		})
+		Context("bit_count", func() {
+			shouldRender("{{ 42.bit_count() }}", "3")
+			shouldFail("{{ 42.bit_count('nope') }}", "received 1 unexpected positional argument")
+		})
+		Context("as_integer_ratio", func() {
+			shouldRender("{{ 42.as_integer_ratio() }}", "[42, 1]")
+			shouldFail("{{ 42.as_integer_ratio('nope') }}", "received 1 unexpected positional argument")
+		})
 	})
 })
