@@ -66,6 +66,18 @@ var _ = Context("floats", func() {
 		shouldFail("{{ 32.32.32 }}", "two dots in numeric token")
 	})
 	Context("when using native python methods", func() {
+		Context("as_integer_ratio", func() {
+			shouldRender("{{ 42.32.as_integer_ratio() }}", "[5956010507197481, 140737488355328]")
+			shouldRender("{{ 42.00.as_integer_ratio() }}", "[42, 1]")
+			shouldFail("{{ 42.35.as_integer_ratio('nope') }}", "received 1 unexpected positional argument")
+		})
+		Context("hex", func() {
+			shouldRender("{{ 99999999999.00.hex() }}", "0x1.74876e7ff0000p+36")
+			shouldRender("{{ 1.0.hex() }}", "0x1.0000000000000p+0")
+			shouldRender("{{ 42.32.hex() }}", "0x1.528f5c28f5c29p+5")
+			shouldRender("{{ 42.00.hex() }}", "0x1.5000000000000p+5")
+			shouldFail("{{ 42.35.hex('nope') }}", "received 1 unexpected positional argument")
+		})
 		Context("is_integer", func() {
 			shouldRender("{{ 42.32.is_integer() }}", "False")
 			shouldRender("{{ 42.00.is_integer() }}", "True")
