@@ -175,6 +175,12 @@ var _ = Context("strings", func() {
 			shouldRender("{{ 'test123'.encode('iso8859-1', 'ignore') }}", "b'test123'")
 			shouldFail("{{ 'test123'.encode('iso8859-1', encoding='utf8') }}", "received 1 unexpected keyword argument: 'encoding'")
 		})
+		Context("encode", func() {
+			shouldRender("{{ ';'.join(['s', 'b', '3']) }}", "s;b;3")
+		})
+		Context("format", func() {
+			shouldRender("{{ 'foo={:,=-10.5G}'.format(\"77.11121111111112\") }}", "foo=,,,,77.111")
+		})
 		Context("when concatenating strings with the '+' operator", func() {
 			BeforeEach(func() {
 				*loader = loaders.MustNewMemoryLoader(map[string]string{
