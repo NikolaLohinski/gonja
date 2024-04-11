@@ -179,7 +179,7 @@ var _ = Context("strings", func() {
 			shouldRender("{{ ';'.join(['s', 'b', '3']) }}", "s;b;3")
 		})
 		Context("format", func() {
-			shouldRender("{{ 'foo={:,=-10.5G}'.format(\"77.11121111111112\") }}", "foo=,,,,77.111")
+			shouldRender("{{ 'foo={:,=-10.5G}'.format(77.11121111111112) }}", "foo=,,,,77.111")
 		})
 		Context("when concatenating strings with the '+' operator", func() {
 			BeforeEach(func() {
