@@ -159,4 +159,30 @@ var _ = Context("lists", func() {
 			shouldFail("{{ [].reverse('yolo') }}", "received 1 unexpected positional argument")
 		})
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/16", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					in: {{ name in ['a'] }}
+					not in: {{ name not in ['a'] }}
+					is not in: {{ name is not in ['a'] }}
+					not (in): {{ not name in ['a'] }}
+				`),
+			})
+			(*environment).Context.Set("name", "bob")
+		})
+
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := heredoc.Doc(`
+					in: False
+					not in: True
+					is not in: True
+					not (in): True
+				`)
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
 })
