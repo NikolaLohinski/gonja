@@ -631,6 +631,24 @@ var _ = Context("parser", func() {
 			},
 		},
 		{
+			"is a negation over of an inclusion",
+			[]string{"{{ var not in list }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeNegation(
+						MatchTestExpressionNode(
+							MatchNameNode("var"),
+							MatchTestCall(
+								"in",
+								[]types.GomegaMatcher{PointTo(MatchNameNode("list"))},
+								nil,
+							),
+						),
+					),
+				),
+			},
+		},
+		{
 			"is an arithmetic expression with a comparison",
 			[]string{"{{ 40 + 2 > 5 }}"},
 			[]types.GomegaMatcher{
