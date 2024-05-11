@@ -65,4 +65,36 @@ var _ = Context("control structure 'block'", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
+	Context("when reusing the self block multiple times", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					{% block block -%}
+					reused content
+					{%- endblock block %}
+
+					some content in between
+
+					{{ self.block() }}
+					{{ self.block() }}
+				`),
+			})
+		})
+
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := heredoc.Doc(`
+				reused content
+
+				some content in between
+
+				reused content
+				reused content
+			`)
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
+
 })
