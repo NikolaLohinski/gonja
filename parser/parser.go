@@ -3,12 +3,17 @@ package parser
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/loaders"
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
+)
+
+var (
+	lineReturnWithOnlyWitheSpace = regexp.MustCompile("^(\n|\r)[ \t]*$")
 )
 
 type ControlStructureGetter interface {
@@ -218,7 +223,16 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 	case tokens.VariableBegin:
 		return p.ParseExpressionNode()
 	case tokens.BlockBegin:
-		return p.ParseControlStructureBlock()
+		node, err := p.ParseControlStructureBlock()
+		if err != nil {
+			return node, err
+		}
+		if p.Config.TrimBlocks && !p.End() && p.Peek(tokens.BlockBegin) != nil {
+			if data := p.Current(tokens.Data); data != nil && lineReturnWithOnlyWitheSpace.MatchString(data.Val) {
+				p.Consume() // Consume whitespace
+			}
+		}
+		return node, err
 	}
 	return nil, p.Error("Unexpected token (only HTML/tags/filters in templates allowed)", t)
 }

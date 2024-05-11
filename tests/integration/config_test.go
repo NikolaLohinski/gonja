@@ -268,4 +268,36 @@ var _ = Context("config", func() {
 			})
 		})
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/18", func() {
+		BeforeEach(func() {
+			(*configuration).TrimBlocks = true
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					{% if one %}
+					- 1
+					{% endif %}
+					{% if two %}
+					- 2
+					{% endif %}
+					{% if three %}
+					- 3
+					{% endif %}`),
+			})
+			(*environment).Context.Set("one", true)
+			(*environment).Context.Set("two", true)
+			(*environment).Context.Set("three", true)
+		})
+
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := heredoc.Doc(`
+				- 1
+				- 2
+				- 3
+			`)
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
 })
