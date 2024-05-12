@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	lineReturnWithOnlyWitheSpace = regexp.MustCompile("^(\n|\r)[ \t]*$")
+	lineReturnWithOnlyWhiteSpace = regexp.MustCompile("^(\n|\r)[ \t]*$")
 )
 
 type ControlStructureGetter interface {
@@ -228,7 +228,7 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 			return node, err
 		}
 		if p.Config.TrimBlocks && !p.End() && p.Peek(tokens.BlockBegin) != nil {
-			if data := p.Current(tokens.Data); data != nil && lineReturnWithOnlyWitheSpace.MatchString(data.Val) {
+			if data := p.Current(tokens.Data); data != nil && lineReturnWithOnlyWhiteSpace.MatchString(data.Val) {
 				p.Consume() // Consume whitespace
 			}
 		}
