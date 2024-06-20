@@ -69,4 +69,28 @@ var _ = Context("tests", func() {
 		shouldRender("{{ 42 is > 31 }}", "True")
 		shouldFail("{{ 42 is greaterthan(True) }}", "True is not a number")
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/19", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]interface{}{
+				"var1": "1",
+				"var2": "3",
+			})
+		})
+		shouldRender(
+			"var1 in ['1', '2'] or (var2 == '3'): {% if var1 in ['1', '2'] or (var2 == '3') %}ok{% endif %}",
+			"var1 in ['1', '2'] or (var2 == '3'): ok",
+		)
+		shouldRender(
+			"(var1 in ['1', '2']) or var2 == '3': {% if (var1 in ['1', '2']) or var2 == '3' %}ok{% endif %}",
+			"(var1 in ['1', '2']) or var2 == '3': ok",
+		)
+		shouldRender(
+			"(var1 in ['1', '2']) or (var2 == '3'): {% if (var1 in ['1', '2']) or (var2 == '3') %}ok{% endif %}",
+			"(var1 in ['1', '2']) or (var2 == '3'): ok",
+		)
+		shouldRender(
+			"var1 in ['1', '2'] or var2 == '3': {% if var1 in ['1', '2'] or var2 == '3' %}ok{% endif %}",
+			"var1 in ['1', '2'] or var2 == '3': ok",
+		)
+	})
 })
