@@ -65,6 +65,16 @@ var _ = Context("bools", func() {
 				})
 			}
 		)
+		Context("string", func() {
+			shouldRender("{{ True.string() }}", "True")
+			shouldRender("{{ False.string() }}", "False")
+			shouldFail("{{ False.string('nope') }}", "received 1 unexpected positional argument")
+		})
+		Context("int", func() {
+			shouldRender("{{ True.int() }}", "1")
+			shouldRender("{{ False.int() }}", "0")
+			shouldFail("{{ False.int('nope') }}", "received 1 unexpected positional argument")
+		})
 		Context("bit_count", func() {
 			shouldRender("{{ True.bit_count() }}", "1")
 			shouldRender("{{ False.bit_count() }}", "0")
@@ -74,6 +84,11 @@ var _ = Context("bools", func() {
 			shouldRender("{{ True.bit_length() }}", "1")
 			shouldRender("{{ False.bit_length() }}", "0")
 			shouldFail("{{ False.bit_length('nope') }}", "received 1 unexpected positional argument")
+		})
+		Context("as_integer_ratio", func() {
+			shouldRender("{{ True.as_integer_ratio() }}", "[1, 1]")
+			shouldRender("{{ False.as_integer_ratio() }}", "[0, 1]")
+			shouldFail("{{ False.as_integer_ratio('nope') }}", "received 1 unexpected positional argument")
 		})
 	})
 })
