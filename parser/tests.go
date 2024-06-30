@@ -38,7 +38,7 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 		}
 		// avoid trying to parse "else" as test arguments
 		if p.CurrentName("else") == nil {
-			arg, err := p.ParseExpression()
+			arg, err := p.ParseVariableOrLiteral()
 			if err == nil && arg != nil {
 				test.Args = append(test.Args, arg)
 			}

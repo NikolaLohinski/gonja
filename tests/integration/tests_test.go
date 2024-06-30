@@ -81,6 +81,10 @@ var _ = Context("tests", func() {
 			"var1 in ['1', '2'] or (var2 == '3'): ok",
 		)
 		shouldRender(
+			"var1 in (['1'] + ['2']) or (var2 == '3'): {% if var1 in (['1'] + ['2']) or (var2 == '3') %}ok{% endif %}",
+			"var1 in (['1'] + ['2']) or (var2 == '3'): ok",
+		)
+		shouldRender(
 			"(var1 in ['1', '2']) or var2 == '3': {% if (var1 in ['1', '2']) or var2 == '3' %}ok{% endif %}",
 			"(var1 in ['1', '2']) or var2 == '3': ok",
 		)
