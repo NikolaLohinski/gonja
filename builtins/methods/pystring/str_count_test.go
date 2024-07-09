@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestCount(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Count", func() {
 	tests := []struct {
 		str    string
 		subStr PyString
@@ -16,12 +21,12 @@ func TestCount(t *testing.T) {
 		{str: "1234555", subStr: "55", res: 1},
 		{str: "12345555", subStr: "55", res: 2},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.str, func(t *testing.T) {
+		tt := tt // capture range variable
+		It(fmt.Sprintf("%q should count %q to '%v'", tt.str, tt.subStr, tt.res), func() {
 			pys := PyString(tt.str)
-			if got := pys.Count(tt.subStr, nil, nil); got != tt.res {
-				t.Errorf("%q.Count(%q) = '%v', want '%v'", tt.str, tt.subStr, got, tt.res)
-			}
+			Expect(pys.Count(tt.subStr, nil, nil)).To(Equal(tt.res))
 		})
 	}
-}
+})

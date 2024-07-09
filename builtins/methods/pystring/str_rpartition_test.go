@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestRPartition(t *testing.T) {
+var _ = Describe("RPartition", func() {
 	tests := []struct {
 		input    PyString
 		substr   string
@@ -18,12 +21,12 @@ func TestRPartition(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
+		test := test // capture range variable
+		It(fmt.Sprintf("For input '%s' with substring '%s', should return (%s, %s, %s)", test.input, test.substr, test.expected.Before, test.expected.Separator, test.expected.After), func() {
 			before, separator, after := test.input.RPartition(test.substr)
-			if before != test.expected.Before || separator != test.expected.Separator || after != test.expected.After {
-				t.Errorf("For input '%s' with substring '%s', expected (%s, %s, %s) but got (%s, %s, %s)",
-					test.input, test.substr, test.expected.Before, test.expected.Separator, test.expected.After, before, separator, after)
-			}
+			Expect(before).To(Equal(test.expected.Before))
+			Expect(separator).To(Equal(test.expected.Separator))
+			Expect(after).To(Equal(test.expected.After))
 		})
 	}
-}
+})

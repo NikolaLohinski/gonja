@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestLJust(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("LJust", func() {
 	tests := []struct {
 		input    PyString
 		width    int
@@ -36,11 +41,9 @@ func TestLJust(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.LJust(test.width, test.fillchar)
-			if result != test.expected {
-				t.Errorf("For input '%s', expected '%s' but got '%s'", test.input, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("should left justify '%s' with width %d and fillchar '%c' as '%s'", test.input, test.width, test.fillchar, test.expected), func() {
+			Expect(test.input.LJust(test.width, test.fillchar)).To(Equal(test.expected))
 		})
 	}
-}
+})

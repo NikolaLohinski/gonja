@@ -1,11 +1,13 @@
 package pystring
 
 import (
-	"reflect"
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestSplitLines(t *testing.T) {
+var _ = Describe("SplitLines", func() {
 	tests := []struct {
 		input    string
 		keepends bool
@@ -54,11 +56,9 @@ func TestSplitLines(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
-			result := SplitLines(test.input, test.keepends)
-			if !reflect.DeepEqual(result, test.expected) {
-				t.Errorf("Expected %#v but got %#v", test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("For input %q with keepends %v, should return %v", test.input, test.keepends, test.expected), func() {
+			Expect(SplitLines(test.input, test.keepends)).To(Equal(test.expected))
 		})
 	}
-}
+})

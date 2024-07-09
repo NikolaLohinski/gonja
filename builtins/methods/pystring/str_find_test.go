@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestFind(t *testing.T) {
+var _ = Describe("Find", func() {
 	tests := []struct {
 		str    string
 		subStr PyString
@@ -18,12 +21,12 @@ func TestFind(t *testing.T) {
 		{str: "1234555", subStr: "55", res: 4},
 		{str: "12345555", subStr: "A", res: -1},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.str, func(t *testing.T) {
+		tt := tt // capture range variable
+		It(fmt.Sprintf("%q should find %q to '%v'", tt.str, tt.subStr, tt.res), func() {
 			pys := PyString(tt.str)
-			if got := pys.Find(tt.subStr, nil, nil); got != tt.res {
-				t.Errorf("%q.Find(%q) = '%v', want '%v'", tt.str, tt.subStr, got, tt.res)
-			}
+			Expect(pys.Find(tt.subStr, nil, nil)).To(Equal(tt.res))
 		})
 	}
-}
+})

@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestCenter(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Center", func() {
 	tests := []struct {
 		in    string
 		width int
@@ -14,12 +19,12 @@ func TestCenter(t *testing.T) {
 		{in: "ǅABCDǄ", width: 15, out: "     ǅABCDǄ    "},
 		{in: "ǅABCDǄ", width: 14, out: "    ǅABCDǄ    "},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
+		tt := tt // capture range variable
+		It(fmt.Sprintf("should center '%s' to '%s' with width %d", tt.in, tt.out, tt.width), func() {
 			pys := PyString(tt.in)
-			if got := pys.Center(tt.width, 0); got != tt.out {
-				t.Errorf("Center() = '%v', want '%v'", got, tt.out)
-			}
+			Expect(pys.Center(tt.width, 0)).To(Equal(tt.out))
 		})
 	}
-}
+})

@@ -1,11 +1,13 @@
 package pystring
 
 import (
-	"reflect"
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestSplit(t *testing.T) {
+var _ = Describe("Split", func() {
 	testCases := []struct {
 		input       string
 		delim       string
@@ -32,7 +34,7 @@ func TestSplit(t *testing.T) {
 			delim:       ",,",
 			maxSplit:    -1,
 			expected:    []string{"1", "2", "3"},
-			description: "Split with comma delimiter and max split of 1",
+			description: "Split with double comma delimiter and no max split",
 		},
 		{
 			input:       "1,2,,3,",
@@ -65,11 +67,10 @@ func TestSplit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
+		tc := tc // capture range variable
+		It(fmt.Sprintf("%s", tc.description), func() {
 			actual := Split(tc.input, tc.delim, tc.maxSplit)
-			if !reflect.DeepEqual(actual, tc.expected) {
-				t.Errorf("Expected %v, but got %v", tc.expected, actual)
-			}
+			Expect(actual).To(Equal(tc.expected))
 		})
 	}
-}
+})

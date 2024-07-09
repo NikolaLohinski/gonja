@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestLStrip(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("LStrip", func() {
 	tests := []struct {
 		input    PyString
 		cutset   string
@@ -28,11 +33,9 @@ func TestLStrip(t *testing.T) {
 	}
 
 	for n, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.LStrip(test.cutset)
-			if result != test.expected {
-				t.Errorf("%d: For input '%s' and cutset '%s', expected '%s' but got '%s'", n, test.input, test.cutset, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("%d: For input '%s' and cutset '%s', should return '%s'", n, test.input, test.cutset, test.expected), func() {
+			Expect(test.input.LStrip(test.cutset)).To(Equal(test.expected))
 		})
 	}
-}
+})

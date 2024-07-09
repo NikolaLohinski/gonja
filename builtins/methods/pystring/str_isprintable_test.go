@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestIsPrintable(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("IsPrintable", func() {
 	tests := []struct {
 		input    string
 		expected bool
@@ -22,11 +27,9 @@ func TestIsPrintable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
-			result := IsPrintable(test.input)
-			if result != test.expected {
-				t.Errorf("For input '%s', expected %t but got %t", test.input, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("should determine if '%s' is printable as '%t'", test.input, test.expected), func() {
+			Expect(IsPrintable(test.input)).To(Equal(test.expected))
 		})
 	}
-}
+})

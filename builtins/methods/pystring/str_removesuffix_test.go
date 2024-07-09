@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestRemoveSuffix(t *testing.T) {
+var _ = Describe("RemoveSuffix", func() {
 	tests := []struct {
 		input    PyString
 		suffix   string
@@ -24,12 +27,9 @@ func TestRemoveSuffix(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.RemoveSuffix(test.suffix)
-			if result != test.expected {
-				t.Errorf("For input '%s' and suffix '%s', expected '%s' but got '%s'",
-					test.input, test.suffix, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("For input '%s' and suffix '%s', should return '%s'", test.input, test.suffix, test.expected), func() {
+			Expect(test.input.RemoveSuffix(test.suffix)).To(Equal(test.expected))
 		})
 	}
-}
+})

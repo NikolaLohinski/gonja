@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestTitle(t *testing.T) {
+var _ = Describe("Title", func() {
 	tests := []struct {
 		s        string
 		expected string
@@ -15,11 +18,10 @@ func TestTitle(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.s, func(t *testing.T) {
+		test := test // capture range variable
+		It(fmt.Sprintf("For input %q should return %q", test.s, test.expected), func() {
 			result := PyString(test.s).Title()
-			if string(result) != test.expected {
-				t.Errorf("Expected %s but got %s", test.expected, result)
-			}
+			Expect(string(result)).To(Equal(test.expected))
 		})
 	}
-}
+})

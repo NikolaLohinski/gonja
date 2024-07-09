@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestReplace(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Replace", func() {
 	tests := []struct {
 		input    PyString
 		old      string
@@ -27,12 +32,9 @@ func TestReplace(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.Replace(test.old, test.new, test.count)
-			if result != test.expected {
-				t.Errorf("For input '%s', old '%s', new '%s', count '%d', expected '%s' but got '%s'",
-					test.input, test.old, test.new, test.count, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("For input '%s', old '%s', new '%s', count '%d', should return '%s'", test.input, test.old, test.new, test.count, test.expected), func() {
+			Expect(test.input.Replace(test.old, test.new, test.count)).To(Equal(test.expected))
 		})
 	}
-}
+})

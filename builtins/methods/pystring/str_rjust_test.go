@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestRJust(t *testing.T) {
+var _ = Describe("RJust", func() {
 	tests := []struct {
 		input    PyString
 		width    int
@@ -18,12 +21,9 @@ func TestRJust(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.RJust(test.width, test.fillchar)
-			if result != test.expected {
-				t.Errorf("For input '%s' with width '%d' and fill character '%c', expected '%s' but got '%s'",
-					test.input, test.width, test.fillchar, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("For input '%s' with width '%d' and fill character '%c', should return '%s'", test.input, test.width, test.fillchar, test.expected), func() {
+			Expect(test.input.RJust(test.width, test.fillchar)).To(Equal(test.expected))
 		})
 	}
-}
+})
