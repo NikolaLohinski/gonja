@@ -81,12 +81,6 @@ func (d Dialect) parseReplacementField(s string, res *strings.Builder, vargs []a
 
 	// python separates attributes and getAttr but for us they will be one and the same.
 	// translate [] accessors to dot notation; e.g. m['sub'] -> m.sub;
-	// TODO:needs rewrite.
-	//mangledKeys := strings.Replace(string(value), "[", ".", -1)
-	//mangledKeys = strings.Replace(mangledKeys, "]", ".", -1)
-	//mangledKeys = strings.Replace(mangledKeys, "..", ".", -1)
-	//mangledKeys = strings.Trim(mangledKeys, ". ")
-
 	anyVal, err := getNestedKwArgs(simpleJSONPathSplit(string(value)), KwArgs(kwarg))
 	if err != nil {
 		return err
