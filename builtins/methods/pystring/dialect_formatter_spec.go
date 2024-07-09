@@ -229,7 +229,8 @@ func (f FormatSpec) ExpectNumericType() bool {
 }
 
 func (f FormatSpec) ExpectStringType() bool {
-	return (f.Type == 's' || f.Type == 'c')
+	return (f.Type == 's' || f.Type == 'c' ||
+		(f.Type == 0) && (f.Precision == 0 && f.Sign == 0 && !f.Alternate && f.Align == 0))
 }
 
 func (f FormatSpec) Validate() error {
