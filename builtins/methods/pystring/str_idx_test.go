@@ -1,18 +1,18 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func intP(i int) *int {
-	return &i
-}
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-func TestIndex(t *testing.T) {
+var _ = Describe("Index", func() {
 	tests := []struct {
 		s     string
 		start *int
 		end   *int
-
-		want string
+		want  string
 	}{
 		{
 			s:     "hello",
@@ -69,18 +69,12 @@ func TestIndex(t *testing.T) {
 			want:  "lo",
 		},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.s, func(t *testing.T) {
-			if got, _ := PyString(tt.s).Idx(tt.start, tt.end); string(got) != tt.want {
-				switch {
-				case tt.start == nil && tt.end == nil:
-					t.Errorf("%q.Index(nil, nil) = %v, want %v", tt.s, got, tt.want)
-				case tt.start == nil:
-					t.Errorf("%q.Index(nil, %d) = %v, want %v", tt.s, *tt.end, got, tt.want)
-				case tt.end == nil:
-					t.Errorf("%q.Index(%d, nil) = %v, want %v", tt.s, *tt.start, got, tt.want)
-				}
-			}
+		tt := tt // capture range variable
+		It(fmt.Sprintf("%q should index from %v to %v as '%v'", tt.s, tt.start, tt.end, tt.want), func() {
+			got, _ := PyString(tt.s).Idx(tt.start, tt.end)
+			Expect(string(got)).To(Equal(tt.want))
 		})
 	}
-}
+})

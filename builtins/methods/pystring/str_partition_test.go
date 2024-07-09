@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestPartition(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Partition", func() {
 	tests := []struct {
 		input    PyString
 		delim    string
@@ -26,12 +31,12 @@ func TestPartition(t *testing.T) {
 	}
 
 	for n, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
+		test := test // capture range variable
+		It(fmt.Sprintf("%d: For input '%s' and delimiter '%s', should return '%s', '%s', '%s'", n, test.input, test.delim, test.expected[0], test.expected[1], test.expected[2]), func() {
 			r1, r2, r3 := test.input.Partition(test.delim)
-			if r1 != test.expected[0] || r2 != test.expected[1] || r3 != test.expected[2] {
-				t.Errorf("%d: For input '%s' and delimiter '%s', expected '%s', '%s', '%s' but got '%s', '%s', '%s'",
-					n, test.input, test.delim, test.expected[0], test.expected[1], test.expected[2], r1, r2, r3)
-			}
+			Expect(r1).To(Equal(test.expected[0]))
+			Expect(r2).To(Equal(test.expected[1]))
+			Expect(r3).To(Equal(test.expected[2]))
 		})
 	}
-}
+})

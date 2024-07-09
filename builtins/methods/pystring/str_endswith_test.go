@@ -1,10 +1,13 @@
 package pystring
 
 import (
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestEndsWith(t *testing.T) {
+var _ = Describe("EndsWith", func() {
 	tests := []struct {
 		str    string
 		subStr PyString
@@ -18,12 +21,12 @@ func TestEndsWith(t *testing.T) {
 		{str: "1234555", subStr: "55", res: true},
 		{str: "12345555", subStr: "55", res: true},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.str, func(t *testing.T) {
+		tt := tt // capture range variable
+		It(fmt.Sprintf("%q should end with %q to '%v'", tt.str, tt.subStr, tt.res), func() {
 			pys := PyString(tt.str)
-			if got := pys.EndsWith(tt.subStr, nil, nil); got != tt.res {
-				t.Errorf("%q.EndWith(%q) = '%v', want '%v'", tt.str, tt.subStr, got, tt.res)
-			}
+			Expect(pys.EndsWith(tt.subStr, nil, nil)).To(Equal(tt.res))
 		})
 	}
-}
+})

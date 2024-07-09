@@ -1,11 +1,13 @@
 package pystring
 
 import (
-	"reflect"
-	"testing"
+	"fmt"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestRSplit(t *testing.T) {
+var _ = Describe("RSplit", func() {
 	tests := []struct {
 		input    PyString
 		delim    string
@@ -26,12 +28,9 @@ func TestRSplit(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(string(test.input), func(t *testing.T) {
-			result := test.input.RSplit(test.delim, test.maxSplit)
-			if !reflect.DeepEqual(result, test.expected) {
-				t.Errorf("For input '%s' with delimiter '%s' and max split %d, expected %v but got %v",
-					test.input, test.delim, test.maxSplit, test.expected, result)
-			}
+		test := test // capture range variable
+		It(fmt.Sprintf("For input '%s' with delimiter '%s' and max split %d, should return %v", test.input, test.delim, test.maxSplit, test.expected), func() {
+			Expect(test.input.RSplit(test.delim, test.maxSplit)).To(Equal(test.expected))
 		})
 	}
-}
+})

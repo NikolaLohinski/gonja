@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestZFill(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("ZFill", func() {
 	tests := []struct {
 		s        string
 		width    int
@@ -15,11 +20,10 @@ func TestZFill(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.s, func(t *testing.T) {
+		test := test // capture range variable
+		It(fmt.Sprintf("For input %q with width %d should return %q", test.s, test.width, test.expected), func() {
 			result := PyString(test.s).ZFill(test.width)
-			if string(result) != test.expected {
-				t.Errorf("Expected %s but got %s", test.expected, result)
-			}
+			Expect(string(result)).To(Equal(test.expected))
 		})
 	}
-}
+})

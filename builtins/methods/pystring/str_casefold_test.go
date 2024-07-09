@@ -1,11 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestCaseFold(t *testing.T) {
-	type args struct {
-		s string
-	}
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("Casefold", func() {
 	tests := []struct {
 		in  string
 		out PyString
@@ -15,12 +17,12 @@ func TestCaseFold(t *testing.T) {
 		{in: "ÄÖÜ", out: "äöü"},
 		{in: "ǅABCDǄ", out: "ǆabcdǆ"},
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
+		tt := tt // capture range variable
+		It(fmt.Sprintf("should casefold '%s' to '%s'", tt.in, tt.out), func() {
 			pys := PyString(tt.in)
-			if got := pys.Casefold(); got != tt.out {
-				t.Errorf("Casefold() = %v, want %v", got, tt.out)
-			}
+			Expect(pys.Casefold()).To(Equal(tt.out))
 		})
 	}
-}
+})

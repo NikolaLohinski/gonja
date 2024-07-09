@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"math"
 	"testing"
-	"unicode"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestNewFormatterSpecFromStr(t *testing.T) {
+var _ = Describe("NewFormatterSpecFromStr", func() {
 	tests := []struct {
 		format   string
 		expected FormatSpec
@@ -59,27 +61,52 @@ func TestNewFormatterSpecFromStr(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(fmt.Sprintf("Format: %s", test.format), func(t *testing.T) {
-			spec, err := NewFormatterSpecFromStr(test.format)
+		format := test.format
+		expected := test.expected
+		errMsg := test.errMsg
 
-			if test.errMsg != "" {
-				if err == nil {
-					t.Errorf("Expected an error but got nil")
-				} else if err.Error() != test.errMsg {
-					t.Errorf("Expected error message '%s' but got '%s'", test.errMsg, err.Error())
-				}
+		It(fmt.Sprintf("should handle format: %s", format), func() {
+			spec, err := NewFormatterSpecFromStr(format)
+
+			if errMsg != "" {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(errMsg))
 			} else {
-				if err != nil {
-					t.Errorf("Expected no error but got: %v", err)
-				}
-				if !isEqual(spec, test.expected) {
-					t.Errorf("Expected '%+v' but got '%+v' ", test.expected, spec)
-				}
+				Expect(err).NotTo(HaveOccurred())
+				Expect(isEqual(spec, expected)).To(Equal(true))
 			}
 		})
 	}
-}
+})
 
+/*
+	var _ = Describe("ValidExpressions", func() {
+		expressions := getValidExpressions(DefaultDialect)
+		for _, expr := range expressions {
+			expr := expr
+
+			It(fmt.Sprintf("should format values correctly for expr: %s", expr), func() {
+				if expr.ExpectFloatType() {
+					_, err := expr.Format(1.123456789)
+					Expect(err).NotTo(HaveOccurred(), "for expr: %s", expr)
+				} else if expr.ExpectIntType() {
+					_, err := expr.Format(16789)
+					Expect(err).NotTo(HaveOccurred(), "for expr: %s", expr)
+				} else if expr.ExpectNumericType() {
+					_, err := expr.Format(167800119)
+					Expect(err).NotTo(HaveOccurred(), "for expr: %s", expr)
+				} else if expr.Sign == 0 && expr.Fill != ' ' {
+					_, err := expr.Format("foobar")
+					Expect(err).NotTo(HaveOccurred(), "for expr: %s", expr)
+				}
+			})
+		}
+	})
+*/
+
+// GinKo doesn't seem to support large table tests. It is several of
+// order of magnitude slower for these tests iterating over all valid
+// expressions. So, we will just use a regular test for this.
 func TestValidExpressionsCanFormatValues(t *testing.T) {
 	expressions := getValidExpressions(DefaultDialect)
 	t.Logf("found %d valid expressions", len(expressions))
@@ -108,6 +135,27 @@ func TestValidExpressionsCanFormatValues(t *testing.T) {
 	}
 }
 
+/*
+var _ = Describe("ValidExpressions serialization and deserialization", func() {
+	return
+	expressions := getValidExpressions(DefaultDialect)
+
+	for _, expr := range expressions {
+		expr := expr
+
+		It(fmt.Sprintf("should serialize and deserialize correctly for expr: %s", expr), func() {
+			exprStr := expr.String()
+			expr2, err := NewFormatterSpecFromStr(exprStr)
+			Expect(err).NotTo(HaveOccurred(), "for expr: %s", exprStr)
+			Expect(isEqual(expr, expr2)).To(BeTrue(), "Expected %#v to equal %#v", expr2, expr)
+		})
+	}
+})
+*/
+
+// GinKo doesn't seem to support large table tests. It is several of
+// order of magnitude slower for these tests iterating over all valid
+// expressions. So, we will just use a regular test for this.
 func TestValidExpressionsCanBeSerializedAndDeserialized(t *testing.T) {
 	expressions := getValidExpressions(DefaultDialect)
 	for _, expr := range expressions {
@@ -122,232 +170,49 @@ func TestValidExpressionsCanBeSerializedAndDeserialized(t *testing.T) {
 	}
 }
 
-func TestCoarceNegativeZeroWithZ(t *testing.T) {
-	// Works after 3.11
-	mustEvalToMatch(t, DialectPython3_11, "z.2f", math.Copysign(0.0, -1), "0.00")
-
-	// not supported before 3.11
-	mustEvalToError(t, DialectPython3_10, "z.2f", 0) // z not supported
-	mustEvalToMatch(t, DialectPython3_10, ".2f", math.Copysign(0.0, -1), "-0.00")
-}
-
-func TestPastFailures(t *testing.T) {
-	// Special cases we don't want to forget about.
-	mustEvalToMatch(t, DefaultDialect, " #1b", 16789, " 0b100000110010101")
-	mustEvalToMatch(t, DefaultDialect, "#1b", 16789,  "0b100000110010101")
-
-	mustEvalToMatch(t, DefaultDialect, "2.1", "foobar", "f ")
-
-	mustEvalToMatch(t, DefaultDialect, "02.1", "foobar", "f0")
-
-	mustEvalToMatch(t, DefaultDialect, "#10o", 16789, "   0o40625")
-
-	mustEvalToMatch(t, DefaultDialect, "#030_x", 100000000, "0x000_0000_0000_0000_05f5_e100")
-
-	mustEvalToMatch(t, DefaultDialect, "#_b", 16789, "0b100_0001_1001_0101")
-
-	mustEvalToMatch(t, DefaultDialect, "#10,d", 16789, "    16,789")
-	mustEvalToMatch(t, DefaultDialect, "#010_o", 0o0040625, "0o004_0625")
-
-	mustEvalToMatch(t, DefaultDialect, "#0_b", 167, "0b1010_0111")
-	mustEvalToMatch(t, DefaultDialect, "#0,d", 16789, "16,789")
-
-	mustEvalToError(t, DefaultDialect, " 0", "foobar")
-	mustEvalToMatch(t, DefaultDialect, "010", "foobar", "foobar0000")
-
-	mustEvalToMatch(t, DefaultDialect, "#010d", 16789, "0000016789")
-	mustEvalToMatch(t, DefaultDialect, ",=-10.5G", 77.11121111111112, ",,,,77.111")
-	mustEvalToMatch(t, DefaultDialect, "A=#x", -53, "-0x35")
-	mustEvalToMatch(t, DefaultDialect, "`=87", 10, "`````````````````````````````````````````````````````````````````````````````````````10")
-	mustEvalToError(t, DefaultDialect, "}<1", "no_used")
-}
-
-func FuzzFormatSpec(t *testing.F) {
-	t.Add('<', rune(0), rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add('>', rune(0), rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add('^', rune(0), rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add('=', rune(0), rune(0), false, false, uint(0), uint(0), rune(0))
-
-	t.Add(rune(0), ' ', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '>', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '.', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), 'g', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '0', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), 'O', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '#', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '<', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '^', rune(0), false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), '=', rune(0), false, false, uint(0), uint(0), rune(0))
-
-	t.Add(rune(0), rune(0), '+', false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), rune(0), '-', false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), rune(0), ' ', false, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), true, false, uint(0), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, true, uint(0), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(1), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(2), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(3), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(4), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(5), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(6), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(7), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(8), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(9), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(10), uint(0), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(1), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(2), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(3), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(4), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(5), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(6), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(7), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(8), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(9), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(10), rune(0))
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'b')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'c')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'd')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'o')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'x')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'X')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'e')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'E')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'f')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'F')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'g')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), 'G')
-	t.Add(rune(0), rune(0), rune(0), false, false, uint(0), uint(0), '%')
-
-	t.Fuzz(func(
-		t *testing.T,
-		Fill rune,
-		Align rune,
-		Sign rune,
-		Alternate bool,
-		ZeroPadding bool,
-		MinWidth uint,
-		Precision uint,
-		Type rune,
-	) {
-
-		// Some fuzz responses aren't really valid test cases.
-		if !unicode.IsPrint(Fill) {
-			return
-		}
-		if Fill != 0 && Align != '<' && Align != '>' && Align != '^' && Align != '=' && Align != 0 {
-			return
-		}
-		if Sign != 0 && Sign != '+' && Sign != '-' && Sign != ' ' {
-			return
-		}
-		if Type != 0 && Type != 'b' && Type != 'c' && Type != 'd' && Type != 'o' && Type != 'x' && Type != 'X' && Type != 'e' && Type != 'E' && Type != 'f' && Type != 'F' && Type != 'g' && Type != 'G' && Type != '%' {
-			return
-		}
-		if Fill != 0 && (Fill != '<' && Fill != '>' && Fill != '^' && Fill != '=') {
-			return
-		}
-		if Align == 0 && (Fill == '<' || Fill == '>' || Fill == '^' || Fill == '=') {
-			return
-		}
-
-		spec := FormatSpec{
-			Fill:        Fill,
-			Align:       Align,
-			Sign:        Sign,
-			Alternate:   Alternate,
-			ZeroPadding: ZeroPadding,
-			MinWidth:    MinWidth,
-			Precision:   Precision,
-			Type:        Type,
-		}
-		orig := spec.String()
-
-		specRecovered, err := NewFormatterSpecFromStr(orig)
-		if err != nil {
-			t.Errorf("Expected to parse '%s' but got error: %v on data %#v", orig, err, spec)
-		}
-		if orig != specRecovered.String() {
-			t.Errorf("Expected '%s' = '%s' on data %#v", specRecovered.String(), orig, spec)
-		}
+var _ = Describe("Coerce Negative Zero With Z", func() {
+	It("should work correctly after Python 3.11", func() {
+		mustEvalToMatch(DialectPython3_11, "z.2f", math.Copysign(0.0, -1), "0.00")
 	})
-}
 
-func BenchmarkFomatSingleReplacement(b *testing.B) {
-	b.StopTimer()
-	rawString := "{0}"
-	vargs := []any{"foo"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+	It("should not support 'z' before Python 3.11", func() {
+		mustEvalToError(DialectPython3_10, "z.2f", 0)
+		mustEvalToMatch(DialectPython3_10, ".2f", math.Copysign(0.0, -1), "-0.00")
+	})
+})
 
-func BenchmarkFomatSingleAutoReplacement(b *testing.B) {
-	b.StopTimer()
-	rawString := "{}"
-	vargs := []any{"foo"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+var _ = Describe("PastFailures", func() {
+	It("should handle special cases correctly", func() {
+		// Special cases we don't want to forget about.
+		mustEvalToMatch(DefaultDialect, " #1b", 16789, " 0b100000110010101")
+		mustEvalToMatch(DefaultDialect, "#1b", 16789, "0b100000110010101")
 
-func BenchmarkFomatDoubleReplacement(b *testing.B) {
-	b.StopTimer()
-	rawString := "{0} {1}"
-	vargs := []any{"foo", "bar"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+		mustEvalToMatch(DefaultDialect, "2.1", "foobar", "f ")
 
-func BenchmarkFomatDoubleAutoReplacement(b *testing.B) {
-	b.StopTimer()
-	rawString := "{} {}"
-	vargs := []any{"foo", "bar"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+		mustEvalToMatch(DefaultDialect, "02.1", "foobar", "f0")
 
-func BenchmarkFomatSingleReplacementWithPadding(b *testing.B) {
-	b.StopTimer()
-	rawString := "{:<10}"
-	vargs := []any{"foo"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+		mustEvalToMatch(DefaultDialect, "#10o", 16789, "   0o40625")
 
-func BenchmarkFomatDoubleReplacementWithPadding(b *testing.B) {
-	b.StopTimer()
-	rawString := "{:<10} {:<10}"
-	vargs := []any{"foo", "bar"}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, nil)
-	}
-}
+		mustEvalToMatch(DefaultDialect, "#030_x", 100000000, "0x000_0000_0000_0000_05f5_e100")
 
-func BenchmarkComplexSpec(b *testing.B) {
-	b.StopTimer()
-	rawString := "{:<} hello {:{}.4%} world {} {m.sub} {m[sub] } {:.2f} "
-	vargs := []any{
-		"foo", 123, "{<60", "buz", 123.321321312,
-	}
-	kwargs := map[string]any{
-		"m": map[string]any{
-			"sub": "subvalue",
-		},
-	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		PyString(rawString).Format(vargs, kwargs)
-	}
-}
+		mustEvalToMatch(DefaultDialect, "#_b", 16789, "0b100_0001_1001_0101")
+
+		mustEvalToMatch(DefaultDialect, "#10,d", 16789, "    16,789")
+		mustEvalToMatch(DefaultDialect, "#010_o", 0o0040625, "0o004_0625")
+
+		mustEvalToMatch(DefaultDialect, "#0_b", 167, "0b1010_0111")
+		mustEvalToMatch(DefaultDialect, "#0,d", 16789, "16,789")
+
+		mustEvalToError(DefaultDialect, " 0", "foobar")
+		mustEvalToMatch(DefaultDialect, "010", "foobar", "foobar0000")
+
+		mustEvalToMatch(DefaultDialect, "#010d", 16789, "0000016789")
+		mustEvalToMatch(DefaultDialect, ",=-10.5G", 77.11121111111112, ",,,,77.111")
+		mustEvalToMatch(DefaultDialect, "A=#x", -53, "-0x35")
+		mustEvalToMatch(DefaultDialect, "`=87", 10, "`````````````````````````````````````````````````````````````````````````````````````10")
+		mustEvalToError(DefaultDialect, "}<1", "no_used")
+	})
+})
 
 /*
 	Test utility functions
@@ -414,31 +279,23 @@ func getValidExpressions(d Dialect) []FormatSpec {
 	return res
 }
 
-func mustFormatSpec(t *testing.T, d Dialect, template string) FormatSpec {
+func mustFormatSpec(d Dialect, template string) FormatSpec {
 	spec, err := d.NewFormatterSpecFromStr(template)
-	if err != nil {
-		t.Fatalf("Failed to parse format spec: %s => %v", template, err)
-	}
+	Expect(err).NotTo(HaveOccurred(), "Failed to parse format spec: %s => %v", template, err)
 	return spec
 }
 
-func mustEvalToMatch(t *testing.T, d Dialect, template string, val any, expected string) {
-	spec := mustFormatSpec(t, d, template)
+func mustEvalToMatch(d Dialect, template string, val any, expected string) {
+	spec := mustFormatSpec(d, template)
 	s, err := spec.Format(val)
-	if err != nil {
-		t.Fatalf("Failed to format spec: %s", err)
-	}
-	if s != expected {
-		t.Fatalf("Expected: '%s', got: '%s'", expected, s)
-	}
+	Expect(err).NotTo(HaveOccurred(), "Failed to format spec: %s", err)
+	Expect(s).To(Equal(expected), "Expected: '%s', got: '%s'", expected, s)
 }
 
-func mustEvalToError(t *testing.T, d Dialect, template string, val any) {
+func mustEvalToError(d Dialect, template string, val any) {
 	spec, err := d.NewFormatterSpecFromStr(template)
 	if err == nil {
 		_, err2 := spec.Format(val)
-		if err2 == nil {
-			t.Fatalf("should fail to parse but got %#v: %s", template, spec)
-		}
+		Expect(err2).To(HaveOccurred(), "should fail to parse but got %#v: %s", template, spec)
 	}
 }

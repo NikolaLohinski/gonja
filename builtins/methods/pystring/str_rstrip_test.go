@@ -2,10 +2,12 @@ package pystring
 
 import (
 	"fmt"
-	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestRStrip(t *testing.T) {
+var _ = Describe("RStrip", func() {
 	testCases := []struct {
 		input    string
 		cutset   string
@@ -18,12 +20,11 @@ func TestRStrip(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("RStrip(%q, %q)", tc.input, tc.cutset), func(t *testing.T) {
+		tc := tc // capture range variable
+		It(fmt.Sprintf("RStrip(%q, %q) should return %q", tc.input, tc.cutset, tc.expected), func() {
 			pys := PyString(tc.input)
 			actual := pys.RStrip(tc.cutset)
-			if actual != PyString(tc.expected) {
-				t.Errorf("Expected RStrip(%q, %q) to be %q, got %q", tc.input, tc.cutset, tc.expected, actual)
-			}
+			Expect(actual).To(Equal(PyString(tc.expected)))
 		})
 	}
-}
+})

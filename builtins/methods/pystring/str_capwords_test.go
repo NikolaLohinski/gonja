@@ -1,10 +1,11 @@
 package pystring
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestCapWords(t *testing.T) {
+var _ = Describe("CapWords", func() {
 	tests := []struct {
 		name     string
 		input    PyString
@@ -42,12 +43,11 @@ func TestCapWords(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result := PyString(test.input).CapWords()
-			if result != test.expected {
-				t.Errorf("Expected %q, but got %q", test.expected, result)
-			}
+	for _, tt := range tests {
+		tt := tt // capture range variable
+		It(tt.name, func() {
+			result := PyString(tt.input).CapWords()
+			Expect(result).To(Equal(tt.expected))
 		})
 	}
-}
+})

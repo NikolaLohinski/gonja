@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestExpandTabs(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("ExpandTabs", func() {
 	tests := []struct {
 		s       string
 		tabSize *int
@@ -20,11 +25,16 @@ func TestExpandTabs(t *testing.T) {
 		},
 		// TODO: Add test cases.
 	}
+
 	for _, tt := range tests {
-		t.Run(tt.s, func(t *testing.T) {
-			if got := ExpandTabs(tt.s, tt.tabSize); got != tt.want {
-				t.Errorf("ExpandTabs() = %v, want %v", got, tt.want)
-			}
+		tt := tt // capture range variable
+		It(fmt.Sprintf("should expand tabs in %q to '%v'", tt.s, tt.want), func() {
+			Expect(ExpandTabs(tt.s, tt.tabSize)).To(Equal(tt.want))
 		})
 	}
+})
+
+// Mock implementation for intP
+func intP(i int) *int {
+	return &i
 }

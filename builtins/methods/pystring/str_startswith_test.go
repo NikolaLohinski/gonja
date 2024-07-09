@@ -1,8 +1,13 @@
 package pystring
 
-import "testing"
+import (
+	"fmt"
 
-func TestStartsWith(t *testing.T) {
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
+
+var _ = Describe("StartsWith", func() {
 	tests := []struct {
 		s        string
 		prefix   string
@@ -27,11 +32,10 @@ func TestStartsWith(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.s, func(t *testing.T) {
+		test := test // capture range variable
+		It(fmt.Sprintf("For input %q.StartsWith(%q, %v, %v) should return %v", test.s, test.prefix, test.start, test.end, test.expected), func() {
 			result := PyString(test.s).StartsWith(test.prefix, test.start, test.end)
-			if result != test.expected {
-				t.Errorf("Expected %q.StartsWith(%q, %v, %v) %v but got %v", test.s, test.prefix, test.start, test.end, test.expected, result)
-			}
+			Expect(result).To(Equal(test.expected))
 		})
 	}
-}
+})
