@@ -214,6 +214,23 @@ var _ = Describe("PastFailures", func() {
 	})
 })
 
+var _ = Describe("SimpleJSONPathSplit", func() {
+	DescribeTable("splits JSONPath correctly",
+		func(input string, expected []string) {
+			result := simpleJSONPathSplit(input)
+			Expect(result).To(Equal(expected))
+		},
+		Entry("empty string", "", []string{}),
+		Entry("single property", "$.store", []string{"$", "store"}),
+		Entry("nested properties", "$.store.book", []string{"$", "store", "book"}),
+		Entry("array index", "$.store.book[0]", []string{"$", "store", "book", "0"}),
+		Entry("array index with quotes", "$.store.book['0']", []string{"$", "store", "book", "0"}),
+		Entry("nested properties with array", "$.store.book[0].title", []string{"$", "store", "book", "0", "title"}),
+		Entry("properties with single quotes", "$['store']['book'][0]['title']", []string{"$", "store", "book", "0", "title"}),
+		Entry("properties with mixed quotes", "$.store['book'][0].title", []string{"$", "store", "book", "0", "title"}),
+	)
+})
+
 /*
 	Test utility functions
 */

@@ -113,39 +113,54 @@ func (d Dialect) formatReplacementFieldValue(res *strings.Builder, value any, fo
 	return err
 }
 
-// TODO: make more robust
 func simpleJSONPathSplit(path string) []string {
-	var parts []string
-	start := 0
+	parts := []string{}
+	var currentPart strings.Builder
+	var withinBrackets, withinQuotes bool
+	quoteChar := rune(0)
 
-	for idx, char := range path {
-		if path[start:idx] == "" {
-			continue
-		}
-
-		withinBrackets := false
-
+	for _, char := range path {
 		switch char {
-		case '"':
-		case '.':
-			part := strings.Trim(path[start:idx], "'\"[].")
-			if withinBrackets && part != "" {
-				parts = append(parts, part)
-				start = idx
-			}
 		case '[', ']':
-			withinBrackets = char == '['
-			part := strings.Trim(path[start:idx], "'\"[].")
-			if part != "" {
-				parts = append(parts, part)
-				start = idx
+			if !withinQuotes {
+				withinBrackets = char == '['
+				part := strings.Trim(currentPart.String(), "'\"")
+				if part != "" {
+					parts = append(parts, part)
+				}
+				currentPart.Reset()
+				continue
+			}
+		case '"', '\'':
+			if withinQuotes {
+				if char == quoteChar {
+					withinQuotes = false
+					quoteChar = 0
+					continue
+				}
+			} else {
+				withinQuotes = true
+				quoteChar = char
+				continue
+			}
+		case '.':
+			if !withinQuotes && !withinBrackets {
+				part := strings.Trim(currentPart.String(), "'\"")
+				if part != "" {
+					parts = append(parts, part)
+				}
+				currentPart.Reset()
+				continue
 			}
 		}
+		currentPart.WriteRune(char)
 	}
 
-	part := strings.Trim(path[start:], "'\"[].")
+	// Add the last part if any
+	part := strings.Trim(currentPart.String(), "'\"")
 	if part != "" {
 		parts = append(parts, part)
 	}
+
 	return parts
 }
