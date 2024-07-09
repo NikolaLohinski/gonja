@@ -4,7 +4,7 @@
 package pystring
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -12,18 +12,28 @@ import (
 	"testing"
 )
 
+// TestValidExpressionsMatchesPython_311 runs test against a python binary
+// to verify correctness with python's format string implementation.
+// NOTE: the current performance is slow due to instancing 1 python process
+// per test. For this to be used in CI it would require a refactor
 func TestValidExpressionsMatchesPython_311(t *testing.T) {
 	pythonCmd := "python3.11"
 	dialect := DialectPython3_11
+
+	pythonEvaluator, err := NewPythonEvaluator(t, pythonCmd)
+	if err != nil {
+		t.Fatalf("couldn't start python process: %v", err)
+	}
+	defer pythonEvaluator.Close()
 
 	expressions := getValidExpressions(dialect)
 	t.Logf("found %d valid expressions; evaluating against dialect %#v", len(expressions), dialect)
 	for _, expr := range expressions {
 		expr.dialect = dialect
 		if expr.ExpectFloatType() {
-			v := 1.123456789
+			v := 112.123456789
 			s, goErr := expr.Format(v)
-			ps, _, pyErr := getPythonRes(pythonCmd, fmt.Sprintf("{0:%s}", expr.String()), []any{v})
+			ps, _, pyErr := pythonEvaluator.Evaluate(fmt.Sprintf("{0:%s}", expr.String()), []any{v})
 			if goErr != nil && pyErr == nil || goErr == nil && pyErr != nil {
 				t.Errorf("Error miss match between golang and python of format '%s': goErr: %v, pyErr: %v", expr.String(), goErr, pyErr)
 			}
@@ -39,7 +49,7 @@ func TestValidExpressionsMatchesPython_311(t *testing.T) {
 		} else if expr.ExpectIntType() {
 			v := 16789
 			s, goErr := expr.Format(v)
-			ps, _, pyErr := getPythonRes(pythonCmd, fmt.Sprintf("{0:%s}", expr.String()), []any{v})
+			ps, _, pyErr := pythonEvaluator.Evaluate(fmt.Sprintf("{0:%s}", expr.String()), []any{v})
 			if goErr != nil && pyErr == nil || goErr == nil && pyErr != nil {
 				t.Errorf("Error miss match between golang and python of format '%s': goErr: %v, pyErr: %v", expr.String(), goErr, pyErr)
 			}
@@ -55,7 +65,7 @@ func TestValidExpressionsMatchesPython_311(t *testing.T) {
 		} else if expr.ExpectNumericType() {
 			v := 16789
 			s, goErr := expr.Format(v)
-			ps, _, pyErr := getPythonRes(pythonCmd, fmt.Sprintf("{0:%s}", expr.String()), []any{v})
+			ps, _, pyErr := pythonEvaluator.Evaluate(fmt.Sprintf("{0:%s}", expr.String()), []any{v})
 			if goErr != nil && pyErr == nil || goErr == nil && pyErr != nil {
 				t.Errorf("Error miss match between golang and python of format '%s': goErr: %v, pyErr: %v", expr.String(), goErr, pyErr)
 			}
@@ -71,7 +81,7 @@ func TestValidExpressionsMatchesPython_311(t *testing.T) {
 		} else {
 			v := "foobar"
 			s, goErr := expr.Format(v)
-			ps, _, pyErr := getPythonRes(pythonCmd, fmt.Sprintf("{0:%s}", expr.String()), []any{v})
+			ps, _, pyErr := pythonEvaluator.Evaluate(fmt.Sprintf("{0:%s}", expr.String()), []any{v})
 			if goErr != nil && pyErr == nil || goErr == nil && pyErr != nil {
 				t.Fatalf("Error miss match between golang and python of format '%s': goErr: %v, pyErr: %v", expr.String(), goErr, pyErr)
 			}
@@ -89,6 +99,12 @@ func TestValidExpressionsMatchesPython_311(t *testing.T) {
 }
 
 func FuzzIntTestingWithPython_311(t *testing.F) {
+	pythonEvaluator, err := NewPythonEvaluator(t, pythonCmd)
+	if err != nil {
+		t.Fatalf("couldn't start python process: %v", err)
+	}
+	defer pythonEvaluator.Close()
+
 	t.Add('<', rune(0), rune(0), false, false, uint(0), uint(0), rune(0), 1.0)
 	t.Add('>', rune(0), rune(0), false, false, uint(0), uint(0), rune(0), 1.0)
 	t.Add('^', rune(0), rune(0), false, false, uint(0), uint(0), rune(0), 1.0)
@@ -225,7 +241,7 @@ func FuzzIntTestingWithPython_311(t *testing.F) {
 		if goErr == nil {
 			goRes, goErr = spec.Format(val[0])
 		}
-		pythonRes, pythonCmd, pyErr := getPythonRes("python3.11", template, val)
+		pythonRes, pythonCmd, pyErr := pythonEvaluator.Evaluate(template, val)
 
 		if goErr != nil && pyErr == nil {
 			t.Errorf("PythonErr: nil != GoErr: '%s'; Spec: %s", goErr.Error(), template)
@@ -249,28 +265,79 @@ func FuzzIntTestingWithPython_311(t *testing.F) {
 	})
 }
 
-// Test utils
+type PythonEvaluator struct {
+	t      *testing.T
+	cmd    *exec.Cmd
+	count  int
+	stdin  *bufio.Writer
+	stdout *bufio.Reader
+}
 
-func getPythonRes(pythonCmd string, template string, args []any) (string, string, error) {
+// Initialize the Python process
+func NewPythonEvaluator(t *testing.T, pythonCmd string) (*PythonEvaluator, error) {
+	cmd := exec.Command(pythonCmd, "-i") // Start Python in interactive mode
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	// Start the Python process
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	return &PythonEvaluator{
+		t:      t,
+		cmd:    cmd,
+		stdin:  bufio.NewWriter(stdin),
+		stdout: bufio.NewReader(stdout),
+	}, nil
+}
+
+// Close the Python process
+func (pe *PythonEvaluator) Close() error {
+	if pe.cmd != nil && pe.cmd.Process != nil {
+		pe.stdin.WriteString("exit()\n")
+		pe.stdin.Flush()
+		return pe.cmd.Wait()
+	}
+	return nil
+}
+
+// Evaluate a template with arguments
+func (pe *PythonEvaluator) Evaluate(template string, args []any) (string, string, error) {
 	b, err := json.Marshal(args)
 	if err != nil {
 		panic(err)
 	}
 
 	template = strings.ReplaceAll(template, "'", "\\'")
+	cmdString := fmt.Sprintf("print('%s'.format(%s))\n", template, string(b[1:len(b)-1]))
 
-	cmdString := fmt.Sprintf("print( '%s'.format(%s) ); exit(0)", template, string(b[1:len(b)-1]))
-	cmd := exec.Command(pythonCmd, "-c", cmdString)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	// Execute the command and capture its output
-	output, err := cmd.Output()
-	if err != nil {
-		return "", cmdString, fmt.Errorf("%w: after cmd:python3 -c \"%s\"   stdErr: %s", err, cmdString, stderr.String())
+	if _, err := pe.stdin.WriteString(cmdString); err != nil {
+		return "", cmdString, fmt.Errorf("failed to write to stdin: %w", err)
 	}
-	cmd.Process.Kill()
+	if err := pe.stdin.Flush(); err != nil {
+		return "", cmdString, fmt.Errorf("failed to flush stdin: %w", err)
+	}
+	pe.count++
+	if pe.count%10000 == 0 {
+		pe.t.Logf("evaluated %d records in python", pe.count)
+	}
 
-	return strings.Trim(string(output), "\n\r"), cmdString, nil
+	// Read the result from stdout
+	output, err := pe.stdout.ReadString('\n')
+	if err != nil {
+		return "", cmdString, fmt.Errorf("failed to read from stdout: %w", err)
+	}
+
+	output = strings.Trim(output, "\n\r")
+
+	return output, cmdString, nil
 }
