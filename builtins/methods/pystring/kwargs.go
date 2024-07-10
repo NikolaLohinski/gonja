@@ -3,6 +3,7 @@ package pystring
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
@@ -18,6 +19,17 @@ type KwArgs map[string]any
 func (k KwArgs) Get(key string) (any, bool) {
 	v, ok := k[key]
 	return v, ok
+}
+
+// KwArgs adds AttributeGetter interface to map[string]any
+type ListArgs []any
+
+func (k ListArgs) Get(key string) (any, bool) {
+	idx, err := strconv.Atoi(key)
+	if err != nil || idx < 0 || idx >= len(k) {
+		return "", false
+	}
+	return k[idx], true
 }
 
 func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
@@ -49,6 +61,8 @@ func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 		return getNestedKwArgs(tail, val)
 	case map[string]any:
 		return getNestedKwArgs(tail, KwArgs(val))
+	case []any:
+		return getNestedKwArgs(tail, ListArgs(val))
 	case map[string]string:
 		subKwarg := make(map[string]any)
 		for k, v := range val {
@@ -141,8 +155,18 @@ func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 		return getNestedKwArgs(tail, KwArgs(subKwarg))
 
 	default:
-		// Handle structs
+		// Handle slices and arrays using reflection
 		v := reflect.ValueOf(maybeVal)
+		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			listArgs := make([]any, v.Len())
+			for i := 0; i < v.Len(); i++ {
+				listArgs[i] = v.Index(i).Interface()
+			}
+			return getNestedKwArgs(tail, ListArgs(listArgs))
+		}
+
+		// Handle structs
+		v = reflect.ValueOf(maybeVal)
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
