@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 	"golang.org/x/exp/utf8string"
 )
 
@@ -58,7 +59,7 @@ func (d Dialect) NewFormatterSpecFromStr(format string) (FormatSpec, error) {
 		switch char {
 		case '<', '>', '^', '=':
 			if spec.Sign != 0 || spec.CoercesNegativeZero || spec.Alternate || spec.MinWidth > 0 || spec.Precision > 0 || spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - Alignment may only be first or second character", ErrValue, format)
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - Alignment may only be first or second character", pyerrors.ErrValue, format)
 			}
 			spec.Align = char
 			if idx > 0 {
@@ -67,38 +68,38 @@ func (d Dialect) NewFormatterSpecFromStr(format string) (FormatSpec, error) {
 
 		case '+', '-', ' ':
 			if spec.Sign != 0 || spec.CoercesNegativeZero || spec.Alternate || spec.MinWidth > 0 || spec.Precision > 0 || spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected sign '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected sign '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			spec.Sign = char
 
 		case 'z':
 			if !spec.dialect.enableCoercesNegativeZeroToPositive {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected float coercion sign '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected float coercion sign '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			if spec.CoercesNegativeZero || spec.Alternate || spec.MinWidth > 0 || spec.Precision > 0 || spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected float coercion sign '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected float coercion sign '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			spec.CoercesNegativeZero = true
 
 		case '#':
 			if spec.Alternate || spec.MinWidth > 0 || spec.Precision > 0 || spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected alternative sign '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected alternative sign '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			spec.Alternate = true
 
 		case '_', ',':
 			if spec.Precision > 0 || spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected grouping sign '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected grouping sign '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			spec.GroupingOption = char
 
 		case '.':
 			if spec.Precision != 0 || spec.Type != 0 || idx+1 >= len(format) {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected precision '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected precision '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			r, _ := utf8.DecodeRuneInString(format[idx+1:])
 			if r == utf8.RuneError || !unicode.IsDigit(r) {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected precision '%s' ", ErrValue, format, string(r))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected precision '%s' ", pyerrors.ErrValue, format, string(r))
 			}
 
 			firstDigit := format[idx+1:]
@@ -107,13 +108,13 @@ func (d Dialect) NewFormatterSpecFromStr(format string) (FormatSpec, error) {
 			completeNumber := firstDigit[:offset]
 			width, err := strconv.Atoi(completeNumber)
 			if err != nil {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s': '%s' ", ErrInternal, format, err.Error())
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s': '%s' ", pyerrors.ErrInternal, format, err.Error())
 			}
 			spec.Precision = uint(width)
 
 		case 'b', 'c', 'd', 'o', 'x', 'X', 'e', 'E', 'f', 'F', 'g', 'G', '%', 'n', 's':
 			if spec.Type != 0 {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected type '%s' ", ErrValue, format, string(char))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected type '%s' ", pyerrors.ErrValue, format, string(char))
 			}
 			spec.Type = char
 
@@ -121,7 +122,7 @@ func (d Dialect) NewFormatterSpecFromStr(format string) (FormatSpec, error) {
 			// MinWidth
 			if unicode.IsDigit(char) {
 				if spec.Type != 0 || spec.Precision > 0 {
-					return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected minwidth '%s' ", ErrValue, format, string(char))
+					return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected minwidth '%s' ", pyerrors.ErrValue, format, string(char))
 				}
 
 				if char == '0' {
@@ -136,11 +137,11 @@ func (d Dialect) NewFormatterSpecFromStr(format string) (FormatSpec, error) {
 				completeNumber := firstDigit[:offset]
 				width, err := strconv.Atoi(completeNumber)
 				if err != nil {
-					return spec, fmt.Errorf("%w: Invalid format specifier '%s': '%s' ", ErrInternal, format, err.Error())
+					return spec, fmt.Errorf("%w: Invalid format specifier '%s': '%s' ", pyerrors.ErrInternal, format, err.Error())
 				}
 				spec.MinWidth = uint(width)
 			} else {
-				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected '%s' at pos %d; NextRund: %s", ErrValue, format, string(char), idx, string(maybeNextRune))
+				return spec, fmt.Errorf("%w: Invalid format specifier '%s' - unexpected '%s' at pos %d; NextRund: %s", pyerrors.ErrValue, format, string(char), idx, string(maybeNextRune))
 			}
 		}
 	}
@@ -235,56 +236,56 @@ func (f FormatSpec) ExpectStringType() bool {
 
 func (f FormatSpec) Validate() error {
 	if !f.AlignIsValid() {
-		return fmt.Errorf("%w: Invalid alignment character: %c", ErrValue, f.Align)
+		return fmt.Errorf("%w: Invalid alignment character: %c", pyerrors.ErrValue, f.Align)
 	}
 	if !f.SignIsValid() {
-		return fmt.Errorf("%w: Invalid sign character: %c", ErrValue, f.Sign)
+		return fmt.Errorf("%w: Invalid sign character: %c", pyerrors.ErrValue, f.Sign)
 	}
 	if !f.TypeIsValid() {
-		return fmt.Errorf("%w: Invalid type character: %c", ErrValue, f.Type)
+		return fmt.Errorf("%w: Invalid type character: %c", pyerrors.ErrValue, f.Type)
 	}
 	if !f.GroupingOptionIsValid() {
-		return fmt.Errorf("%w: Invalid grouping option: %c", ErrValue, f.GroupingOption)
+		return fmt.Errorf("%w: Invalid grouping option: %c", pyerrors.ErrValue, f.GroupingOption)
 	}
 
 	if f.ExpectIntType() && f.Precision > 0 {
-		return fmt.Errorf("%w: Precision only allowed for float types, not %c", ErrValue, f.Type)
+		return fmt.Errorf("%w: Precision only allowed for float types, not %c", pyerrors.ErrValue, f.Type)
 	}
 
 	expectString := f.ExpectStringType()
 	if expectString && f.Sign != 0 {
-		return fmt.Errorf("%w: Sign not allowed with string format specifier 's'", ErrValue)
+		return fmt.Errorf("%w: Sign not allowed with string format specifier 's'", pyerrors.ErrValue)
 	}
 	if expectString && f.Align == '=' {
-		return fmt.Errorf("%w: '=' alignment not allowed with string format specifier 's'", ErrValue)
+		return fmt.Errorf("%w: '=' alignment not allowed with string format specifier 's'", pyerrors.ErrValue)
 	}
 	if expectString && f.GroupingOption != 0 {
-		return fmt.Errorf("%w: '=' grouping only allowed with float and int types", ErrValue)
+		return fmt.Errorf("%w: '=' grouping only allowed with float and int types", pyerrors.ErrValue)
 	}
 	if expectString && f.Precision > 0 {
-		return fmt.Errorf("%w: Precision not allowed with string format specifier 's'", ErrValue)
+		return fmt.Errorf("%w: Precision not allowed with string format specifier 's'", pyerrors.ErrValue)
 	}
 
 	if f.GroupingOption != 0 && (f.Type != 'd' && f.Type != 'b' && f.Type != 'o' && f.Type != 'x' && f.Type != 'X') {
-		return fmt.Errorf("%w: Cannot specify '%s' with '%s'.", ErrValue, string(f.GroupingOption), string(f.Type))
+		return fmt.Errorf("%w: Cannot specify '%s' with '%s'.", pyerrors.ErrValue, string(f.GroupingOption), string(f.Type))
 	}
 
 	expectedIntType := f.ExpectIntType()
 	if f.Alternate && !expectedIntType && f.Type != 0 {
-		return fmt.Errorf("%w: Alternate form (#) only allowed with integer types, not %c", ErrValue, f.Type)
+		return fmt.Errorf("%w: Alternate form (#) only allowed with integer types, not %c", pyerrors.ErrValue, f.Type)
 	}
 	if expectedIntType && f.Precision > 0 {
-		return fmt.Errorf("%w: Precision not allowed with integer format specifier '%c'", ErrValue, f.Type)
+		return fmt.Errorf("%w: Precision not allowed with integer format specifier '%c'", pyerrors.ErrValue, f.Type)
 	}
 
 	if f.Alternate && f.Type == 'c' {
-		return fmt.Errorf("%w: Alternate form (#) not allowed with integer format specifier '%c'", ErrValue, f.Type)
+		return fmt.Errorf("%w: Alternate form (#) not allowed with integer format specifier '%c'", pyerrors.ErrValue, f.Type)
 	}
 	if f.Fill != 0 && f.Align == 0 {
-		return fmt.Errorf("%w: Fill character only allowed with alignment", ErrValue)
+		return fmt.Errorf("%w: Fill character only allowed with alignment", pyerrors.ErrValue)
 	}
 	if f.Fill == '}' || f.Fill == '{' {
-		return fmt.Errorf("%w: Single '%s' encountered in format string", ErrValue, string(f.Fill))
+		return fmt.Errorf("%w: Single '%s' encountered in format string", pyerrors.ErrValue, string(f.Fill))
 	}
 
 	return nil
@@ -452,16 +453,16 @@ func (f FormatSpec) FormatValue(v any) (string, ValueCategory, error) {
 
 		// Only added for compatibility with python.
 		//if f.Fill == ' ' {
-		//	return "", ValueCategoryString, fmt.Errorf("%w: Space not allowed in string format specifier", ErrValue)
+		//	return "", ValueCategoryString, fmt.Errorf("%w: Space not allowed in string format specifier", pyerrors.ErrValue)
 		//}
 		if f.Sign != 0 && !f.dialect.tryTypeJugglingString {
-			return "", ValueCategoryString, fmt.Errorf("%w: Sign not allowed in string format specifier", ErrValue)
+			return "", ValueCategoryString, fmt.Errorf("%w: Sign not allowed in string format specifier", pyerrors.ErrValue)
 		}
 		if f.Alternate && !f.dialect.tryTypeJugglingString {
-			return "", ValueCategoryString, fmt.Errorf("%w: Alternate form (#) not allowed in string format specifier", ErrValue)
+			return "", ValueCategoryString, fmt.Errorf("%w: Alternate form (#) not allowed in string format specifier", pyerrors.ErrValue)
 		}
 		if f.GroupingOption != 0 && !f.dialect.tryTypeJugglingString {
-			return "", ValueCategoryString, fmt.Errorf("%w: Cannot specify '%s' with 's'", ErrValue, string(f.GroupingOption))
+			return "", ValueCategoryString, fmt.Errorf("%w: Cannot specify '%s' with 's'", pyerrors.ErrValue, string(f.GroupingOption))
 		}
 
 		// We expect this library to be used where type safety isn't guaranteed; Therefore
@@ -581,7 +582,7 @@ func (f FormatSpec) FormatBool(value bool) (string, error) {
 func (f FormatSpec) FormatInt(value int64) (string, error) {
 
 	if f.Precision > 0 {
-		return "", fmt.Errorf("%w: Precision not allowed with integer format specifier", ErrValue)
+		return "", fmt.Errorf("%w: Precision not allowed with integer format specifier", pyerrors.ErrValue)
 	}
 
 	valueStr, err := f.formatInt(value)
@@ -635,7 +636,7 @@ func (f FormatSpec) formatInt(value int64) (string, error) {
 		return f.FormatFloat(float64(value))
 
 	default:
-		return "", fmt.Errorf("%w: unsupported format type: %s for integer datatype", ErrValue, string(f.Type))
+		return "", fmt.Errorf("%w: unsupported format type: %s for integer datatype", pyerrors.ErrValue, string(f.Type))
 	}
 }
 

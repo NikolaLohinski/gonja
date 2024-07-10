@@ -3,6 +3,7 @@ package pystring
 import (
 	"fmt"
 
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -22,7 +23,7 @@ func Encode(str, encoding, errors string) ([]byte, error) {
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("%w: unsupported encoding '%s'", ErrArguments, encoding)
+		return nil, fmt.Errorf("%w: unsupported encoding '%s'", pyerrors.ErrArguments, encoding)
 	}
 }
 

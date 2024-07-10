@@ -1,4 +1,4 @@
-package pystring
+package pyerrors
 
 import "fmt"
 

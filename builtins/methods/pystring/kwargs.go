@@ -3,6 +3,8 @@ package pystring
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
 
 // Used to resolve nested kw-args
@@ -21,7 +23,7 @@ func (k KwArgs) Get(key string) (any, bool) {
 func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 	if len(keys) == 0 {
 		// Shouldn't happen if all other logic is correct
-		return "", fmt.Errorf("%w: empty key", ErrInternal)
+		return "", fmt.Errorf("%w: empty key", pyerrors.ErrInternal)
 	}
 
 	key := keys[0]
@@ -32,13 +34,13 @@ func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 		if val, ok := kwarg.Get(key); ok {
 			return val, nil
 		}
-		return "", fmt.Errorf("%w: '%s'", ErrKey, key)
+		return "", fmt.Errorf("%w: '%s'", pyerrors.ErrKey, key)
 	}
 
 	// Fetch key
 	maybeVal, ok := kwarg.Get(key)
 	if !ok {
-		return "", fmt.Errorf("%w: '%s'", ErrKey, key)
+		return "", fmt.Errorf("%w: '%s'", pyerrors.ErrKey, key)
 	}
 
 	// See if we can recurse down to sub-keys
@@ -171,5 +173,5 @@ func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 		}
 	}
 
-	return "", fmt.Errorf("%w: '%#v' is not a sub-gettable for key %s", ErrValue, maybeVal, key)
+	return "", fmt.Errorf("%w: '%#v' is not a sub-gettable for key %s", pyerrors.ErrValue, maybeVal, key)
 }
