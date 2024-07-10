@@ -58,6 +58,16 @@ var _ = Describe("GetNestedKwArgs", func() {
 			"value",
 			false,
 		),
+		Entry("list of string",
+			[]string{"map", "1"},
+			KwArgs{
+				"map": []any{
+					"foo", "bar",
+				},
+			},
+			"bar",
+			false,
+		),
 		Entry("map of string",
 			[]string{"map", "key"},
 			KwArgs{
