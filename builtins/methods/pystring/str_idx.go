@@ -1,5 +1,7 @@
 package pystring
 
+import "github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
+
 // Idx replicates indexing behavior in python. As such it supports negative
 // indexing and don't crash on out of bound indexes.
 func Idx(s string, start, end *int) (string, error) {
@@ -30,7 +32,7 @@ func Idx(s string, start, end *int) (string, error) {
 	}
 
 	if actualEnd < actualStart || actualStart < 0 || actualEnd < 0 || actualStart > sLen || actualEnd > sLen {
-		return "", ErrIndex
+		return "", pyerrors.ErrIndex
 	}
 
 	return s[actualStart:actualEnd], nil

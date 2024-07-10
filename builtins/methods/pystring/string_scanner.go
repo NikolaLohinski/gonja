@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
 
 // Token represents a token in the input string
@@ -73,7 +75,7 @@ func (s *pyStringScanner) Next() (Token, string, error) {
 
 		closingBrace := indexOfClosingBrace(remainder)
 		if closingBrace == -1 {
-			return Unknown, "", fmt.Errorf("%w: couldn't find closing brace", ErrValue)
+			return Unknown, "", fmt.Errorf("%w: couldn't find closing brace", pyerrors.ErrValue)
 		}
 		s.index += closingBrace + 1
 
@@ -106,7 +108,7 @@ func (s *pyStringScanner) maybePopulateAutomaticReplacement(block string) (strin
 	}
 
 	if foundAutomaticFieldSpec && foundManualFieldSpec {
-		return "", fmt.Errorf("%w: cannot switch from manual field specification to automatic field numbering", ErrValue)
+		return "", fmt.Errorf("%w: cannot switch from manual field specification to automatic field numbering", pyerrors.ErrValue)
 	}
 
 	// does the format block contain automatic replacement specifiers?

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
 
 // Any value which implements formatter will itself decide how a formatting
@@ -20,7 +22,7 @@ func (d Dialect) Format(s string, vargs []any, kwarg map[string]any) (string, er
 	for {
 		t, s, err := scan.Next()
 		if err != nil {
-			return "", fmt.Errorf("%w: %s", ErrInternal, err.Error())
+			return "", fmt.Errorf("%w: %s", pyerrors.ErrInternal, err.Error())
 		}
 
 		switch {
@@ -37,7 +39,7 @@ func (d Dialect) Format(s string, vargs []any, kwarg map[string]any) (string, er
 			return res.String(), nil
 
 		default:
-			return "", fmt.Errorf("%w: Unknown token type %s", ErrInternal, t.String())
+			return "", fmt.Errorf("%w: Unknown token type %s", pyerrors.ErrInternal, t.String())
 
 		}
 	}
@@ -50,7 +52,7 @@ func (d Dialect) Format(s string, vargs []any, kwarg map[string]any) (string, er
 func (d Dialect) parseReplacementField(s string, res *strings.Builder, vargs []any, kwarg map[string]any) error {
 	// Strip initial and final braces
 	if s[0] != '{' && s[len(s)-1] != '}' {
-		return fmt.Errorf("%w: format didn't have format directives in: %s", ErrInternal, s)
+		return fmt.Errorf("%w: format didn't have format directives in: %s", pyerrors.ErrInternal, s)
 	}
 	s = s[1 : len(s)-1]
 
@@ -74,7 +76,7 @@ func (d Dialect) parseReplacementField(s string, res *strings.Builder, vargs []a
 	// Extract vargs
 	if v, err := strconv.Atoi(string(value)); err == nil && v >= 0 {
 		if v >= len(vargs) || v < 0 {
-			return fmt.Errorf("%w: Replacement index %d out of range for positional args tuple", ErrIndex, v)
+			return fmt.Errorf("%w: Replacement index %d out of range for positional args tuple", pyerrors.ErrIndex, v)
 		}
 		return d.formatReplacementFieldValue(res, vargs[v], string(format))
 	}

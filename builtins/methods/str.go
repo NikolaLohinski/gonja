@@ -3,6 +3,7 @@ package methods
 import (
 	"errors"
 
+	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 	"github.com/nikolalohinski/gonja/v2/builtins/methods/pystring"
 	. "github.com/nikolalohinski/gonja/v2/exec"
 	"golang.org/x/exp/utf8string"
@@ -83,7 +84,7 @@ var strMethods = NewMethodSet[string](map[string]Method[string]{
 
 		res, err := pystring.PyString(self).Encode(encoding, errorsArg)
 		if err != nil {
-			if errors.Is(err, pystring.ErrArguments) {
+			if errors.Is(err, pyerrors.ErrArguments) {
 				return nil, ErrInvalidCall(err)
 			}
 			return nil, err
