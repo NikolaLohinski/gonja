@@ -1,13 +1,16 @@
-Maintainer:
-* Nikola Lohinski (@nikolalohinski)
+Maintainers:
 
-Main author of gonja:
+* @nikolalohinski
 
-* Axel Haustant (@noirbizarre)
+Initial authors of `gonja`:
 
-Contributors (in no specific order):
+* @noirbizarre
+* @flosch
 
-* Florian Schlachter <flori@n-schlachter.de>
+Contributors:
+
+* @Zatte
+* @karakanb
 * @romanoaugusto88
 * @vitalbh
 * @blaubaer
