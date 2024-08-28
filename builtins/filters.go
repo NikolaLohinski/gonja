@@ -897,28 +897,39 @@ func filterSlice(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	comp := strings.Split(params.Args[0].String(), ":")
-	if len(comp) != 2 {
-		return exec.AsValue(errors.New("Slice string must have the format 'from:to' [from/to can be omitted, but the ':' is required]"))
+	var (
+		slices   int
+		fillWith interface{}
+	)
+	if err := params.Take(
+		exec.PositionalArgument("slices", nil, exec.IntArgument(&slices)),
+		exec.KeywordArgument("fill_with", exec.AsValue(nil), exec.AnyArgument(&fillWith)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-
-	if !in.CanSlice() {
-		return in
+	if slices < 1 {
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("slices argument %d must be > 0", slices)))
 	}
-
-	from := exec.AsValue(comp[0]).Integer()
-	to := in.Len()
-
-	if from > to {
-		from = to
+	if !in.IsList() {
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
-
-	vto := exec.AsValue(comp[1]).Integer()
-	if vto >= from && vto <= in.Len() {
-		to = vto
+	quotient := int(math.Ceil(float64(in.Len()) / float64(slices)))
+	remainder := in.Len() % slices
+	output := make([]interface{}, 0)
+	in.Iterate(func(index, _ int, value, _ *exec.Value) bool {
+		if index%quotient == 0 {
+			output = append(output, []interface{}{value.Interface()})
+		} else {
+			output[len(output)-1] = append(output[len(output)-1].([]interface{}), value.Interface())
+		}
+		return true
+	}, func() {})
+	if remainder > 0 && fillWith != nil {
+		for len(output[len(output)-1].([]interface{})) < quotient {
+			output[len(output)-1] = append(output[len(output)-1].([]interface{}), fillWith)
+		}
 	}
-
-	return in.Slice(from, to)
+	return exec.AsValue(output)
 }
 
 func filterSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {

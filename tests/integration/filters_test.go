@@ -67,4 +67,13 @@ var _ = Context("filters", func() {
 		shouldFail("{{ True | indent }}", "invalid call to filter 'indent': True is not a string")
 		shouldFail("{{ True | indent(width='yolo') }}", "invalid call to filter 'indent': failed to validate argument 'width': yolo is not an integer")
 	})
+	Context("slice", func() {
+		shouldRender("{{ [1, 2, 3, 4, 5, 6] | slice(2) }}", "[[1, 2, 3], [4, 5, 6]]")
+		shouldRender("{{ [1, 2, 3, 4, 5] | slice(3) }}", "[[1, 2], [3, 4], [5]]")
+		shouldRender("{{ [1, 2, 3, 4, 5] | slice(3, 42) }}", "[[1, 2], [3, 4], [5, 42]]")
+		shouldRender("{{ [1, 2, 3, 4, 5, 6, 7] | slice(3, fill_with='this') }}", "[[1, 2, 3], [4, 5, 6], [7, 'this', 'this']]")
+		shouldFail("{{ True | slice(42) }}", "invalid call to filter 'slice': True is not a list")
+		shouldFail("{{ True | slice('yolo') }}", "invalid call to filter 'slice': failed to validate argument 'slices': yolo is not an integer")
+		shouldFail("{{ True | slice(-32) }}", "invalid call to filter 'slice': slices argument -32 must be > 0")
+	})
 })

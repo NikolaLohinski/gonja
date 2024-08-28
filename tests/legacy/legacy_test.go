@@ -113,7 +113,6 @@ var _ = Context("legacy tests", func() {
 				{{ "hell'o" }}
 
 				Filters
-				{{ 'Test'|slice('1:3') }}
 				{{ '<div class=\"foo\"><ul class=\"foo\"><li class=\"foo\"><p class=\"foo\">This is a long test.</p></li></ul></div>'|safe }}
 				{{ '<a name="link"><p>This </a>is a long test.</p>'|safe }}
 
@@ -130,7 +129,6 @@ var _ = Context("legacy tests", func() {
 				hell'o
 
 				Filters
-				es
 				<div class="foo"><ul class="foo"><li class="foo"><p class="foo">This is a long test.</p></li></ul></div>
 				<a name="link"><p>This </a>is a long test.</p>
 
