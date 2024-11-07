@@ -194,5 +194,33 @@ var _ = Context("strings", func() {
 				AssertPrettyDiff("one two", *returnedResult)
 			})
 		})
+		Context("https://github.com/NikolaLohinski/gonja/issues/25", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: heredoc.Doc(`
+					{%- set ns = namespace(found=false) -%}
+					{%- for v in ["a", "b", "c"] -%}
+					      {%- if v.startswith("b") -%}
+					        {% set ns.found=true -%}
+					      {%- endif -%}
+					{%- endfor -%}
+					{{ ns.found }}
+					{{ name }}
+					`),
+				})
+				(*environment).Context.Set("name", "bob")
+			})
+
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				expected := heredoc.Doc(`
+				True
+				bob
+				`)
+				AssertPrettyDiff(expected, *returnedResult)
+			})
+		})
 	})
 })
