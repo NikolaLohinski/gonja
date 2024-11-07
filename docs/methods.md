@@ -62,41 +62,65 @@ Most methods are implemented; Except for these:
 We strive for 100% python compatibility but due to limited resources we are bound by the differences in golang and python. 
 For example in go `unicode.IsNumber("三")` returns false for chinese numbers "三" but in python `!char.isnumeric()` returns true.
 
-### The [capitalize](https://docs.python.org/3/library/stdtypes.html#str.capitalize)() method
+### The `capitalize()` method
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.capitalize) |
+| ------------------------------------------------------------- |
 
 Return a copy of the string with its first character capitalized and the rest lowercased.
 
-### The [capwords](https://docs.python.org/3/library/string.html#string.capwords)()
+### The `capwords(sep=None)` method
 
-Split the argument into words using str.split(), capitalize each word using str.capitalize(), and join the capitalized words using str.join(). If the optional second argument sep is absent or None, runs of whitespace characters are replaced by a single space and leading and trailing whitespace are removed, otherwise sep is used to split and join the words.
+| [🐍 `python`](https://docs.python.org/3/library/string.html#string.capwords) |
+| ------------------------------------------------------------- |
 
-### The [casefold](https://docs.python.org/3/library/stdtypes.html#str.casefold)() method
+Splits the argument into words, capitalizes each word, and joins them back as a single string. If the optional second argument sep is absent or None, several whitespace characters are replaced by a single space and leading and trailing whitespace characters are removed ; otherwise the `sep` is used to split and join the words.
+
+### The `casefold()` method
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.casefold) |
+| ------------------------------------------------------------- |
 
 Return a casefolded copy of the string. Casefolded strings may be used for caseless matching.
 
 Casefolding is similar to lowercasing but more aggressive because it is intended to remove all case distinctions in a string. For example, the German lowercase letter 'ß' is equivalent to "ss". Since it is already lowercase, lower() would do nothing to 'ß'; casefold() converts it to "ss".
 
-### The [center](https://docs.python.org/3/library/stdtypes.html#str.center)(width[, fillchar]) method
+### The `center(width[, fillchar])` method
 
-Return centered in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.center) |
+| ------------------------------------------------------------- |
 
-### The [count](https://docs.python.org/3/library/stdtypes.html#str.count)(sub[, start[, end]]) method
+Returns a copy of the string of length `width` with the initial content being center. Padding is done using the specified `fillchar` (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
 
-Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.
+### The `count(sub[, start[, end]])` method
 
-If sub is empty, returns the number of empty strings between characters which is the length of the string plus one.
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.count) |
+| ------------------------------------------------------------- |
 
-### The [encode](https://docs.python.org/3/library/stdtypes.html#str.encode)(encoding='utf-8', errors='strict') method
+Returns the number of non-overlapping occurrences of substring sub in the range `[start, end]`. Optional arguments `start` and `end` are interpreted as in slice notation.
 
--Return the string encoded to bytes. Encoding defaults to `'utf-8'` and only `'iso-8859-1'` is also supported. `errors` controls how encoding errors are handled and can be set to `'strict'` or `'ignore'`.
+If `sub` is empty, it returns the number of empty strings between characters which is the length of the string plus one.
 
-### The [endswith](https://docs.python.org/3/library/stdtypes.html#str.endswith)(suffix[, start[, end]]) method
+### The `encode(encoding='utf-8', errors='strict')` method
 
-Return True if the string ends with the specified suffix, otherwise return False. suffix can also be a tuple of suffixes to look for. With optional start, test beginning at that position. With optional end, stop comparing at that position.
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.encode) |
+| ------------------------------------------------------------- |
 
-### The [expandtabs](https://docs.python.org/3/library/stdtypes.html#str.expandtabs)(tabsize=8) method
+Returns the string encoded to bytes. Encoding defaults to `'utf-8'` and only `'iso-8859-1'` is also supported. `errors` controls how encoding errors are handled and can be set to `'strict'` or `'ignore'`.
 
-Return a copy of the string where all tab characters are replaced by one or more spaces, depending on the current column and the given tab size. Tab positions occur every tabsize characters (default is 8, giving tab positions at columns 0, 8, 16 and so on). To expand the string, the current column is set to zero and the string is examined character by character. If the character is a tab (\t), one or more space characters are inserted in the result until the current column is equal to the next tab position. (The tab character itself is not copied.) If the character is a newline (\n) or return (\r), it is copied and the current column is reset to zero. Any other character is copied unchanged and the current column is incremented by one regardless of how the character is represented when printed.
+### The `endswith(suffix[, start[, end]])` method
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.endswith) |
+| ------------------------------------------------------------- |
+
+Returns `True` if the string ends with the specified suffix, otherwise return `False`. `suffix` can also be a tuple of suffixes to look for. With the optional `start`, testing begins at that position. With the optional `end`, comparing stops at that position.
+
+### The `expandtabs(tabsize=8)` method
+
+| [🐍 `python`](https://docs.python.org/3/library/stdtypes.html#str.expandtabs) |
+| ------------------------------------------------------------- |
+
+Returns a copy of the string where all tab characters are replaced by one or more spaces, depending on the current column and the given tab size. Tab positions occur every `tabsize` characters (default is 8, giving tab positions at columns 0, 8, 16 and so on). To expand the string, the current column is set to zero and the string is examined character by character. If the character is a tab (`\t`), one or more space characters are inserted in the result until the current column is equal to the next tab position. (The tab character itself is not copied.) If the character is a newline (`\n`) or return (`\r`), it is copied and the current column is reset to zero. Any other character is copied unchanged and the current column is incremented by one regardless of how the character is represented when printed.
 
 ### The [find](https://docs.python.org/3/library/stdtypes.html#str.find)(sub[, start[, end]]) method
 
