@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	lineReturnWithOnlyWhiteSpace = regexp.MustCompile("^(\n|\r)[ \t]*$")
+	lineReturnWithOnlyWhiteSpace = regexp.MustCompile("^(\n|\r\n)[ \t]*$")
 )
 
 type ControlStructureGetter interface {
