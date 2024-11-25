@@ -300,4 +300,36 @@ var _ = Context("config", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/27", func() {
+		BeforeEach(func() {
+			(*configuration).TrimBlocks = true
+			(*configuration).LeftStripBlocks = true
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					This has config line
+					{$ header $}
+					{% for l in lines %}
+					{$ l $}
+					{% endfor %}`),
+			})
+			(*configuration).VariableStartString = "{$"
+			(*configuration).VariableEndString = "$}"
+			(*environment).Context.Set("header", "Header")
+			(*environment).Context.Set("lines", []string{"line1", "line2", "line3"})
+		})
+
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := heredoc.Doc(`
+				This has config line
+				Header
+				line1
+				line2
+				line3
+			`)
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
 })
