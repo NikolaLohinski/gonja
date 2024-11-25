@@ -174,12 +174,12 @@ var _ = Context("legacy tests", func() {
 				{{ html_test("Max") }}
 
 				Importing macros
-				{% from "macro.helper" import imported_macro, imported_macro as renamed_macro, imported_macro as html_test %}
+				{% from "/macro.helper" import imported_macro, imported_macro as renamed_macro, imported_macro as html_test %}
 				{{ imported_macro("User1") }}
 				{{ renamed_macro("User2") }}
 				{{ html_test("Max") }}
 
-				Chaining macros{% from "macro2.helper" import greeter_macro %}
+				Chaining macros{% from "/macro2.helper" import greeter_macro %}
 				{{ greeter_macro() }}
 				End
 			`),
@@ -239,7 +239,7 @@ var _ = Context("legacy tests", func() {
 					`),
 					"/macro2.helper": heredoc.Doc(`
 						{% macro greeter_macro() %}
-						{% from "macro.helper" import imported_macro, imported_macro_void %}
+						{% from "/macro.helper" import imported_macro, imported_macro_void %}
 						One greeting: {{ imported_macro("Dirk") }} - {{ imported_macro_void() }}
 						{% endmacro %}
 					`),
