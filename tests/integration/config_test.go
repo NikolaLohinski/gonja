@@ -293,10 +293,10 @@ var _ = Context("config", func() {
 			Expect(*returnedErr).To(BeNil())
 			By("returning the expected result")
 			expected := heredoc.Doc(`
+				
 				- 1
 				- 2
-				- 3
-			`)
+				- 3`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})

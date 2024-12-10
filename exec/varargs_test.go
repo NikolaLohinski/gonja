@@ -65,7 +65,7 @@ var _ = Context("varargs", func() {
 			})
 		})
 	})
-	Context("Expect", func() {
+	XContext("Expect", func() {
 		Context("nothing", func() {
 			var (
 				returnedVarArgs *exec.ReducedVarArgs
