@@ -97,4 +97,42 @@ var _ = Context("tests", func() {
 			"var1 in ['1', '2'] or var2 == '3': ok",
 		)
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/30", func() {
+		shouldRender(
+			`{{ "a" < "b" }}`,
+			`True`,
+		)
+		shouldRender(
+			`{{ "b" > "a" }}`,
+			`True`,
+		)
+		shouldRender(
+			`{{ "a" > "b" }}`,
+			`False`,
+		)
+		shouldRender(
+			`{{ "a" == "b" }}`,
+			`False`,
+		)
+		shouldRender(
+			`{{ "a" == "a" }}`,
+			`True`,
+		)
+		shouldRender(
+			`{{ "b" >= "a" }}`,
+			`True`,
+		)
+		shouldRender(
+			`{{ "a" >= "b" }}`,
+			`False`,
+		)
+		shouldRender(
+			`{{ "b" <= "a" }}`,
+			`False`,
+		)
+		shouldRender(
+			`{{ "a" <= "b" }}`,
+			`True`,
+		)
+	})
 })
