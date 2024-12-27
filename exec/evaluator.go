@@ -179,10 +179,16 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() <= right.Float())
 		}
+		if left.IsString() || right.IsString() {
+			return AsValue(left.String() <= right.String())
+		}
 		return AsValue(left.Integer() <= right.Integer())
 	case tokens.GreaterThanOrEqual:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() >= right.Float())
+		}
+		if left.IsString() || right.IsString() {
+			return AsValue(left.String() >= right.String())
 		}
 		return AsValue(left.Integer() >= right.Integer())
 	case tokens.Equals:
@@ -191,11 +197,19 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() > right.Float())
 		}
+		if left.IsString() || right.IsString() {
+			return AsValue(left.String() > right.String())
+		}
+
 		return AsValue(left.Integer() > right.Integer())
 	case tokens.LowerThan:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() < right.Float())
 		}
+		if left.IsString() || right.IsString() {
+			return AsValue(left.String() < right.String())
+		}
+
 		return AsValue(left.Integer() < right.Integer())
 	case tokens.Ne:
 		return AsValue(!left.EqualValueTo(right))
