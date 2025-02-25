@@ -135,4 +135,11 @@ var _ = Context("tests", func() {
 			`True`,
 		)
 	})
+
+	Context("https://github.com/NikolaLohinski/gonja/issues/33", func() {
+		shouldRender(
+			`{% set prop = "foo" %}{% if 1==1 %}{% set prop = "bar" %}{% endif %}{{ prop }}`,
+			"bar",
+		)
+	})
 })
