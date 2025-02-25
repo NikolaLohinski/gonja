@@ -128,6 +128,16 @@ func (r *Renderer) ExecuteWrapper(wrapper *nodes.Wrapper) error {
 	return nodes.Walk(r.Inherit(), wrapper)
 }
 
+// ExecuteIfWrapper wraps the nodes.Wrapper execution logic and updates the parent context
+func (r *Renderer) ExecuteIfWrapper(wrapper *nodes.Wrapper) error {
+	sub := r.Inherit()
+	if err := nodes.Walk(sub, wrapper); err != nil {
+		return err
+	}
+	r.Environment.Context.Update(sub.Environment.Context)
+	return nil
+}
+
 func (r *Renderer) Execute() error {
 	// Determine the parent to be executed (for template inheritance)
 	root := r.RootNode

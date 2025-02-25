@@ -33,11 +33,11 @@ func (node *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 		}
 
 		if result.IsTrue() {
-			return r.ExecuteWrapper(node.wrappers[i])
+			return r.ExecuteIfWrapper(node.wrappers[i])
 		}
 		// Last condition?
 		if len(node.conditions) == i+1 && len(node.wrappers) > i+1 {
-			return r.ExecuteWrapper(node.wrappers[i+1])
+			return r.ExecuteIfWrapper(node.wrappers[i+1])
 		}
 	}
 	return nil
