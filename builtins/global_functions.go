@@ -34,10 +34,21 @@ func rangeFunction(_ *exec.Evaluator, params *exec.VarArgs) (<-chan int, error) 
 	default:
 		return nil, exec.ErrInvalidCall(errors.New("expected signature is [start, ]stop[, step] where all arguments are integers"))
 	}
+
+	if step == 0 {
+		return nil, exec.ErrInvalidCall(errors.New("step cannot be 0"))
+	}
+
 	channel := make(chan int)
 	go func() {
-		for i := start; i < stop; i += step {
-			channel <- i
+		if step > 0 {
+			for i := start; i < stop; i += step {
+				channel <- i
+			}
+		} else {
+			for i := start; i > stop; i += step {
+				channel <- i
+			}
 		}
 		close(channel)
 	}()

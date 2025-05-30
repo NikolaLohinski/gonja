@@ -68,6 +68,9 @@ var _ = Context("functions", func() {
 	})
 	Context("range", func() {
 		shouldRender(`{% for i in range(10) %}{{ i }}{% endfor %}`, "0123456789")
+		shouldRender(`{% for i in range(1, 10, 2) %}{{ i }}{% endfor %}`, "13579")
+		shouldRender(`{% for i in range(10, 1, -1) %}{{ i }}{% endfor %}`, "1098765432")
+		shouldRender(`{% for i in range(10, 1, -2) %}{{ i }}{% endfor %}`, "108642")
 		shouldFail("{% set invalid = range(True) -%}", "invalid call to function 'range': expected signature is \\[start, ]stop\\[, step] where all arguments are integers")
 	})
 })
