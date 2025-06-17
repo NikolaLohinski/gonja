@@ -1,11 +1,15 @@
 package exec
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/loaders"
@@ -386,6 +390,11 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 			attr, found = value.GetItem(node.Attribute)
 		}
 		if !found {
+			// NEW: Check for built-in type methods before failing
+			if method := e.getBuiltinMethod(value, node.Attribute); method != nil {
+				return method
+			}
+
 			if attr.IsError() {
 				return AsValue(errors.Wrapf(attr, `Unable to evaluate %s`, node))
 			}
@@ -647,4 +656,285 @@ func (e *Evaluator) evalParams(node *nodes.Call, fn *Value) ([]reflect.Value, er
 	}
 
 	return parameters, nil
+}
+
+// NEW: Add this helper method to check for built-in type methods
+func (e *Evaluator) getBuiltinMethod(value *Value, methodName string) *Value {
+	if value.IsString() {
+		return e.getStringBuiltinMethod(value.String(), methodName)
+	}
+	if value.IsList() {
+		return e.getListBuiltinMethod(value.Interface().([]interface{}), methodName)
+	}
+	if value.IsDict() {
+		return e.getDictBuiltinMethod(value.Interface().(map[string]interface{}), methodName)
+	}
+	return nil
+}
+
+// NEW: String built-in methods
+func (e *Evaluator) getStringBuiltinMethod(s string, methodName string) *Value {
+	switch methodName {
+	case "startswith":
+		return AsValue(func(prefix interface{}) bool {
+			if prefixStr, ok := prefix.(string); ok {
+				return strings.HasPrefix(s, prefixStr)
+			}
+			return false
+		})
+	case "endswith":
+		return AsValue(func(suffix interface{}) bool {
+			if suffixStr, ok := suffix.(string); ok {
+				return strings.HasSuffix(s, suffixStr)
+			}
+			return false
+		})
+	case "upper":
+		return AsValue(func() string {
+			return strings.ToUpper(s)
+		})
+	case "lower":
+		return AsValue(func() string {
+			return strings.ToLower(s)
+		})
+	case "strip":
+		return AsValue(func() string {
+			return strings.TrimSpace(s)
+		})
+	case "replace":
+		return AsValue(func(old, new interface{}, args ...interface{}) string {
+			oldStr, ok1 := old.(string)
+			newStr, ok2 := new.(string)
+			if !ok1 || !ok2 {
+				return s
+			}
+			count := -1
+			if len(args) > 0 {
+				if countInt, ok := args[0].(int); ok {
+					count = countInt
+				}
+			}
+			return strings.Replace(s, oldStr, newStr, count)
+		})
+	case "split":
+		return AsValue(func(sep interface{}) []string {
+			if sepStr, ok := sep.(string); ok {
+				return strings.Split(s, sepStr)
+			}
+			return []string{s}
+		})
+	case "join":
+		return AsValue(func(items interface{}) string {
+			if itemList, ok := items.([]interface{}); ok {
+				strItems := make([]string, len(itemList))
+				for i, item := range itemList {
+					strItems[i] = fmt.Sprintf("%v", item)
+				}
+				return strings.Join(strItems, s)
+			}
+			return s
+		})
+	case "title":
+		return AsValue(func() string {
+			//return strings.Title(s)
+			return cases.Title(language.Und).String(s)
+		})
+	case "capitalize":
+		return AsValue(func() string {
+			if len(s) == 0 {
+				return s
+			}
+			return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+		})
+	case "center":
+		return AsValue(func(width interface{}, fillchar ...interface{}) string {
+			w, ok := width.(int)
+			if !ok || w <= len(s) {
+				return s
+			}
+			fill := " "
+			if len(fillchar) > 0 {
+				if fillStr, ok := fillchar[0].(string); ok && len(fillStr) > 0 {
+					fill = string(fillStr[0])
+				}
+			}
+			padding := w - len(s)
+			leftPad := padding / 2
+			rightPad := padding - leftPad
+			return strings.Repeat(fill, leftPad) + s + strings.Repeat(fill, rightPad)
+		})
+	case "count":
+		return AsValue(func(substr interface{}) int {
+			if subStr, ok := substr.(string); ok {
+				return strings.Count(s, subStr)
+			}
+			return 0
+		})
+	case "find":
+		return AsValue(func(substr interface{}) int {
+			if subStr, ok := substr.(string); ok {
+				return strings.Index(s, subStr)
+			}
+			return -1
+		})
+	case "isdigit":
+		return AsValue(func() bool {
+			if len(s) == 0 {
+				return false
+			}
+			for _, r := range s {
+				if !unicode.IsDigit(r) {
+					return false
+				}
+			}
+			return true
+		})
+	case "isalpha":
+		return AsValue(func() bool {
+			if len(s) == 0 {
+				return false
+			}
+			for _, r := range s {
+				if !unicode.IsLetter(r) {
+					return false
+				}
+			}
+			return true
+		})
+	case "isalnum":
+		return AsValue(func() bool {
+			if len(s) == 0 {
+				return false
+			}
+			for _, r := range s {
+				if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+					return false
+				}
+			}
+			return true
+		})
+	case "islower":
+		return AsValue(func() bool {
+			hasLetter := false
+			for _, r := range s {
+				if unicode.IsLetter(r) {
+					hasLetter = true
+					if !unicode.IsLower(r) {
+						return false
+					}
+				}
+			}
+			return hasLetter
+		})
+	case "isupper":
+		return AsValue(func() bool {
+			hasLetter := false
+			for _, r := range s {
+				if unicode.IsLetter(r) {
+					hasLetter = true
+					if !unicode.IsUpper(r) {
+						return false
+					}
+				}
+			}
+			return hasLetter
+		})
+	case "isspace":
+		return AsValue(func() bool {
+			if len(s) == 0 {
+				return false
+			}
+			for _, r := range s {
+				if !unicode.IsSpace(r) {
+					return false
+				}
+			}
+			return true
+		})
+	default:
+		return nil
+	}
+}
+
+// NEW: List built-in methods (add common list methods)
+func (e *Evaluator) getListBuiltinMethod(list []interface{}, methodName string) *Value {
+	switch methodName {
+	case "append":
+		return AsValue(func(item interface{}) []interface{} {
+			return append(list, item)
+		})
+	case "count":
+		return AsValue(func(item interface{}) int {
+			count := 0
+			for _, v := range list {
+				if reflect.DeepEqual(v, item) {
+					count++
+				}
+			}
+			return count
+		})
+	case "index":
+		return AsValue(func(item interface{}) int {
+			for i, v := range list {
+				if reflect.DeepEqual(v, item) {
+					return i
+				}
+			}
+			return -1
+		})
+	case "reverse":
+		return AsValue(func() []interface{} {
+			reversed := make([]interface{}, len(list))
+			for i, v := range list {
+				reversed[len(list)-1-i] = v
+			}
+			return reversed
+		})
+	default:
+		return nil
+	}
+}
+
+// NEW: Dict built-in methods (add common dict methods)
+func (e *Evaluator) getDictBuiltinMethod(dict map[string]interface{}, methodName string) *Value {
+	switch methodName {
+	case "keys":
+		return AsValue(func() []string {
+			keys := make([]string, 0, len(dict))
+			for k := range dict {
+				keys = append(keys, k)
+			}
+			return keys
+		})
+	case "values":
+		return AsValue(func() []interface{} {
+			values := make([]interface{}, 0, len(dict))
+			for _, v := range dict {
+				values = append(values, v)
+			}
+			return values
+		})
+	case "items":
+		return AsValue(func() [][]interface{} {
+			items := make([][]interface{}, 0, len(dict))
+			for k, v := range dict {
+				items = append(items, []interface{}{k, v})
+			}
+			return items
+		})
+	case "get":
+		return AsValue(func(key interface{}, defaultValue ...interface{}) interface{} {
+			if keyStr, ok := key.(string); ok {
+				if value, exists := dict[keyStr]; exists {
+					return value
+				}
+			}
+			if len(defaultValue) > 0 {
+				return defaultValue[0]
+			}
+			return nil
+		})
+	default:
+		return nil
+	}
 }
