@@ -61,6 +61,33 @@ func (p *Parser) ParseExpression() (nodes.Expression, error) {
 	return expr, nil
 }
 
+func (p *Parser) ParseCondition() (nodes.Expression, nodes.Expression, error) {
+	var returnedCondition, returnedAlternative nodes.Expression
+	if p.MatchName("if") != nil {
+		condition, err := p.ParseExpression()
+		if err != nil {
+			return nil, nil, err
+		}
+		if condition == nil {
+			return nil, nil, p.Error("Expected a condition", p.Current())
+		}
+		returnedCondition = condition
+
+		if p.MatchName("else") != nil {
+			alternative, err := p.ParseExpression()
+			if err != nil {
+				return nil, nil, err
+			}
+			if alternative == nil {
+				return nil, nil, p.Error("Expected an alternative", p.Current())
+			}
+			returnedAlternative = alternative
+		}
+	}
+
+	return returnedCondition, returnedAlternative, nil
+}
+
 func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 	log.WithFields(log.Fields{
 		"current": p.Current(),
@@ -84,28 +111,16 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 	}
 	node.Expression = expr
 
-	if p.MatchName("if") != nil {
-		condition, err := p.ParseExpression()
-		if err != nil {
-			return nil, err
-		}
-		if condition == nil {
-			return nil, p.Error("Expected a condition", p.Current())
-		}
-		node.Condition = condition
-
-		if p.MatchName("else") != nil {
-			alternative, err := p.ParseExpression()
-			if err != nil {
-				return nil, err
-			}
-			if expr == nil {
-				return nil, p.Error("Expected an alternative", p.Current())
-			}
-			node.Alternative = alternative
-		}
+	condition, alternative, err := p.ParseCondition()
+	if err != nil {
+		return nil, err
 	}
-
+	if condition != nil {
+		node.Condition = condition
+	}
+	if alternative != nil {
+		node.Alternative = alternative
+	}
 	tok = p.Match(tokens.VariableEnd)
 	if tok == nil {
 		return nil, p.Error(fmt.Sprintf("'%s' expected here", p.Config.VariableEndString), p.Current())

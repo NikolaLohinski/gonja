@@ -11,9 +11,11 @@ import (
 )
 
 type SetControlStructure struct {
-	location   *tokens.Token
-	target     nodes.Expression
-	expression nodes.Expression
+	location    *tokens.Token
+	target      nodes.Expression
+	expression  nodes.Expression
+	condition   nodes.Expression
+	alternative nodes.Expression
 }
 
 func (controlStructure *SetControlStructure) Position() *tokens.Token {
@@ -25,8 +27,24 @@ func (controlStructure *SetControlStructure) String() string {
 }
 
 func (controlStructure *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	var value *exec.Value
 	// Evaluate expression
-	value := r.Eval(controlStructure.expression)
+	if controlStructure.condition != nil && controlStructure.alternative != nil {
+		condition := r.Eval(controlStructure.condition)
+		if condition.IsError() {
+			return condition
+		}
+		if condition.Bool() {
+			value = r.Eval(controlStructure.expression)
+		} else {
+			value = r.Eval(controlStructure.alternative)
+		}
+	} else {
+		value = r.Eval(controlStructure.expression)
+	}
+	if value == nil {
+		return errors.Errorf(`Invalid value in 'set' tag: %s`, controlStructure.expression)
+	}
 	if value.IsError() {
 		return value
 	}
@@ -88,10 +106,21 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 		return nil, err
 	}
 	controlStructure.expression = expr
+	condition, alternative, err := args.ParseCondition()
+	if err != nil {
+		return nil, err
+	}
+	if condition != nil {
+		controlStructure.condition = condition
+		if alternative == nil {
+			return nil, args.Error("Malformed 'set' if else condition", args.Current())
+		}
+		controlStructure.alternative = alternative
+	}
 
 	// Remaining arguments
 	if !args.End() {
-		return nil, args.Error("Malformed 'set'-tag args.", args.Current())
+		return nil, args.Error("Malformed 'set' tag args.", args.Current())
 	}
 
 	return controlStructure, nil

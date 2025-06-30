@@ -74,4 +74,23 @@ var _ = Context("expressions", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/40", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					{%- set output = "foo" if variable else bar -%}
+					{{- output -}}
+				`),
+			})
+			(*environment).Context.Set("variable", true)
+		})
+
+		It("should return the expected rendered content", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := "foo"
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
 })
