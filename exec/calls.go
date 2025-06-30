@@ -11,16 +11,15 @@ import (
 
 func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 	fn := e.Eval(node.Func)
-	if fn.IsError() {
-		return AsValue(errors.Wrapf(fn, `unable to evaluate function '%s'`, node.Func))
-	}
-
 	if !fn.IsCallable() {
 		getAttributeNode, ok := node.Func.(*nodes.GetAttribute)
 		if node.Parent == nil || !ok {
 			return AsValue(errors.Errorf(`%s is not callable`, node.Func))
 		}
 		return e.evalMethod(node.Parent, getAttributeNode.Attribute, node.Args, node.Kwargs)
+	}
+	if fn.IsError() {
+		return AsValue(errors.Wrapf(fn, `unable to evaluate function '%s'`, node.Func))
 	}
 
 	var current reflect.Value

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/nikolalohinski/gonja/v2"
+	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/loaders"
 
@@ -14,8 +15,9 @@ var _ = Context("strings", func() {
 	var (
 		identifier = new(string)
 
-		environment = new(*exec.Environment)
-		loader      = new(loaders.Loader)
+		environment   = new(*exec.Environment)
+		loader        = new(loaders.Loader)
+		configuration = new(*config.Config)
 
 		context = new(*exec.Context)
 
@@ -26,10 +28,11 @@ var _ = Context("strings", func() {
 		*identifier = "/test"
 		*environment = gonja.DefaultEnvironment
 		*loader = loaders.MustNewMemoryLoader(nil)
+		*configuration = config.New()
 	})
 	JustBeforeEach(func() {
 		var t *exec.Template
-		t, *returnedErr = exec.NewTemplate(*identifier, gonja.DefaultConfig, *loader, *environment)
+		t, *returnedErr = exec.NewTemplate(*identifier, *configuration, *loader, *environment)
 		if *returnedErr != nil {
 			return
 		}
@@ -219,6 +222,27 @@ var _ = Context("strings", func() {
 				True
 				bob
 				`)
+				AssertPrettyDiff(expected, *returnedResult)
+			})
+		})
+		Context("https://github.com/NikolaLohinski/gonja/issues/45", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: heredoc.Doc(`
+						{%- if name.startswith('b') -%}
+						hello world
+						{%- endif -%}
+					`),
+				})
+				(*configuration).StrictUndefined = true
+				(*environment).Context.Set("name", "bob")
+			})
+
+			It("should return the expected rendered content", func() {
+				By("not returning any error")
+				Expect(*returnedErr).To(BeNil())
+				By("returning the expected result")
+				expected := "hello world"
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
