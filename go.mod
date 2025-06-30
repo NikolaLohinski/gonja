@@ -1,8 +1,6 @@
 module github.com/nikolalohinski/gonja/v2
 
-go 1.23.0
-
-toolchain go1.23.3
+go 1.24.4
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
