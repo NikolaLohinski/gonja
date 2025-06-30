@@ -465,7 +465,7 @@ func (l *Lexer) lexExpression() lexFn {
 			l.emit(Or)
 		// not
 		case r == 'n' && l.accept("o"):
-			if !(l.accept("t") && isSpace(l.peek())) {
+			if !(l.accept("t") && (isSpace(l.peek()) || l.peek() == '(')) {
 				return l.lexIdentifier
 			}
 			l.emit(Not)
