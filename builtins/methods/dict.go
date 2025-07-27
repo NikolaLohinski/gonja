@@ -18,4 +18,14 @@ var dictMethods = NewMethodSet[map[string]interface{}](map[string]Method[map[str
 		sort.Strings(keys)
 		return keys, nil
 	},
+	"items": func(self map[string]interface{}, selfValue *Value, arguments *VarArgs) (interface{}, error) {
+		if err := arguments.Take(); err != nil {
+			return nil, ErrInvalidCall(err)
+		}
+		items := make([]interface{}, 0)
+		for _, item := range self {
+			items = append(items, item)
+		}
+		return items, nil
+	},
 })
