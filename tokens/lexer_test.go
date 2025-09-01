@@ -42,6 +42,16 @@ var _ = Context("lexer", func() {
 				},
 			},
 			{
+				"unbalanced expression delimiter",
+				"{{ 42",
+				[]Fields{
+					{"Type": Equal(tokens.VariableBegin)},
+					{"Type": Equal(tokens.Whitespace)},
+					{"Type": Equal(tokens.Integer), "Val": Equal("42")},
+					{"Type": Equal(tokens.EOF)},
+				},
+			},
+			{
 				"just contains regular data",
 				"Hello World",
 				[]Fields{
