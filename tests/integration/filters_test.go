@@ -76,4 +76,9 @@ var _ = Context("filters", func() {
 		shouldFail("{{ True | slice('yolo') }}", "invalid call to filter 'slice': failed to validate argument 'slices': yolo is not an integer")
 		shouldFail("{{ True | slice(-32) }}", "invalid call to filter 'slice': slices argument -32 must be > 0")
 	})
+	Context("default", func() {
+		shouldRender(`{{ undefined_var | default("default_value") }}`, "default_value")
+		shouldRender(`{{ "" | default("default_value", true) }}`, "default_value")
+		shouldRender(`{{ "is_true" | default("default_value", true) }}`, "is_true")
+	})
 })
