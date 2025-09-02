@@ -1360,7 +1360,7 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() || in.IsNil() {
 		return p.First()
 	}
-	if p.GetKeywordArgument("boolean", false).Bool() && !(in.IsBool() && in.Bool()) {
+	if p.GetKeywordArgument("boolean", false).Bool() && !in.IsTrue() {
 		return p.First()
 	}
 	return in
