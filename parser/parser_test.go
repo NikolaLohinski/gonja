@@ -316,9 +316,9 @@ var _ = Context("parser", func() {
 									),
 									tokens.Multiply,
 									MatchNodeBinaryExpression(
-										MatchUnaryExpression(
-											tokens.Subtraction,
-											MatchNodeBinaryExpression(
+										MatchNodeBinaryExpression(
+											MatchUnaryExpression(
+												tokens.Subtraction,
 												MatchUnaryExpression(
 													tokens.Subtraction,
 													MatchNodeBinaryExpression(
@@ -326,9 +326,10 @@ var _ = Context("parser", func() {
 														tokens.Subtraction,
 														MatchIntegerNode(100),
 													)),
-												tokens.Power,
-												MatchIntegerNode(2),
-											)),
+											),
+											tokens.Power,
+											MatchIntegerNode(2),
+										),
 										tokens.Power,
 										MatchIntegerNode(3),
 									),
