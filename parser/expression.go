@@ -11,7 +11,8 @@ import (
 // ParseFilterExpression parses an optionnal filter chain for a node
 func (p *Parser) ParseFilterExpression(expr nodes.Expression) (nodes.Expression, error) {
 	log.WithFields(log.Fields{
-		"current": p.Current(),
+		"current":    p.Current(),
+		"expression": expr,
 	}).Trace("ParseFilterExpression")
 
 	if p.Current(tokens.Pipe) != nil {
