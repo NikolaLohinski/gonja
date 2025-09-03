@@ -682,6 +682,54 @@ var _ = Context("parser", func() {
 			},
 		},
 		{
+			"is a logical expression after filter",
+			[]string{"{{ true | filter and false }}", "{{true|filter and false}}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeFilteredExpressionNode(
+							MatchNodeBool(true),
+							MatchFilterCallNode("filter", nil, nil),
+						),
+						tokens.And,
+						MatchNodeBool(false),
+					),
+				),
+			},
+		},
+		{
+			"is arithmetic expression with a filter",
+			[]string{"{{ 1 + \"24\" | int }}", "{{1+\"24\"|int}}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchIntegerNode(1),
+						tokens.Addition,
+						MatchNodeFilteredExpressionNode(
+							MatchStringNode("24"),
+							MatchFilterCallNode("int", nil, nil),
+						),
+					),
+				),
+			},
+		},
+		{
+			"arithmetic operator after filter",
+			[]string{"{{ \"24\" | int + 1 }}", "{{\"24\"|int+1}}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchNodeBinaryExpression(
+						MatchNodeFilteredExpressionNode(
+							MatchStringNode("24"),
+							MatchFilterCallNode("int", nil, nil),
+						),
+						tokens.Addition,
+						MatchIntegerNode(1),
+					),
+				),
+			},
+		},
+		{
 			"is a function call with both positional and named arguments",
 			[]string{"{{ func(101, name=arg) }}"},
 			[]types.GomegaMatcher{
