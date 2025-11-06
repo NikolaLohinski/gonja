@@ -107,7 +107,6 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 			_, err = io.WriteString(r.Output, value.Escaped())
 		} else {
 			_, err = io.WriteString(r.Output, value.String())
-
 		}
 		return nil, err
 	case *nodes.ControlStructureBlock:

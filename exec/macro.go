@@ -23,9 +23,6 @@ func (ms MacroSet) Exists(name string) bool {
 // name, Register will panic. You usually want to call this
 // function in the filter's init() function:
 // http://golang.org/doc/effective_go.html#init
-//
-// See http://www.john-doe.de/post/gonja/ for more about
-// writing filters and tags.
 func (ms *MacroSet) Register(name string, fn Macro) error {
 	if ms.Exists(name) {
 		return errors.Errorf("filter with name '%s' is already registered", name)
