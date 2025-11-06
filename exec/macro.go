@@ -6,7 +6,6 @@ import (
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/pkg/errors"
-	// "github.com/nikolalohinski/gonja/v2/nodes"
 )
 
 // Macro is the type macro functions must fulfill
