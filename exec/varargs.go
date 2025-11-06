@@ -22,7 +22,7 @@ func NewVarArgs() *VarArgs {
 	}
 }
 
-// First returns the first argument or nil AsValue
+// First returns the first argument or nil as a Value
 func (va *VarArgs) First() *Value {
 	if len(va.Args) > 0 {
 		return va.Args[0]
@@ -137,13 +137,13 @@ func (va *VarArgs) ExpectNothing() *ReducedVarArgs {
 	return va.ExpectArgs(0)
 }
 
-// ExpectKwArgs allow to specify optionnaly expected KwArgs
+// ExpectKwArgs allow to specify expected KwArgs
 func (va *VarArgs) ExpectKwArgs(kwargs []*KwArg) *ReducedVarArgs {
 	return va.Expect(0, kwargs)
 }
 
 // ReducedVarArgs represents python variadic arguments / keyword arguments
-// but values are reduced (ie. keyword arguments given as arguments are accessible by name)
+// but values are reduced (i.e. keyword arguments given as arguments are accessible by name)
 type ReducedVarArgs struct {
 	*VarArgs
 	error error

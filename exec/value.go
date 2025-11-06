@@ -19,8 +19,8 @@ type Value struct {
 	Safe bool // used to indicate whether a Value needs explicit escaping in the template
 }
 
-// AsValue converts any given Value to a gonja.Value
-// Usually being used within oSn functions passed to a template
+// AsValue converts any given Value to a gonja.Value.
+// Usually being used within functions passed to a template
 // through a Context or within filter functions.
 //
 // Example:
@@ -100,7 +100,7 @@ func (v *Value) IsIterable() bool {
 	return v.IsString() || v.IsList() || v.IsDict()
 }
 
-// IsNil checks whether the underlying value is NIL
+// IsNil checks whether the underlying value is nil
 func (v *Value) IsNil() bool {
 	return !v.getResolvedValue().IsValid()
 }
@@ -205,8 +205,8 @@ func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
 //  5. time.Time
 //  6. String() will be called on the underlying value if provided
 //
-// NIL values will lead to an empty string. Unsupported types are leading
-// to their respective type name.
+// nil values will lead to an empty string. For unsupported types, String will
+// return to the type's name.
 func (v *Value) String() string {
 	if v.IsNil() {
 		return ""
@@ -325,7 +325,7 @@ func (v *Value) Integer() int {
 	}
 }
 
-// Float returns the underlying value as a float (converts the underlying
+// Float returns the underlying value as a float (converting the underlying
 // value, if necessary). If it's not possible to convert the underlying value,
 // it will return 0.0.
 func (v *Value) Float() float64 {
@@ -349,9 +349,9 @@ func (v *Value) Float() float64 {
 	}
 }
 
-// Bool returns the underlying value as bool. If the value is not bool, false
+// Bool returns the underlying value as a bool. If the value is not a bool, false
 // will always be returned. If you're looking for true/false-evaluation of the
-// underlying value, have a look on the IsTrue()-function.
+// underlying value, have a look at the IsTrue() function.
 func (v *Value) Bool() bool {
 	switch v.getResolvedValue().Kind() {
 	case reflect.Bool:
@@ -362,9 +362,8 @@ func (v *Value) Bool() bool {
 	}
 }
 
-// IsTrue tries to evaluate the underlying value the Pythonic-way:
-//
-// Returns TRUE in one the following cases:
+// IsTrue tries to evaluate the underlying value the Pythonic-way by returning
+// true in one the following cases:
 //
 //   - int != 0
 //   - uint != 0
@@ -373,7 +372,7 @@ func (v *Value) Bool() bool {
 //   - bool == true
 //   - underlying value is a struct
 //
-// Otherwise returns always FALSE.
+// In any other case, IsTrue returns false.
 func (v *Value) IsTrue() bool {
 	if v.IsNil() || v.IsError() {
 		return false
@@ -467,7 +466,7 @@ func (v *Value) Slice(i, j int) *Value {
 }
 
 // Index gets the i-th item of an array, slice or string. Otherwise
-// it will return NIL.
+// it will return nil.
 func (v *Value) Index(i int) *Value {
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Slice:
@@ -490,8 +489,8 @@ func (v *Value) Index(i int) *Value {
 }
 
 // Contains checks whether the underlying value (which must be of type struct, map,
-// string, array or slice) contains of another Value (e. g. used to check
-// whether a struct contains of a specific field or a map contains a specific key).
+// string, array or slice) contains of Value (e.g. to check
+// whether a struct contains a specific field or a map contains a specific key).
 //
 // Example:
 //
@@ -559,7 +558,7 @@ func (v *Value) CanSlice() bool {
 //	value    *Value (only for maps, the respective value for a specific key)
 //
 // If the underlying value has no items or is not one of the types above,
-// the empty function (function's second argument) will be called.
+// the empty function (Iterate's second argument) will be called.
 func (v *Value) Iterate(fn func(idx, count int, key, value *Value) bool, empty func()) {
 	v.IterateOrder(fn, empty, false, false, false)
 }
@@ -731,7 +730,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 	empty()
 }
 
-// Interface gives you access to the underlying value.
+// Interface returns the underlying value.
 func (v *Value) Interface() interface{} {
 	if v.Val.IsValid() {
 		return v.Val.Interface()
@@ -739,7 +738,7 @@ func (v *Value) Interface() interface{} {
 	return nil
 }
 
-// EqualValueTo checks whether two values are containing the same value or object.
+// EqualValueTo checks whether two values are equal.
 func (v *Value) EqualValueTo(other *Value) bool {
 	// comparison of uint with int fails using .Interface()-comparison (see issue #64)
 	if v.IsInteger() && other.IsInteger() {
@@ -836,7 +835,7 @@ func ToValue(data interface{}) *Value {
 	}
 
 	if !val.IsValid() {
-		// Value is not valid (e. g. NIL value)
+		// Value is not valid (e.g. nil value)
 		return AsValue(nil)
 	}
 	return &Value{Val: val, Safe: isSafe}
@@ -1117,7 +1116,7 @@ func (ci caseInsensitiveValueList) Less(i, j int) bool {
 	}
 }
 
-// CaseInsensitive returns the the data sorted in a case insensitive way (if string).
+// CaseInsensitive returns the data sorted in a case insensitive way (if string).
 func CaseInsensitive(data sort.Interface) sort.Interface {
 	if vl, ok := data.(ValuesList); ok {
 		return &caseInsensitiveValueList{vl}

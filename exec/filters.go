@@ -8,10 +8,10 @@ import (
 	"github.com/nikolalohinski/gonja/v2/nodes"
 )
 
-// FilterFunction is the type filter functions must fulfil
+// FilterFunction is the type filter functions must fulfill
 type FilterFunction func(e *Evaluator, in *Value, params *VarArgs) *Value
 
-// EvaluateFiltered evaluate a filtered expression
+// EvaluateFiltered evaluates a filtered expression
 func (e *Evaluator) EvaluateFiltered(expr *nodes.FilteredExpression) *Value {
 	value := e.Eval(expr.Expression)
 
@@ -25,7 +25,7 @@ func (e *Evaluator) EvaluateFiltered(expr *nodes.FilteredExpression) *Value {
 	return value
 }
 
-// ExecuteFilter execute a filter node
+// ExecuteFilter executes a filter node
 func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 	params := NewVarArgs()
 
@@ -47,7 +47,7 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 	return e.ExecuteFilterByName(fc.Name, v, params)
 }
 
-// ExecuteFilterByName execute a filter given its name
+// ExecuteFilterByName executes a filter given its name
 func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs) *Value {
 	filter, ok := e.Environment.Filters.Get(name)
 	if !e.Environment.Filters.Exists(name) || !ok {

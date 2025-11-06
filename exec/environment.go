@@ -34,7 +34,7 @@ func (f *FilterSet) Exists(name string) bool {
 	return existing
 }
 
-// Exists returns true if the given filter is already registered
+// Get returns true and the named filter if it is already registered
 func (f *FilterSet) Get(name string) (FilterFunction, bool) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
