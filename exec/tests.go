@@ -8,14 +8,11 @@ import (
 	"github.com/nikolalohinski/gonja/v2/nodes"
 )
 
-// TestFunction is the type test functions must fulfil
+// TestFunction is the type test functions must fulfill
 type TestFunction func(*Context, *Value, *VarArgs) (bool, error)
 
 func (e *Evaluator) EvalTest(expr *nodes.TestExpression) *Value {
 	value := e.Eval(expr.Expression)
-	// if value.IsError() {
-	// 	return AsValue(errors.Wrapf(value, `Unable to evaluate expresion %s`, expr.Expression))
-	// }
 
 	return e.ExecuteTest(expr.Test, value)
 }
