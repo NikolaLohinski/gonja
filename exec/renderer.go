@@ -21,7 +21,7 @@ type Renderer struct {
 	Output      io.Writer
 }
 
-// NewRenderer initialize a new renderer
+// NewRenderer initializes a new renderer
 func NewRenderer(environment *Environment, wr io.Writer, config *config.Config, loader loaders.Loader, template *Template) *Renderer {
 	r := &Renderer{
 		Config:      config.Inherit(),

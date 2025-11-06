@@ -25,7 +25,7 @@ type Template struct {
 	root        *nodes.Template
 }
 
-// Create a gonja template instance that can be executed with a given context later on
+// NewTemplate creates a gonja template instance that can be executed with a given context later on
 func NewTemplate(identifier string, config *config.Config, loader loaders.Loader, environment *Environment) (*Template, error) {
 	input, err := loader.Read(identifier)
 	if err != nil {
@@ -56,7 +56,7 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 	return t, nil
 }
 
-// Executes the template and return the rendered content in the provided writer
+// Execute executes the template and returns the rendered content in the provided writer
 func (t *Template) Execute(wr io.Writer, data *Context) error {
 	if data == nil {
 		data = EmptyContext()
@@ -78,7 +78,7 @@ func (t *Template) Execute(wr io.Writer, data *Context) error {
 	return nil
 }
 
-// Executes the template and return the rendered content as a string
+// ExecuteToString executes the template and returns the rendered content as a string
 func (t *Template) ExecuteToString(data *Context) (string, error) {
 	output := bytes.NewBufferString("")
 
@@ -89,7 +89,7 @@ func (t *Template) ExecuteToString(data *Context) (string, error) {
 	return output.String(), nil
 }
 
-// Executes the template and return the rendered content as bytes
+// ExecuteToBytes executes the template and returns the rendered content as bytes
 func (t *Template) ExecuteToBytes(data *Context) ([]byte, error) {
 	output := bytes.NewBuffer(nil)
 
@@ -100,7 +100,7 @@ func (t *Template) ExecuteToBytes(data *Context) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-// Return all macros available to the template
+// Macros returns all macros available to the template
 func (t *Template) Macros() map[string]*nodes.Macro {
 	return t.root.Macros
 }

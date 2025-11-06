@@ -9,7 +9,7 @@ import (
 	// "github.com/nikolalohinski/gonja/v2/nodes"
 )
 
-// FilterFunction is the type filter functions must fulfil
+// Macro is the type macro functions must fulfill
 type Macro func(params *VarArgs) *Value
 
 type MacroSet map[string]Macro
