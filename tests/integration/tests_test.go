@@ -142,4 +142,36 @@ var _ = Context("tests", func() {
 			"bar",
 		)
 	})
+	Context("booleans", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]interface{}{
+				"var1": true,
+				"var2": false,
+			})
+		})
+		shouldRender(`{{ var1 is boolean() }}`, "True")
+		shouldRender(`{{ var1 is boolean }}`, "True")
+		shouldRender(`{{ var2 is boolean }}`, "True")
+		shouldRender(`{{ var1 is false() }}`, "False")
+		shouldRender(`{{ var1 is false }}`, "False")
+		shouldRender(`{{ var2 is false }}`, "True")
+		shouldRender(`{{ var1 is true }}`, "True")
+		shouldRender(`{{ var2 is true }}`, "False")
+	})
+	Context("numbers", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]interface{}{
+				"var1": 1.3,
+				"var2": "hello world!",
+				"var3": -42,
+			})
+		})
+		shouldRender(`{{ var1 is float() }}`, "True")
+		shouldRender(`{{ var1 is float }}`, "True")
+		shouldRender(`{{ var2 is float }}`, "False")
+		shouldRender(`{{ var3 is float }}`, "False")
+		shouldRender(`{{ var1 is integer() }}`, "False")
+		shouldRender(`{{ var2 is integer() }}`, "False")
+		shouldRender(`{{ var3 is integer() }}`, "True")
+	})
 })

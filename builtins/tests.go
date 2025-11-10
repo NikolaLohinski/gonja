@@ -8,6 +8,7 @@ import (
 )
 
 var Tests = exec.NewTestSet(map[string]exec.TestFunction{
+	"boolean":     testBoolean,
 	"callable":    testCallable,
 	"defined":     testDefined,
 	"divisibleby": testDivisibleby,
@@ -15,12 +16,15 @@ var Tests = exec.NewTestSet(map[string]exec.TestFunction{
 	"equalto":     testEqual,
 	"==":          testEqual,
 	"even":        testEven,
+	"false":       testFalse,
+	"float":       testFloat,
 	"ge":          testGreaterEqual,
 	">=":          testGreaterEqual,
 	"gt":          testGreaterThan,
 	"greaterthan": testGreaterThan,
 	">":           testGreaterThan,
 	"in":          testIn,
+	"integer":     testInteger,
 	"iterable":    testIterable,
 	"le":          testLessEqual,
 	"<=":          testLessEqual,
@@ -37,9 +41,14 @@ var Tests = exec.NewTestSet(map[string]exec.TestFunction{
 	"sameas":      testSameas,
 	"sequence":    testSequence,
 	"string":      testString,
+	"true":        testTrue,
 	"undefined":   testUndefined,
 	"upper":       testUpper,
 })
+
+func testBoolean(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return in.IsBool(), nil
+}
 
 func testCallable(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	return in.IsCallable(), nil
@@ -69,6 +78,14 @@ func testEven(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, er
 	return in.Integer()%2 == 0, nil
 }
 
+func testFalse(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return !in.Bool(), nil
+}
+
+func testFloat(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return in.IsFloat(), nil
+}
+
 func testGreaterEqual(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	param := params.Args[0]
 	if !in.IsNumber() || !param.IsNumber() {
@@ -78,9 +95,7 @@ func testGreaterEqual(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (
 }
 
 func testGreaterThan(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	var (
-		to float64
-	)
+	var to float64
 	if err := params.Take(
 		exec.PositionalArgument("to", nil, exec.NumberArgument(&to)),
 	); err != nil {
@@ -93,6 +108,10 @@ func testGreaterThan(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (b
 func testIn(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	seq := params.First()
 	return seq.Contains(in), nil
+}
+
+func testInteger(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return in.IsInteger(), nil
 }
 
 func testIterable(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -162,6 +181,10 @@ func testSameas(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, 
 
 func testString(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	return in.IsString(), nil
+}
+
+func testTrue(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	return in.Bool(), nil
 }
 
 func testUndefined(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
