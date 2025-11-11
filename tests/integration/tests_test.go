@@ -174,4 +174,12 @@ var _ = Context("tests", func() {
 		shouldRender(`{{ var2 is integer() }}`, "False")
 		shouldRender(`{{ var3 is integer() }}`, "True")
 	})
+	Context("https://github.com/NikolaLohinski/gonja/issues/63", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]interface{}{
+				"var1": uint64(42),
+			})
+		})
+		shouldRender("{{ var1 is eq 42 }}", "True")
+	})
 })
