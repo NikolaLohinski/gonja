@@ -68,7 +68,7 @@ func testDivisibleby(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (b
 
 func testEqual(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	param := params.First()
-	return in.Interface() == param.Interface(), nil
+	return in.EqualValueTo(param), nil
 }
 
 func testEven(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
