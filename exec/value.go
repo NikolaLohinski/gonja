@@ -532,7 +532,6 @@ func (v *Value) Contains(other *Value) bool {
 		return false
 
 	default:
-		fmt.Println("default")
 		log.Errorf("Value.Contains() not available for type: %s\n", resolved.Kind().String())
 		return false
 	}
