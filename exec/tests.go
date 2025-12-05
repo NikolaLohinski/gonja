@@ -2,14 +2,19 @@ package exec
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
 )
 
-// TestFunction is the type test functions must fulfill
-type TestFunction func(*Context, *Value, *VarArgs) (bool, error)
+// TestFunction is the type test functions must fulfill is
+// type TestFunction func(*Evaluator, *Value, *VarArgs) (bool, error)
+// but we use an so as to support the legacy type
+// type TestFunction func(*Context, *Value, *VarArgs) (bool, error)
+// in a backwards compatible way
+type TestFunction any
 
 func (e *Evaluator) EvalTest(expr *nodes.TestExpression) *Value {
 	value := e.Eval(expr.Expression)
@@ -48,7 +53,26 @@ func (e *Evaluator) ExecuteTestByName(name string, in *Value, params *VarArgs) *
 		return AsValue(errors.Errorf("test '%s' not found", name))
 	}
 
-	result, err := test(e.Environment.Context, in, params)
+	if err := e.Environment.Tests.validate(name, test); err != nil {
+		return AsValue(fmt.Errorf("test '%s' is invalid: %q", name, err))
+	}
+
+	testFn := reflect.ValueOf(test)
+	firstArgument := reflect.ValueOf(e)
+	if testFn.Type().In(0) == reflect.TypeFor[*Context]() {
+		firstArgument = reflect.ValueOf(e.Environment.Context)
+	}
+	arguments := []reflect.Value{
+		firstArgument,
+		reflect.ValueOf(in),
+		reflect.ValueOf(params),
+	}
+	results := testFn.Call(arguments)
+	result := results[0].Bool()
+	var err error
+	if !results[1].IsNil() {
+		err = results[1].Interface().(error)
+	}
 	if callErr, ok := err.(ErrInvalidCall); ok && err != nil {
 		return AsValue(fmt.Errorf("invalid call to test '%s': %s", name, callErr.Error()))
 	} else if err != nil {

@@ -1,6 +1,8 @@
 package exec
 
 import (
+	"fmt"
+	"reflect"
 	"sync"
 
 	"github.com/nikolalohinski/gonja/v2/parser"
@@ -156,6 +158,37 @@ func NewTestSet(tests map[string]TestFunction) *TestSet {
 	}
 }
 
+func (t *TestSet) validate(name string, fn TestFunction) error {
+	testFn := reflect.ValueOf(fn)
+	testType := testFn.Type()
+	if testType.Kind() != reflect.Func || testType.NumIn() != 3 || testType.NumOut() != 2 {
+		return fmt.Errorf("test '%s' is not a function with 3 arguments and 2 returns", name)
+	}
+
+	firstArgumentType := testType.In(0)
+	switch firstArgumentType {
+	case reflect.TypeFor[*Evaluator](), reflect.TypeFor[*Context]():
+		// valid
+	default:
+		return fmt.Errorf("test '%s' first argument is neither of type *exec.Context nor *exec.Evaluator", name)
+	}
+
+	if testType.In(1) != reflect.TypeFor[*Value]() {
+		return fmt.Errorf("test '%s' second argument is not of type *exec.Value", name)
+	}
+	if testType.In(2) != reflect.TypeFor[*VarArgs]() {
+		return fmt.Errorf("test '%s' third argument is not of type *exec.VarArgs", name)
+	}
+	if testType.Out(0) != reflect.TypeFor[bool]() {
+		return fmt.Errorf("test '%s' first returned variable is not of type bool", name)
+	}
+	if testType.Out(1) != reflect.TypeFor[error]() {
+		return fmt.Errorf("test '%s' second returned variable is not of type error", name)
+	}
+
+	return nil
+}
+
 // Exists returns true if the given test is already registered
 func (t *TestSet) Exists(name string) bool {
 	t.lock.Lock()
@@ -172,15 +205,16 @@ func (t *TestSet) Get(name string) (TestFunction, bool) {
 }
 
 // Register registers a new test. If there's already a test with the same
-// name, RegisterTest will panic. You usually want to call this
-// function in the test's init() function:
-// http://golang.org/doc/effective_go.html#init
+// name, RegisterTest will error out.
 func (t *TestSet) Register(name string, fn TestFunction) error {
 	if t.Exists(name) {
 		return errors.Errorf("test with name '%s' is already registered", name)
 	}
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	if err := t.validate(name, fn); err != nil {
+		return err
+	}
 	t.tests[name] = fn
 	return nil
 }
@@ -193,6 +227,9 @@ func (t *TestSet) Replace(name string, fn TestFunction) error {
 	}
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	if err := t.validate(name, fn); err != nil {
+		return err
+	}
 	t.tests[name] = fn
 	return nil
 }
@@ -203,6 +240,9 @@ func (t *TestSet) Update(other *TestSet) *TestSet {
 	other.lock.Lock()
 	defer other.lock.Unlock()
 	for name, test := range other.tests {
+		if err := t.validate(name, test); err != nil {
+			continue
+		}
 		t.tests[name] = test
 	}
 	return t
