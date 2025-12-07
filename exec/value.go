@@ -742,6 +742,10 @@ func (v *Value) EqualValueTo(other *Value) bool {
 	if v.IsInteger() && other.IsInteger() {
 		return v.Integer() == other.Integer()
 	}
+	// comparison of float with int also fails using .Interface()-comparison
+	if v.IsNumber() && other.IsNumber() {
+		return v.Float() == other.Float()
+	}
 	return v.Interface() == other.Interface()
 }
 

@@ -182,4 +182,15 @@ var _ = Context("tests", func() {
 		})
 		shouldRender("{{ var1 is eq 42 }}", "True")
 	})
+	Context("float to int equality", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]interface{}{
+				"foo": 42.0,
+			})
+		})
+		shouldRender("{{ foo is eq 42 }}", "True")
+		shouldRender("{{ 42.0 is eq 42 }}", "True")
+		shouldRender("{{ 42 is eq 42.0 }}", "True")
+		shouldRender("{{ 42.5 is eq 42 }}", "False")
+	})
 })
