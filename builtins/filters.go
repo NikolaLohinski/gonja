@@ -1065,7 +1065,10 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		in = exec.AsValue(inCast)
 	}
 
-	p := params.Expect(0, []*exec.KwArg{{Name: "indent", Default: nil}})
+	p := params.Expect(0, []*exec.KwArg{
+		{Name: "indent", Default: nil},
+		{Name: "ensure_ascii", Default: exec.AsValue(true)}, // Accepted for compatibility, ignored (Go handles unicode)
+	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'tojson'"))
 	}

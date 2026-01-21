@@ -439,7 +439,7 @@ var strMethods = NewMethodSet[string](map[string]Method[string]{
 			cutset string
 		)
 		if err := arguments.Take(
-			PositionalArgument("cutset", AsValue(' '), StringArgument(&cutset)),
+			PositionalArgument("cutset", AsValue(""), StringArgument(&cutset)),
 		); err != nil {
 			return nil, ErrInvalidCall(err)
 		}
