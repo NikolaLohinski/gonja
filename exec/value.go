@@ -191,7 +191,10 @@ func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
 		}
 		return object
 	}
-	return v.Val.Interface()
+	if v.Val.CanInterface() {
+		return v.Val.Interface()
+	}
+	return fmt.Errorf("cannot access unexported field")
 }
 
 // String returns a string for the underlying value. If this value is not
@@ -730,7 +733,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 
 // Interface returns the underlying value.
 func (v *Value) Interface() interface{} {
-	if v.Val.IsValid() {
+	if v.Val.IsValid() && v.Val.CanInterface() {
 		return v.Val.Interface()
 	}
 	return nil
