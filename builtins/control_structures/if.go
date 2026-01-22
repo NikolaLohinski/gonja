@@ -13,8 +13,8 @@ import (
 
 type IfControlStructure struct {
 	location   *tokens.Token
-	conditions []nodes.Expression
-	wrappers   []*nodes.Wrapper
+	Conditions []nodes.Expression
+	Wrappers   []*nodes.Wrapper
 }
 
 func (controlStructure *IfControlStructure) Position() *tokens.Token {
@@ -26,18 +26,18 @@ func (controlStructure *IfControlStructure) String() string {
 }
 
 func (node *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	for i, condition := range node.conditions {
+	for i, condition := range node.Conditions {
 		result := r.Eval(condition)
 		if result.IsError() {
 			return result
 		}
 
 		if result.IsTrue() {
-			return r.ExecuteIfWrapper(node.wrappers[i])
+			return r.ExecuteIfWrapper(node.Wrappers[i])
 		}
 		// Last condition?
-		if len(node.conditions) == i+1 && len(node.wrappers) > i+1 {
-			return r.ExecuteIfWrapper(node.wrappers[i+1])
+		if len(node.Conditions) == i+1 && len(node.Wrappers) > i+1 {
+			return r.ExecuteIfWrapper(node.Wrappers[i+1])
 		}
 	}
 	return nil
@@ -57,7 +57,7 @@ func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, er
 	if err != nil {
 		return nil, err
 	}
-	ifNode.conditions = append(ifNode.conditions, condition)
+	ifNode.Conditions = append(ifNode.Conditions, condition)
 
 	if !args.End() {
 		return nil, args.Error("If-condition is malformed.", nil)
@@ -69,7 +69,7 @@ func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, er
 		if err != nil {
 			return nil, err
 		}
-		ifNode.wrappers = append(ifNode.wrappers, wrapper)
+		ifNode.Wrappers = append(ifNode.Wrappers, wrapper)
 
 		if wrapper.EndTag == "elif" {
 			// elif can take a condition
@@ -77,7 +77,7 @@ func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, er
 			if err != nil {
 				return nil, err
 			}
-			ifNode.conditions = append(ifNode.conditions, condition)
+			ifNode.Conditions = append(ifNode.Conditions, condition)
 
 			if !tagArgs.End() {
 				return nil, tagArgs.Error("Elif-condition is malformed.", nil)
