@@ -1,17 +1,11 @@
 package parser
 
 import (
-	log "github.com/sirupsen/logrus"
-
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
 func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseTest")
-
 	expr, err := p.ParseFilterExpression(expr)
 	if err != nil {
 		return nil, err
@@ -56,8 +50,5 @@ func (p *Parser) ParseTest(expr nodes.Expression) (nodes.Expression, error) {
 		}
 	}
 
-	log.WithFields(log.Fields{
-		"expr": expr,
-	}).Trace("parseTest return")
 	return expr, nil
 }

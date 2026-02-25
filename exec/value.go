@@ -9,8 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	log "github.com/sirupsen/logrus"
-
 	u "github.com/nikolalohinski/gonja/v2/utils"
 )
 
@@ -295,7 +293,6 @@ func (v *Value) String() string {
 		return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 	}
 
-	log.Errorf("Value.String() not implemented for type: %s\n", resolved.Kind().String())
 	return resolved.String()
 }
 
@@ -323,7 +320,6 @@ func (v *Value) Integer() int {
 		}
 		return int(f)
 	default:
-		log.Errorf("Value.Integer() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return 0
 	}
 }
@@ -347,7 +343,6 @@ func (v *Value) Float() float64 {
 		}
 		return f
 	default:
-		log.Errorf("Value.Float() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return 0.0
 	}
 }
@@ -360,7 +355,6 @@ func (v *Value) Bool() bool {
 	case reflect.Bool:
 		return v.getResolvedValue().Bool()
 	default:
-		log.Errorf("Value.Bool() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return false
 	}
 }
@@ -394,7 +388,6 @@ func (v *Value) IsTrue() bool {
 	case reflect.Struct:
 		return true // struct instance is always true
 	default:
-		log.Errorf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return false
 	}
 }
@@ -429,7 +422,6 @@ func (v *Value) Negate() *Value {
 	case reflect.Struct:
 		return AsValue(false)
 	default:
-		log.Errorf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return AsValue(true)
 	}
 }
@@ -451,7 +443,6 @@ func (v *Value) Len() int {
 		}
 		fallthrough
 	default:
-		log.Errorf("Value.Len() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return 0
 	}
 }
@@ -466,7 +457,6 @@ func (v *Value) Slice(i, j int) *Value {
 		runes := []rune(v.getResolvedValue().String())
 		return AsValue(string(runes[i:j]))
 	default:
-		log.Errorf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return AsValue([]int{})
 	}
 }
@@ -488,7 +478,6 @@ func (v *Value) Index(i int) *Value {
 		}
 		return AsValue("")
 	default:
-		log.Errorf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		return AsValue([]int{})
 	}
 }
@@ -517,7 +506,6 @@ func (v *Value) Contains(other *Value) bool {
 		case string:
 			mapValue = resolved.MapIndex(other.getResolvedValue())
 		default:
-			log.Errorf("Value.Contains() does not support lookup type '%s'\n", other.getResolvedValue().Kind().String())
 			return false
 		}
 
@@ -538,7 +526,6 @@ func (v *Value) Contains(other *Value) bool {
 		return false
 
 	default:
-		log.Errorf("Value.Contains() not available for type: %s\n", resolved.Kind().String())
 		return false
 	}
 }
@@ -698,7 +685,6 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		return
 	case reflect.Struct:
 		if resolved.Type() != TypeDict {
-			log.Errorf("Value.Iterate() not available for type: %s\n", resolved.Kind().String())
 		}
 		dict := resolved.Interface().(Dict)
 		keys := dict.Keys()
@@ -729,7 +715,6 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		}
 
 	default:
-		log.Errorf("Value.Iterate() not available for type: %s\n", resolved.Kind().String())
 	}
 	empty()
 }
