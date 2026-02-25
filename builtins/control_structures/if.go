@@ -3,8 +3,6 @@ package controlStructures
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/parser"
@@ -44,10 +42,6 @@ func (node *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 }
 
 func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	log.WithFields(log.Fields{
-		"arg":     args.Current(),
-		"current": p.Current(),
-	}).Trace("ParseIf")
 	ifNode := &IfControlStructure{
 		location: args.Current(),
 	}

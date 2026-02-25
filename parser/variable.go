@@ -8,13 +8,9 @@ import (
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
-	log "github.com/sirupsen/logrus"
 )
 
 func (p *Parser) parseNumber() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseNumber")
 	t := p.Match(tokens.Integer, tokens.Float)
 	if t == nil {
 		return nil, p.Error("Expected a number", t)
@@ -44,9 +40,6 @@ func (p *Parser) parseNumber() (nodes.Expression, error) {
 }
 
 func (p *Parser) parseString() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseString")
 	t := p.Match(tokens.String)
 	if t == nil {
 		return nil, p.Error("Expected a string", t)
@@ -78,9 +71,6 @@ func (p *Parser) parseCollectionOrExpression() (nodes.Expression, error) {
 }
 
 func (p *Parser) parseList() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseList")
 	t := p.Match(tokens.LeftBracket)
 	if t == nil {
 		return nil, p.Error("Expected [", t)
@@ -120,9 +110,6 @@ func (p *Parser) parseList() (nodes.Expression, error) {
 }
 
 func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseTuple")
 	t := p.Match(tokens.LeftParenthesis)
 	if t == nil {
 		return nil, p.Error("Expected (", t)
@@ -169,9 +156,6 @@ func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
 }
 
 func (p *Parser) parsePair() (*nodes.Pair, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parsePair")
 	key, err := p.ParseExpression()
 	if err != nil {
 		return nil, err
@@ -191,9 +175,6 @@ func (p *Parser) parsePair() (*nodes.Pair, error) {
 }
 
 func (p *Parser) parseDict() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("parseDict")
 	t := p.Match(tokens.LeftBrace)
 	if t == nil {
 		return nil, p.Error("Expected {", t)
@@ -228,10 +209,6 @@ func (p *Parser) parseDict() (nodes.Expression, error) {
 }
 
 func (p *Parser) ParseVariable() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("ParseVariable")
-
 	t := p.Match(tokens.Name)
 	if t == nil {
 		return nil, p.Error("Expected an identifier.", t)
@@ -326,9 +303,6 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 
 // IDENT | IDENT.(IDENT|NUMBER)...
 func (p *Parser) ParseVariableOrLiteral() (nodes.Expression, error) {
-	log.WithFields(log.Fields{
-		"current": p.Current(),
-	}).Trace("ParseVariableOrLiteral")
 	t := p.Current()
 
 	if t == nil {
