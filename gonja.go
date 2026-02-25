@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"io"
 	"path"
 
 	"github.com/nikolalohinski/gonja/v2/builtins"
 	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/loaders"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -26,14 +24,6 @@ var (
 		Methods:           builtins.Methods,
 	}
 )
-
-func SetLoggerOutput(out io.Writer) {
-	logrus.SetOutput(out)
-}
-
-func SetLoggerLevel(level logrus.Level) {
-	logrus.SetLevel(level)
-}
 
 func FromString(source string) (*exec.Template, error) {
 	return FromBytes([]byte(source))
