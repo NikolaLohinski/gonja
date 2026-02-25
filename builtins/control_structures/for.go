@@ -11,17 +11,17 @@ import (
 )
 
 type ForControlStructure struct {
-	key             string
-	value           string // only for maps: for key, value in map
-	objectEvaluator nodes.Expression
-	ifCondition     nodes.Expression
+	Key             string
+	Value           string // only for maps: for key, value in map
+	ObjectEvaluator nodes.Expression
+	IfCondition     nodes.Expression
 
-	bodyWrapper  *nodes.Wrapper
-	emptyWrapper *nodes.Wrapper
+	BodyWrapper  *nodes.Wrapper
+	EmptyWrapper *nodes.Wrapper
 }
 
 func (controlStructure *ForControlStructure) Position() *tokens.Token {
-	return controlStructure.bodyWrapper.Position()
+	return controlStructure.BodyWrapper.Position()
 }
 func (controlStructure *ForControlStructure) String() string {
 	t := controlStructure.Position()
@@ -54,7 +54,7 @@ func (li *LoopInfos) Changed(value *exec.Value) bool {
 }
 
 func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) (forError error) {
-	obj := r.Eval(node.objectEvaluator)
+	obj := r.Eval(node.ObjectEvaluator)
 	if obj.IsError() {
 		return obj
 	}
@@ -70,29 +70,29 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 
 		// There's something to iterate over (correct type and at least 1 item)
 		// Update loop infos and public context
-		if node.value != "" && !key.IsString() && key.Len() == 2 {
+		if node.Value != "" && !key.IsString() && key.Len() == 2 {
 			key.Iterate(func(idx, count int, key, value *exec.Value) bool {
 				switch idx {
 				case 0:
-					ctx.Set(node.key, key)
+					ctx.Set(node.Key, key)
 					pair.Key = key
 				case 1:
-					ctx.Set(node.value, key)
+					ctx.Set(node.Value, key)
 					pair.Value = key
 				}
 				return true
 			}, func() {})
 		} else {
-			ctx.Set(node.key, key)
+			ctx.Set(node.Key, key)
 			pair.Key = key
 			if value != nil {
-				ctx.Set(node.value, value)
+				ctx.Set(node.Value, value)
 				pair.Value = value
 			}
 		}
 
-		if node.ifCondition != nil {
-			if !sub.Eval(node.ifCondition).IsTrue() {
+		if node.IfCondition != nil {
+			if !sub.Eval(node.IfCondition).IsTrue() {
 				return true
 			}
 		}
@@ -106,8 +106,8 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		first:  true,
 		index0: -1,
 	}
-	if len(items.Pairs) == 0 && node.emptyWrapper != nil {
-		if err := r.Inherit().ExecuteWrapper(node.emptyWrapper); err != nil {
+	if len(items.Pairs) == 0 && node.EmptyWrapper != nil {
+		if err := r.Inherit().ExecuteWrapper(node.EmptyWrapper); err != nil {
 			return err
 		}
 	}
@@ -115,9 +115,9 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		sub := r.Inherit()
 		ctx := sub.Environment.Context
 
-		ctx.Set(node.key, pair.Key)
+		ctx.Set(node.Key, pair.Key)
 		if pair.Value != nil {
-			ctx.Set(node.value, pair.Value)
+			ctx.Set(node.Value, pair.Value)
 		}
 
 		ctx.Set("loop", loop)
@@ -155,7 +155,7 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		}
 
 		// Render elements with updated context
-		err := sub.ExecuteWrapper(node.bodyWrapper)
+		err := sub.ExecuteWrapper(node.BodyWrapper)
 		if err != nil {
 			return err
 		}
@@ -190,10 +190,10 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.objectEvaluator = objectEvaluator
-	controlStructure.key = keyToken.Val
+	controlStructure.ObjectEvaluator = objectEvaluator
+	controlStructure.Key = keyToken.Val
 	if valueToken != nil {
-		controlStructure.value = valueToken.Val
+		controlStructure.Value = valueToken.Val
 	}
 
 	if args.MatchName("if") != nil {
@@ -201,7 +201,7 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 		if err != nil {
 			return nil, err
 		}
-		controlStructure.ifCondition = ifCondition
+		controlStructure.IfCondition = ifCondition
 	}
 
 	if !args.End() {
@@ -213,7 +213,7 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.bodyWrapper = wrapper
+	controlStructure.BodyWrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
@@ -225,7 +225,7 @@ func forParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 		if err != nil {
 			return nil, err
 		}
-		controlStructure.emptyWrapper = wrapper
+		controlStructure.EmptyWrapper = wrapper
 
 		if !endargs.End() {
 			return nil, endargs.Error("Arguments not allowed here.", nil)

@@ -104,3 +104,8 @@ func (t *Template) ExecuteToBytes(data *Context) ([]byte, error) {
 func (t *Template) Macros() map[string]*nodes.Macro {
 	return t.root.Macros
 }
+
+// Root returns the root node of the template
+func (t *Template) Root() *nodes.Template {
+	return t.root
+}
