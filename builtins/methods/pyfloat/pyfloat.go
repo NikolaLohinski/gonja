@@ -1,3 +1,4 @@
+// Package pyfloat provides Python-compatible float methods.
 package pyfloat
 
 import (

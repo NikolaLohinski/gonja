@@ -48,7 +48,7 @@ var _ = Context("dicts", func() {
 					["exi" ~ "sts"]: {{ value["exi" ~ "sts"] }}
 				`),
 				})
-				(*environment).Context.Set("value", map[string]interface{}{"exists": "content"})
+				(*environment).Context.Set("value", map[string]any{"exists": "content"})
 			})
 
 			It("should return the expected rendered content", func() {
@@ -86,7 +86,7 @@ var _ = Context("dicts", func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: "{{ data..test }}",
 			})
-			(*environment).Context.Set("data", map[string]interface{}{})
+			(*environment).Context.Set("data", map[string]any{})
 		})
 
 		It("should return the expected error", func() {

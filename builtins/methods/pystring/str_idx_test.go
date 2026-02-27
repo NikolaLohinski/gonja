@@ -71,7 +71,6 @@ var _ = Describe("Index", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("%q should index from %v to %v as '%v'", tt.s, tt.start, tt.end, tt.want), func() {
 			got, _ := PyString(tt.s).Idx(tt.start, tt.end)
 			Expect(string(got)).To(Equal(tt.want))

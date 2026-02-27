@@ -1,19 +1,21 @@
 package exec
 
+import "maps"
+
 import "sync"
 
 type Context struct {
-	data   map[string]interface{}
+	data   map[string]any
 	parent *Context
 	lock   sync.Mutex
 }
 
-func NewContext(data map[string]interface{}) *Context {
+func NewContext(data map[string]any) *Context {
 	return &Context{data: data}
 }
 
 func EmptyContext() *Context {
-	return &Context{data: map[string]interface{}{}}
+	return &Context{data: map[string]any{}}
 }
 
 func (ctx *Context) Has(name string) bool {
@@ -26,7 +28,7 @@ func (ctx *Context) Has(name string) bool {
 	return exists
 }
 
-func (ctx *Context) Get(name string) (interface{}, bool) {
+func (ctx *Context) Get(name string) (any, bool) {
 	ctx.lock.Lock()
 	value, exists := ctx.data[name]
 	ctx.lock.Unlock()
@@ -39,7 +41,7 @@ func (ctx *Context) Get(name string) (interface{}, bool) {
 	}
 }
 
-func (ctx *Context) Set(name string, value interface{}) {
+func (ctx *Context) Set(name string, value any) {
 	ctx.lock.Lock()
 	ctx.data[name] = value
 	ctx.lock.Unlock()
@@ -48,7 +50,7 @@ func (ctx *Context) Set(name string, value interface{}) {
 func (ctx *Context) Inherit() *Context {
 	ctx.lock.Lock()
 	inherited := &Context{
-		data:   map[string]interface{}{},
+		data:   map[string]any{},
 		parent: ctx,
 	}
 	ctx.lock.Unlock()
@@ -61,9 +63,7 @@ func (ctx *Context) Update(other *Context) *Context {
 		return ctx
 	}
 	ctx.lock.Lock()
-	for k, v := range other.data {
-		ctx.data[k] = v
-	}
+	maps.Copy(ctx.data, other.data)
 	ctx.lock.Unlock()
 	return ctx
 }

@@ -55,7 +55,7 @@ func (si *sliceIterator) Next() *Token {
 	}
 }
 
-func NewStream(input interface{}) *Stream {
+func NewStream(input any) *Stream {
 	var it TokenIterator
 
 	switch t := input.(type) {

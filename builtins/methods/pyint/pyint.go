@@ -1,3 +1,4 @@
+// Package pyint provides Python-compatible integer methods.
 package pyint
 
 import (

@@ -47,7 +47,7 @@ var _ = Context("lists", func() {
 					[-99]: {{ value[-99] }}
 				`),
 				})
-				(*environment).Context.Set("value", []interface{}{"1", 2, 3, 4, "five"})
+				(*environment).Context.Set("value", []any{"1", 2, 3, 4, "five"})
 			})
 
 			It("should return the expected rendered content", func() {
@@ -79,7 +79,7 @@ var _ = Context("lists", func() {
 					[-4:]: {{ value[-4:] }}
 				`),
 				})
-				(*environment).Context.Set("value", []interface{}{"1", 2, 3, 4, "five"})
+				(*environment).Context.Set("value", []any{"1", 2, 3, 4, "five"})
 			})
 
 			It("should return the expected rendered content", func() {

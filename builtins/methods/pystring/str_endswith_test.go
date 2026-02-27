@@ -23,7 +23,6 @@ var _ = Describe("EndsWith", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("%q should end with %q to '%v'", tt.str, tt.subStr, tt.res), func() {
 			pys := PyString(tt.str)
 			Expect(pys.EndsWith(tt.subStr, nil, nil)).To(Equal(tt.res))

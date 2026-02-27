@@ -2,9 +2,11 @@ package legacy_test
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -87,7 +89,7 @@ var _ = Context("legacy tests", func() {
 			description         string
 			template            string
 			expected            string
-			context             map[string]interface{}
+			context             map[string]any
 			additionalTemplates map[string]string
 		}{
 			{
@@ -138,13 +140,13 @@ var _ = Context("legacy tests", func() {
 				Functions
 				hello
 			`),
-				map[string]interface{}{
-					"map": map[string]interface{}{
+				map[string]any{
+					"map": map[string]any{
 						"struct": struct{ Text string }{
 							Text: "does not matter",
 						},
 					},
-					"func_variadic": func(msg string, args ...interface{}) string {
+					"func_variadic": func(msg string, args ...any) string {
 						return fmt.Sprintf(msg, args...)
 					},
 				},
@@ -228,9 +230,9 @@ var _ = Context("legacy tests", func() {
                 
                 End
 			`),
-				map[string]interface{}{
+				map[string]any{
 					"name":      "john doe",
-					"misc_list": []interface{}{"Hello", 99, 3.14, "good"},
+					"misc_list": []any{"Hello", 99, 3.14, "good"},
 				},
 				map[string]string{
 					"/macro.helper": heredoc.Doc(`
@@ -283,16 +285,16 @@ var _ = Context("legacy tests", func() {
 				VarArgs(args=[], kwargs={a="a", b="b"})
 				VarArgs(args=[1, 2, 3], kwargs={a="a", b="b", c="c"})
 			`),
-				map[string]interface{}{
+				map[string]any{
 					"name":   "john doe",
 					"number": 42,
 					"func_add": func(a, b int) int {
 						return a + b
 					},
-					"func_add_iface": func(a, b interface{}) interface{} {
+					"func_add_iface": func(a, b any) any {
 						return a.(int) + b.(int)
 					},
-					"func_variadic": func(msg string, args ...interface{}) string {
+					"func_variadic": func(msg string, args ...any) string {
 						return fmt.Sprintf(msg, args...)
 					},
 					"func_variadic_sum_int": func(args ...int) int {
@@ -424,20 +426,15 @@ var _ = Context("legacy tests", func() {
                 
                 </html>
 			`),
-				map[string]interface{}{
+				map[string]any{
 					"text": "<h2>Hello!</h2><p>Welcome to my new blog page. I'm using gonja which supports {{ variables }} and {% tags %}.</p>",
 					"is_admin": func(u *struct {
 						Name      string
 						Validated bool
 					}) bool {
-						for _, a := range adminList {
-							if a == u.Name {
-								return true
-							}
-						}
-						return false
+						return slices.Contains(adminList, u.Name)
 					},
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"comments": []struct {
 							Author *struct {
 								Name      string
@@ -489,9 +486,7 @@ var _ = Context("legacy tests", func() {
 			Context(t.description, func() {
 				BeforeEach(func() {
 					templates := map[string]string{*identifier: t.template}
-					for name, content := range t.additionalTemplates {
-						templates[name] = content
-					}
+					maps.Copy(templates, t.additionalTemplates)
 					*loader = loaders.MustNewMemoryLoader(templates)
 					*context = exec.NewContext(t.context)
 				})

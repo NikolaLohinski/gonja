@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -31,7 +32,7 @@ func (va *VarArgs) First() *Value {
 }
 
 // GetKeywordArgument gets a keyword arguments with fallback on default value
-func (va *VarArgs) GetKeywordArgument(key string, fallback interface{}) *Value {
+func (va *VarArgs) GetKeywordArgument(key string, fallback any) *Value {
 	value, ok := va.KwArgs[key]
 	if ok {
 		return value
@@ -41,29 +42,29 @@ func (va *VarArgs) GetKeywordArgument(key string, fallback interface{}) *Value {
 
 type KwArg struct {
 	Name    string
-	Default interface{}
+	Default any
 }
 
 // Expect validates VarArgs against an expected signature
-func (v *VarArgs) Expect(arguments int, keywordArguments []*KwArg) *ReducedVarArgs {
-	result := &ReducedVarArgs{VarArgs: v}
+func (va *VarArgs) Expect(arguments int, keywordArguments []*KwArg) *ReducedVarArgs {
+	result := &ReducedVarArgs{VarArgs: va}
 	copiedVariableArguments := &VarArgs{
-		Args:   v.Args,
+		Args:   va.Args,
 		KwArgs: map[string]*Value{},
 	}
 	reduceIndex := -1
 	unexpectedArgs := []string{}
-	if len(v.Args) < arguments {
+	if len(va.Args) < arguments {
 		// Priority on missing arguments
 		if arguments > 1 {
-			result.error = errors.Errorf(`expected %d arguments, got %d`, arguments, len(v.Args))
+			result.error = errors.Errorf(`expected %d arguments, got %d`, arguments, len(va.Args))
 		} else {
-			result.error = errors.Errorf(`expected an argument, got %d`, len(v.Args))
+			result.error = errors.Errorf(`expected an argument, got %d`, len(va.Args))
 		}
 		return result
-	} else if len(v.Args) > arguments {
-		copiedVariableArguments.Args = v.Args[:arguments]
-		for index, arg := range v.Args[arguments:] {
+	} else if len(va.Args) > arguments {
+		copiedVariableArguments.Args = va.Args[:arguments]
+		for index, arg := range va.Args[arguments:] {
 			if len(keywordArguments) > index {
 				copiedVariableArguments.KwArgs[keywordArguments[index].Name] = arg
 				reduceIndex = index + 1
@@ -75,7 +76,7 @@ func (v *VarArgs) Expect(arguments int, keywordArguments []*KwArg) *ReducedVarAr
 
 	unexpectedKwArgs := []string{}
 Loop:
-	for key, value := range v.KwArgs {
+	for key, value := range va.KwArgs {
 		for index, keywordArgument := range keywordArguments {
 			if key == keywordArgument.Name {
 				if reduceIndex < 0 || index >= reduceIndex {
@@ -212,11 +213,9 @@ func StringEnumArgument(output *string, options []string) func(v *Value) error {
 			return errors.New("received nil pointer to string in StringEnumArgument transposer")
 		}
 		value := v.String()
-		for _, option := range options {
-			if option == value {
-				*output = v.String()
-				return nil
-			}
+		if slices.Contains(options, value) {
+			*output = v.String()
+			return nil
 		}
 		return fmt.Errorf("unexpected value '%s' is not in: ['%s']", value, strings.Join(options, "','"))
 	}
@@ -261,7 +260,7 @@ func NumberArgument(output *float64) func(v *Value) error {
 	}
 }
 
-func AnyArgument(output *interface{}) func(*Value) error {
+func AnyArgument(output *any) func(*Value) error {
 	return func(v *Value) error {
 		if output == nil {
 			return errors.New("received nil pointer to string in AnyArgument transposer")
@@ -316,25 +315,25 @@ func KeywordArgument(name string, defaultValue *Value, transmuters ...ArgumentTr
 	}
 }
 
-func (v *VarArgs) Take(arguments ...*argument) error {
-	unexpectedArgs := len(v.Args)
-	unexpectedKwArgs := v.KwArgs
+func (va *VarArgs) Take(arguments ...*argument) error {
+	unexpectedArgs := len(va.Args)
+	unexpectedKwArgs := va.KwArgs
 	for index, argument := range arguments {
 		var value *Value
 		if argument.positional {
-			if index >= len(v.Args) {
+			if index >= len(va.Args) {
 				if argument.fallback != nil {
 					value = argument.fallback
 				} else {
 					return fmt.Errorf("missing required %s positional argument '%s'", humanize.Ordinal(index+1), argument.name)
 				}
 			} else {
-				value = v.Args[index]
+				value = va.Args[index]
 				unexpectedArgs -= 1
 			}
 		} else {
-			if unexpectedArgs > 0 && index < len(v.Args) {
-				value = v.Args[index]
+			if unexpectedArgs > 0 && index < len(va.Args) {
+				value = va.Args[index]
 				unexpectedArgs -= 1
 			} else if v, ok := unexpectedKwArgs[argument.name]; ok {
 				value = v

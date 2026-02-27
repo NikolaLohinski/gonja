@@ -1,8 +1,9 @@
 package pystring
 
-// there has been multiples changes in python in regards to how format specifiers are handled
-// to enable all possible formats we captures these changes feature flags which can be opted
-// in our out into.
+// DefaultDialect captures the format specifier behavior for Python 3.11.
+// There have been multiple changes in Python regarding how format specifiers are handled;
+// to enable all possible formats we capture these changes as feature flags which can be opted
+// in or out of.
 var DefaultDialect = NewDialect(3.11)
 var DialectPython3_11 = NewDialect(3.11)
 var DialectPython3_10 = NewDialect(3.10)

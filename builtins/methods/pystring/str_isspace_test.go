@@ -41,7 +41,6 @@ var _ = Describe("IsSpace", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is space as '%t'", test.input, test.expected), func() {
 			Expect(test.input.IsSpace()).To(Equal(test.expected))
 		})

@@ -8,8 +8,8 @@ import (
 	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
 
-// Any value which implements formatter will itself decide how a formatting
-// string should be interpreted. If not the default formatter is used.
+// Formatter is implemented by any value that decides how a formatting
+// string should be interpreted. If not implemented, the default formatter is used.
 type Formatter interface {
 	Format(format string) (string, error)
 }

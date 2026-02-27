@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Return a string which is the concatenation of the strings in iterable.
+// JoinString returns a string which is the concatenation of the strings in iterable.
 // A TypeError will be raised if there are any non-string values in iterable,
 // including bytes objects. The separator between elements is the string
 // providing this method.
@@ -27,16 +27,16 @@ func JoinStringer[T fmt.Stringer](s string, it []T) string {
 	return strings.Join(strs, s)
 }
 
-// Return a string which is the concatenation of the strings in iterable.
+// JoinString returns a string which is the concatenation of the strings in iterable.
 // A TypeError will be raised if there are any non-string values in iterable,
-// including bytes objects. The separator between elements is the string
+// including bytes objects. The separator between elements is the string.
 func (pys PyString) JoinString(it []PyString) PyString {
 	return PyString(JoinString(pys, it))
 }
 
-// Return a string which is the concatenation of the strings in iterable.
+// JoinStringer returns a string which is the concatenation of the strings in iterable.
 // A TypeError will be raised if there are any non-string values in iterable,
-// including bytes objects. The separator between elements is the string
+// including bytes objects. The separator between elements is the string.
 func (pys PyString) JoinStringer(it []fmt.Stringer) PyString {
 	return PyString(JoinStringer(string(pys), it))
 }

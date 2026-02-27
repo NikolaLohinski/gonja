@@ -27,7 +27,6 @@ var _ = Describe("RemovePrefix", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s' and prefix '%s', should return '%s'", test.input, test.prefix, test.expected), func() {
 			Expect(test.input.RemovePrefix(test.prefix)).To(Equal(test.expected))
 		})

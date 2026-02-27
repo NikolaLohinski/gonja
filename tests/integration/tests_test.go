@@ -71,7 +71,7 @@ var _ = Context("tests", func() {
 	})
 	Context("https://github.com/NikolaLohinski/gonja/issues/19", func() {
 		BeforeEach(func() {
-			*context = exec.NewContext(map[string]interface{}{
+			*context = exec.NewContext(map[string]any{
 				"var1": "1",
 				"var2": "3",
 			})
@@ -144,7 +144,7 @@ var _ = Context("tests", func() {
 	})
 	Context("booleans", func() {
 		BeforeEach(func() {
-			*context = exec.NewContext(map[string]interface{}{
+			*context = exec.NewContext(map[string]any{
 				"var1": true,
 				"var2": false,
 			})
@@ -160,7 +160,7 @@ var _ = Context("tests", func() {
 	})
 	Context("numbers", func() {
 		BeforeEach(func() {
-			*context = exec.NewContext(map[string]interface{}{
+			*context = exec.NewContext(map[string]any{
 				"var1": 1.3,
 				"var2": "hello world!",
 				"var3": -42,
@@ -176,7 +176,7 @@ var _ = Context("tests", func() {
 	})
 	Context("https://github.com/NikolaLohinski/gonja/issues/63", func() {
 		BeforeEach(func() {
-			*context = exec.NewContext(map[string]interface{}{
+			*context = exec.NewContext(map[string]any{
 				"var1": uint64(42),
 			})
 		})
@@ -184,7 +184,7 @@ var _ = Context("tests", func() {
 	})
 	Context("float to int equality", func() {
 		BeforeEach(func() {
-			*context = exec.NewContext(map[string]interface{}{
+			*context = exec.NewContext(map[string]any{
 				"foo": 42.0,
 			})
 		})

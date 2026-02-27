@@ -1,3 +1,4 @@
+// Package nodes provides AST node types for the template parser.
 package nodes
 
 import (
@@ -26,7 +27,7 @@ import (
 // That position information is needed to properly position comments
 // when printing the construct.
 
-// All node types implement the Node interface.
+// Node is the interface implemented by all node types.
 type Node interface {
 	fmt.Stringer
 	Position() *tokens.Token
@@ -56,14 +57,14 @@ func (t *Template) String() string {
 	return fmt.Sprintf("template(%s)", t.Identifier)
 }
 
-func (tpl *Template) GetBlocks(name string) []*Wrapper {
+func (t *Template) GetBlocks(name string) []*Wrapper {
 	var blocks []*Wrapper
-	if tpl.Parent != nil {
-		blocks = tpl.Parent.GetBlocks(name)
+	if t.Parent != nil {
+		blocks = t.Parent.GetBlocks(name)
 	} else {
 		blocks = []*Wrapper{}
 	}
-	block, exists := tpl.Blocks[name]
+	block, exists := t.Blocks[name]
 	if exists {
 		blocks = append([]*Wrapper{block}, blocks...)
 	}
@@ -84,9 +85,9 @@ type Data struct {
 
 func (d *Data) Position() *tokens.Token { return d.Data }
 
-// func (c *Comment) End() token.Pos { return token.Pos(int(c.Slash) + len(c.Text)) }
-func (c *Data) String() string {
-	return fmt.Sprintf("data(%s)", u.Ellipsis(c.Data.Val, 20))
+// String returns a string representation of the Data node.
+func (d *Data) String() string {
+	return fmt.Sprintf("data(%s)", u.Ellipsis(d.Data.Val, 20))
 }
 
 // A Comment node represents a single {# #} comment.
@@ -98,12 +99,12 @@ type Comment struct {
 
 func (c *Comment) Position() *tokens.Token { return c.Start }
 
-// func (c *Comment) End() token.Pos { return token.Pos(int(c.Slash) + len(c.Text)) }
+// String returns a string representation of the Comment node.
 func (c *Comment) String() string {
 	return fmt.Sprintf("comment(%s)", u.Ellipsis(c.Text, 20))
 }
 
-// Ouput represents a printable expression node {{ }}
+// Output represents a printable expression node {{ }}
 type Output struct {
 	Start       *tokens.Token
 	Expression  Expression
@@ -380,7 +381,7 @@ type BinaryExpression struct {
 	Operator *BinOperator
 }
 
-func (b *BinaryExpression) Position() *tokens.Token { return b.Left.Position() }
+func (expr *BinaryExpression) Position() *tokens.Token { return expr.Left.Position() }
 func (expr *BinaryExpression) String() string {
 	return fmt.Sprintf("%s %s %s", expr.Left, expr.Operator.Token.Val, expr.Right)
 }

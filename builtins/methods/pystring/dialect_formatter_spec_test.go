@@ -265,7 +265,7 @@ func getValidExpressions(d Dialect) []FormatSpec {
 				for _, alternate := range validAlternate {
 					for _, zeroPadding := range validZeroPadding {
 						for _, width := range validWidths {
-							for _, _ = range validGroupings {
+							for range validGroupings {
 								for _, precision := range validPrecisions {
 									for _, t := range ValidTypes {
 										spec := FormatSpec{

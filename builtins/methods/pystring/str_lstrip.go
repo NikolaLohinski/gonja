@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// Return a copy of the string with leading characters removed. The chars
+// LStrip returns a copy of the string with leading characters removed. The chars
 // argument is a string specifying the set of characters to be removed. If omitted
 // or None, the chars argument defaults to removing whitespace. The chars argument
 // is not a prefix; rather, all combinations of its values are stripped:
@@ -28,7 +28,7 @@ func LStrip(s string, cutset string) string {
 	cutFrom := 0
 
 	for i, c := range s {
-		if strings.IndexRune(cutset, c) == -1 {
+		if !strings.ContainsRune(cutset, c) {
 			break
 		}
 		cutFrom = i + 1
@@ -37,7 +37,7 @@ func LStrip(s string, cutset string) string {
 	return s[cutFrom:]
 }
 
-// Return a copy of the string with leading characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix; rather, all combinations of its values are stripped:
+// LStrip returns a copy of the string with leading characters removed. The chars argument is a string specifying the set of characters to be removed. If omitted or None, the chars argument defaults to removing whitespace. The chars argument is not a prefix; rather, all combinations of its values are stripped:
 //
 // >>>
 // >>> '   spacious   '.lstrip(){}

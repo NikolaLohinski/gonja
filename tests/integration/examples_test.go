@@ -17,7 +17,7 @@ var _ = Context("examples", func() {
 			Expect(err).To(BeNil())
 
 			out := bytes.NewBufferString("")
-			err = template.Execute(out, exec.NewContext(map[string]interface{}{"name": "bob"}))
+			err = template.Execute(out, exec.NewContext(map[string]any{"name": "bob"}))
 			Expect(err).To(BeNil())
 
 			Expect(out.String()).To(Equal("Hello Bob!"))

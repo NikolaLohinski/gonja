@@ -41,7 +41,6 @@ var _ = Describe("LJust", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should left justify '%s' with width %d and fillchar '%c' as '%s'", test.input, test.width, test.fillchar, test.expected), func() {
 			Expect(test.input.LJust(test.width, test.fillchar)).To(Equal(test.expected))
 		})

@@ -1,11 +1,21 @@
 package parser
 
 import (
+	"fmt"
+
+	"github.com/nikolalohinski/gonja/v2/logging"
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
+	log "github.com/sirupsen/logrus"
 )
 
 func (p *Parser) ParseMath() (nodes.Expression, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"current": p.Current(),
+		}).Trace("ParseMath")
+	}
+
 	expr, err := p.parseConcat()
 	if err != nil {
 		return nil, err
@@ -24,10 +34,21 @@ func (p *Parser) ParseMath() (nodes.Expression, error) {
 		}
 	}
 
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"expr": expr,
+		}).Trace("ParseMath return")
+	}
 	return expr, nil
 }
 
 func (p *Parser) parseConcat() (nodes.Expression, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"current": p.Current(),
+		}).Trace("parseConcat")
+	}
+
 	expr, err := p.ParseMathPrioritary()
 	if err != nil {
 		return nil, err
@@ -46,10 +67,21 @@ func (p *Parser) parseConcat() (nodes.Expression, error) {
 		}
 	}
 
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"expr": expr,
+		}).Trace("parseConcat return")
+	}
 	return expr, nil
 }
 
 func (p *Parser) ParseMathPrioritary() (nodes.Expression, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"current": p.Current(),
+		}).Trace("ParseMathPrioritary")
+	}
+
 	expr, err := p.ParsePower()
 	if err != nil {
 		return nil, err
@@ -68,10 +100,21 @@ func (p *Parser) ParseMathPrioritary() (nodes.Expression, error) {
 		}
 	}
 
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"expr": expr,
+		}).Trace("ParseMathPrioritary return")
+	}
 	return expr, nil
 }
 
 func (p *Parser) parseUnary() (nodes.Expression, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"current": p.Current(),
+		}).Trace("parseUnary")
+	}
+
 	sign := p.Match(tokens.Addition, tokens.Subtraction)
 
 	expr, err := p.ParseVariableOrLiteral()
@@ -92,10 +135,21 @@ func (p *Parser) parseUnary() (nodes.Expression, error) {
 		return nil, err
 	}
 
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"expr": expr,
+		}).Trace("parseUnary return")
+	}
 	return expr, nil
 }
 
 func (p *Parser) ParsePower() (nodes.Expression, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"current": p.Current(),
+		}).Trace("ParsePower")
+	}
+
 	if p.Current(tokens.In) != nil {
 		return nil, nil
 	}
@@ -118,5 +172,11 @@ func (p *Parser) ParsePower() (nodes.Expression, error) {
 		}
 	}
 
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"type": fmt.Sprintf("%T", expr),
+			"expr": expr,
+		}).Trace("ParsePower return")
+	}
 	return expr, nil
 }

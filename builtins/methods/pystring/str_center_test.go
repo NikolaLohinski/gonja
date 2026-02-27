@@ -21,7 +21,6 @@ var _ = Describe("Center", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("should center '%s' to '%s' with width %d", tt.in, tt.out, tt.width), func() {
 			pys := PyString(tt.in)
 			Expect(pys.Center(tt.width, 0)).To(Equal(tt.out))

@@ -26,7 +26,6 @@ var _ = Describe("IsAlnum", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is alphanumeric as '%t'", test.input, test.expected), func() {
 			Expect(test.input.IsAlnum()).To(Equal(test.expected))
 		})

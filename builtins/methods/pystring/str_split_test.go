@@ -1,8 +1,6 @@
 package pystring
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -67,8 +65,7 @@ var _ = Describe("Split", func() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
-		It(fmt.Sprintf("%s", tc.description), func() {
+		It(tc.description, func() {
 			actual := Split(tc.input, tc.delim, tc.maxSplit)
 			Expect(actual).To(Equal(tc.expected))
 		})

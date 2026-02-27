@@ -28,7 +28,6 @@ var _ = Describe("RFind", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s', substring '%s', start '%v', end '%v', should return '%d'", test.input, test.substr, test.start, test.end, test.expected), func() {
 			Expect(test.input.RFind(test.substr, test.start, test.end)).To(Equal(test.expected))
 		})

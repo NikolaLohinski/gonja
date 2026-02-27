@@ -27,7 +27,6 @@ var _ = Describe("IsTitle", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is title as '%t'", test.input, test.expected), func() {
 			Expect(test.input.IsTitle()).To(Equal(test.expected))
 		})

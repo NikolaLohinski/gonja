@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	ctx := exec.NewContext(map[string]interface{}{
+	ctx := exec.NewContext(map[string]any{
 		"var": "gonja",
 	})
 	if err = template.Execute(os.Stdout, ctx); err != nil { // Prints Gonja is fun! to stdout

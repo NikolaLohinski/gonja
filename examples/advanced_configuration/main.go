@@ -19,7 +19,7 @@ func main() {
 
 	// Build a custom environment
 	environment := &exec.Environment{
-		Context: exec.NewContext(map[string]interface{}{
+		Context: exec.NewContext(map[string]any{
 			"example": "default context in the environment",
 		}),
 		Tests:             builtins.Tests,

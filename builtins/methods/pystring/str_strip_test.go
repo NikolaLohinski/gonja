@@ -21,7 +21,6 @@ var _ = Describe("Strip", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input %q with cutset %q should return %q", test.s, test.cutset, test.expected), func() {
 			result := PyString(test.s).Strip(test.cutset)
 			Expect(string(result)).To(Equal(test.expected))

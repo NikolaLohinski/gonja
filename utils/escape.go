@@ -1,3 +1,4 @@
+// Package utils provides utility functions for template processing.
 package utils
 
 import "strings"

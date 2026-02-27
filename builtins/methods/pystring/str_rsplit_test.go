@@ -28,7 +28,6 @@ var _ = Describe("RSplit", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s' with delimiter '%s' and max split %d, should return %v", test.input, test.delim, test.maxSplit, test.expected), func() {
 			Expect(test.input.RSplit(test.delim, test.maxSplit)).To(Equal(test.expected))
 		})

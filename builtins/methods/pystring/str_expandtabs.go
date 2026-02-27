@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// Return a copy of the string where all tab characters are replaced by one or
+// ExpandTabs returns a copy of the string where all tab characters are replaced by one or
 // more spaces, depending on the current column and the given tab size. Tab
 // positions occur every tabsize characters (default is 8, giving tab positions
 // at columns 0, 8, 16 and so on). To expand the string, the current column is
@@ -48,7 +48,7 @@ func ExpandTabs(s string, tabSize *int) string {
 	return result.String()
 }
 
-// Return a copy of the string where all tab characters are replaced by one or
+// ExpandTabs returns a copy of the string where all tab characters are replaced by one or
 // more spaces, depending on the current column and the given tab size. Tab
 // positions occur every tabsize characters (default is 8, giving tab positions
 // at columns 0, 8, 16 and so on). To expand the string, the current column is

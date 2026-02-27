@@ -1,3 +1,4 @@
+// Package loaders provides template loading implementations.
 package loaders
 
 import (

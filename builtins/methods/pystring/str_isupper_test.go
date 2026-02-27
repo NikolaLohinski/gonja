@@ -22,7 +22,6 @@ var _ = Describe("IsUpper", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is upper as '%t'", test.input, test.expected), func() {
 			Expect(test.input.IsUpper()).To(Equal(test.expected))
 		})

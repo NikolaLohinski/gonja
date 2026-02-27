@@ -29,9 +29,9 @@ func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 	var err error
 	t := fn.Val.Type()
 
-	if t.NumIn() == 1 && t.In(0) == reflect.TypeOf(&VarArgs{}) {
+	if t.NumIn() == 1 && t.In(0) == reflect.TypeFor[*VarArgs]() {
 		params, err = e.evalVarArgs(node)
-	} else if t.NumIn() == 2 && t.In(0) == reflect.TypeOf(&Evaluator{}) && t.In(1) == reflect.TypeOf(&VarArgs{}) {
+	} else if t.NumIn() == 2 && t.In(0) == reflect.TypeFor[*Evaluator]() && t.In(1) == reflect.TypeFor[*VarArgs]() {
 		params, err = e.evalVarArgs(node)
 		params = append([]reflect.Value{reflect.ValueOf(e)}, params...)
 	} else {
@@ -105,7 +105,7 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 		}
 		parameters.KwArgs[key] = value
 	}
-	var result interface{}
+	var result any
 	err := fmt.Errorf("unknown method '%s' for '%s'", method, parent.String())
 	switch {
 	case parent.IsString():
@@ -130,7 +130,7 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 			if err, ok := dict.(error); err != nil && ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
 			}
-			goMap, ok := dict.(map[string]interface{})
+			goMap, ok := dict.(map[string]any)
 			if !ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to map[string]interface{}: %s", parent.String(), err))
 			}
@@ -142,7 +142,7 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 			if err, ok := list.(error); err != nil && ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to a Go type: %s", parent.String(), err))
 			}
-			goList, ok := list.([]interface{})
+			goList, ok := list.([]any)
 			if !ok {
 				return AsValue(fmt.Errorf("failed to cast '%s' to []interface{}: %s", parent.String(), err))
 			}
