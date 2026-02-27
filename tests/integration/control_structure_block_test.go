@@ -49,7 +49,7 @@ var _ = Context("control structure 'block'", func() {
 					self {{ self.second() }}
 				`),
 			})
-			(*environment).Context.Set("value", map[string]interface{}{"exists": "content"})
+			(*environment).Context.Set("value", map[string]any{"exists": "content"})
 		})
 
 		It("should return the expected rendered content", func() {

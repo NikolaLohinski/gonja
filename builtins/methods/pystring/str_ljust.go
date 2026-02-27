@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-// Return the string left justified in a string of length width. Padding is
+// LJust returns the string left justified in a string of length width. Padding is
 // done using the specified fillchar (default is an ASCII space). The original
 // string is returned if width is less than or equal to len(s).
 func LJust(s string, width int, fillchar rune) string {
@@ -21,7 +21,7 @@ func LJust(s string, width int, fillchar rune) string {
 	return s + strings.Repeat(string(fillchar), requiredPadding)
 }
 
-// Return the string left justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
+// LJust returns the string left justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
 func (pys PyString) LJust(width int, fillchar rune) PyString {
 	return PyString(LJust(string(pys), width, fillchar))
 }

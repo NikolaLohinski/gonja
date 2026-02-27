@@ -23,7 +23,6 @@ var _ = Describe("Count", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("%q should count %q to '%v'", tt.str, tt.subStr, tt.res), func() {
 			pys := PyString(tt.str)
 			Expect(pys.Count(tt.subStr, nil, nil)).To(Equal(tt.res))

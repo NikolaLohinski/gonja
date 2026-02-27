@@ -2,6 +2,7 @@ package exec
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"sync"
 
@@ -78,9 +79,7 @@ func (f *FilterSet) Update(other *FilterSet) *FilterSet {
 	other.lock.Lock()
 	defer f.lock.Unlock()
 	defer other.lock.Unlock()
-	for name, filter := range other.filters {
-		f.filters[name] = filter
-	}
+	maps.Copy(f.filters, other.filters)
 	return f
 }
 
@@ -110,7 +109,7 @@ func (c *ControlStructureSet) Get(name string) (parser.ControlStructureParser, b
 	return parser, existing
 }
 
-// Registers a new tag. You usually want to call this
+// Register registers a new tag. You usually want to call this
 // function in the tag's init() function:
 // http://golang.org/doc/effective_go.html#init
 func (c *ControlStructureSet) Register(name string, parser parser.ControlStructureParser) error {
@@ -123,7 +122,7 @@ func (c *ControlStructureSet) Register(name string, parser parser.ControlStructu
 	return nil
 }
 
-// Replaces an already registered tag with a new implementation. Use this
+// Replace replaces an already registered tag with a new implementation. Use this
 // function with caution since it allows you to change existing tag behaviour.
 func (c *ControlStructureSet) Replace(name string, parser parser.ControlStructureParser) error {
 	if !c.Exists(name) {
@@ -140,9 +139,7 @@ func (c *ControlStructureSet) Update(other *ControlStructureSet) *ControlStructu
 	defer c.lock.Unlock()
 	other.lock.Lock()
 	defer other.lock.Unlock()
-	for name, parser := range other.statements {
-		c.statements[name] = parser
-	}
+	maps.Copy(c.statements, other.statements)
 	return c
 }
 
@@ -248,23 +245,23 @@ func (t *TestSet) Update(other *TestSet) *TestSet {
 	return t
 }
 
-type Method[I interface{}] func(self I, selfValue *Value, arguments *VarArgs) (interface{}, error)
+type Method[I any] func(self I, selfValue *Value, arguments *VarArgs) (any, error)
 
 type Methods struct {
 	Bool  *MethodSet[bool]
 	Int   *MethodSet[int]
 	Float *MethodSet[float64]
 	Str   *MethodSet[string]
-	Dict  *MethodSet[map[string]interface{}]
-	List  *MethodSet[[]interface{}]
+	Dict  *MethodSet[map[string]any]
+	List  *MethodSet[[]any]
 }
 
-type MethodSet[I interface{}] struct {
+type MethodSet[I any] struct {
 	methods map[string]Method[I]
 	lock    sync.Mutex
 }
 
-func NewMethodSet[I interface{}](methods map[string]Method[I]) *MethodSet[I] {
+func NewMethodSet[I any](methods map[string]Method[I]) *MethodSet[I] {
 	return &MethodSet[I]{
 		methods: methods,
 	}

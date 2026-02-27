@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// If the string starts with the prefix string, return string) {}
+// RemovePrefix returns the string with the prefix removed. If the string starts with the prefix string, return string) {}
 // [len(prefix):]. Otherwise, return a copy of the original string:
 //
 // >>>
@@ -19,7 +19,7 @@ func RemovePrefix(s string, prefix string) string {
 	return s
 }
 
-// If the string starts with the prefix string, return string) {} //[len(prefix):]. Otherwise, return a copy of the original string:
+// RemovePrefix returns the string with the prefix removed. If the string starts with the prefix string, return string) {} //[len(prefix):]. Otherwise, return a copy of the original string:
 //
 // >>>
 // >>> 'TestHook'.removeprefix('Test'){}

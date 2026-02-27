@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// Return a copy of the string with uppercase characters converted to lowercase
+// SwapCase returns a copy of the string with uppercase characters converted to lowercase
 // and vice versa. Note that it is not necessarily true that
 // s.swapcase().swapcase() == s.
 func SwapCase(s string) string {
@@ -22,7 +22,7 @@ func SwapCase(s string) string {
 	return res.String()
 }
 
-// Return a copy of the string with uppercase characters converted to lowercase
+// SwapCase returns a copy of the string with uppercase characters converted to lowercase
 // and vice versa. Note that it is not necessarily true that
 // s.swapcase().swapcase() == s.
 func (pys PyString) SwapCase() PyString {

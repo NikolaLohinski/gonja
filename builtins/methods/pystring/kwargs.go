@@ -8,7 +8,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
 )
 
-// Used to resolve nested kw-args
+// AttributeGetter is used to resolve nested kw-args.
 type AttributeGetter interface {
 	Get(string) (any, bool)
 }
@@ -21,7 +21,7 @@ func (k KwArgs) Get(key string) (any, bool) {
 	return v, ok
 }
 
-// KwArgs adds AttributeGetter interface to map[string]any
+// ListArgs adds AttributeGetter interface to []any.
 type ListArgs []any
 
 func (k ListArgs) Get(key string) (any, bool) {
@@ -167,7 +167,7 @@ func getNestedKwArgs(keys []string, kwarg AttributeGetter) (any, error) {
 
 		// Handle structs
 		v = reflect.ValueOf(maybeVal)
-		if v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Pointer {
 			v = v.Elem()
 		}
 

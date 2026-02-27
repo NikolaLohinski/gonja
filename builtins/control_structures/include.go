@@ -14,7 +14,6 @@ import (
 type IncludeControlStructure struct {
 	location           *tokens.Token
 	filenameExpression nodes.Expression
-	template           *nodes.Template
 	ignoreMissing      bool
 	withContext        bool
 	isEmpty            bool

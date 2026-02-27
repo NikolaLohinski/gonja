@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// Return a list of the lines in the string, breaking at line boundaries. Line breaks are not included in the resulting list unless keepends is given and true.
+// SplitLines returns a list of the lines in the string, breaking at line boundaries. Line breaks are not included in the resulting list unless keepends is given and true.
 //
 // This method splits on the following line boundaries. In particular, the boundaries are a superset of universal newlines.
 //
@@ -29,7 +29,7 @@ func SplitLines(s string, keepends bool) []string {
 		offset = +1
 	}
 
-	cutset := "\n\r\v\x0b\f\x0c\x1c\x1d\x1e\x85\u2028\u2029"
+	cutset := "\n\r\v\f\x1c\x1d\x1e\u0085\u2028\u2029"
 	for index := strings.IndexAny(s, cutset); index != -1; index = strings.IndexAny(s, cutset) {
 		offsetMultiplier := 1
 		if s[index] == '\r' && index+1 < len(s) && s[index+1] == '\n' {
@@ -46,7 +46,7 @@ func SplitLines(s string, keepends bool) []string {
 	return res
 }
 
-// Return a list of the lines in the string, breaking at line boundaries. Line breaks are not included in the resulting list unless keepends is given and true.
+// SplitLines returns a list of the lines in the string, breaking at line boundaries. Line breaks are not included in the resulting list unless keepends is given and true.
 //
 // This method splits on the following line boundaries. In particular, the boundaries are a superset of universal newlines.
 //

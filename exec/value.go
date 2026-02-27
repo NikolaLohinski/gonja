@@ -1,15 +1,18 @@
+// Package exec provides template execution support.
 package exec
 
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
+	"github.com/nikolalohinski/gonja/v2/logging"
 	u "github.com/nikolalohinski/gonja/v2/utils"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type Value struct {
@@ -24,14 +27,14 @@ type Value struct {
 // Example:
 //
 //	AsValue("my string")
-func AsValue(i interface{}) *Value {
+func AsValue(i any) *Value {
 	return &Value{
 		Val: reflect.ValueOf(i),
 	}
 }
 
 // AsSafeValue works like AsValue, but does not apply the 'escape' filter.
-func AsSafeValue(i interface{}) *Value {
+func AsSafeValue(i any) *Value {
 	return &Value{
 		Val:  reflect.ValueOf(i),
 		Safe: true,
@@ -43,7 +46,7 @@ func ValueError(err error) *Value {
 }
 
 func (v *Value) getResolvedValue() reflect.Value {
-	if v.Val.IsValid() && v.Val.Kind() == reflect.Ptr {
+	if v.Val.IsValid() && v.Val.Kind() == reflect.Pointer {
 		return v.Val.Elem()
 	}
 	return v.Val
@@ -118,7 +121,7 @@ func (v *Value) Error() string {
 	return ""
 }
 
-func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
+func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) any {
 	switch {
 	case v.IsError():
 		return errors.New(v.Error())
@@ -134,7 +137,7 @@ func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
 		return v.String()
 	case v.IsList():
 		var err error
-		list := make([]interface{}, 0)
+		list := make([]any, 0)
 		v.Iterate(func(_, _ int, element, _ *Value) bool {
 			casted := element.ToGoSimpleType(allowInterfaceKeys)
 			var isError bool
@@ -150,7 +153,7 @@ func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
 		return list
 	case v.IsIterable() && allowInterfaceKeys:
 		var err error
-		object := make(map[interface{}]interface{})
+		object := make(map[any]any)
 		v.Iterate(func(_, _ int, key, value *Value) bool {
 			var isError bool
 			castedKey := key.ToGoSimpleType(allowInterfaceKeys)
@@ -170,7 +173,7 @@ func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) interface{} {
 		return object
 	case v.IsIterable() && !allowInterfaceKeys:
 		var err error
-		object := make(map[string]interface{})
+		object := make(map[string]any)
 		v.Iterate(func(_, _ int, key, value *Value) bool {
 			var isError bool
 			castedValue := value.ToGoSimpleType(allowInterfaceKeys)
@@ -253,7 +256,7 @@ func (v *Value) String() string {
 		}
 		out.WriteByte('[')
 		length := v.Len()
-		for i := 0; i < length; i++ {
+		for i := range length {
 			if i > 0 {
 				out.WriteString(", ")
 			}
@@ -293,6 +296,9 @@ func (v *Value) String() string {
 		return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 	}
 
+	if logging.Enabled() {
+		log.Errorf("Value.String() not implemented for type: %s\n", resolved.Kind().String())
+	}
 	return resolved.String()
 }
 
@@ -320,6 +326,9 @@ func (v *Value) Integer() int {
 		}
 		return int(f)
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Integer() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return 0
 	}
 }
@@ -343,6 +352,9 @@ func (v *Value) Float() float64 {
 		}
 		return f
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Float() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return 0.0
 	}
 }
@@ -355,6 +367,9 @@ func (v *Value) Bool() bool {
 	case reflect.Bool:
 		return v.getResolvedValue().Bool()
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Bool() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return false
 	}
 }
@@ -388,6 +403,9 @@ func (v *Value) IsTrue() bool {
 	case reflect.Struct:
 		return true // struct instance is always true
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return false
 	}
 }
@@ -422,6 +440,9 @@ func (v *Value) Negate() *Value {
 	case reflect.Struct:
 		return AsValue(false)
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return AsValue(true)
 	}
 }
@@ -443,6 +464,9 @@ func (v *Value) Len() int {
 		}
 		fallthrough
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Len() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return 0
 	}
 }
@@ -457,6 +481,9 @@ func (v *Value) Slice(i, j int) *Value {
 		runes := []rune(v.getResolvedValue().String())
 		return AsValue(string(runes[i:j]))
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return AsValue([]int{})
 	}
 }
@@ -478,6 +505,9 @@ func (v *Value) Index(i int) *Value {
 		}
 		return AsValue("")
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		}
 		return AsValue([]int{})
 	}
 }
@@ -506,6 +536,9 @@ func (v *Value) Contains(other *Value) bool {
 		case string:
 			mapValue = resolved.MapIndex(other.getResolvedValue())
 		default:
+			if logging.Enabled() {
+				log.Errorf("Value.Contains() does not support lookup type '%s'\n", other.getResolvedValue().Kind().String())
+			}
 			return false
 		}
 
@@ -526,6 +559,9 @@ func (v *Value) Contains(other *Value) bool {
 		return false
 
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Contains() not available for type: %s\n", resolved.Kind().String())
+		}
 		return false
 	}
 }
@@ -592,7 +628,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		var items ValuesList
 
 		itemCount := resolved.Len()
-		for i := 0; i < itemCount; i++ {
+		for i := range itemCount {
 			// value := resolved.Index(i)
 
 			items = append(items, ToValue(resolved.Index(i)))
@@ -655,7 +691,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 					}
 				}
 			} else {
-				for i := 0; i < charCount; i++ {
+				for i := range charCount {
 					if !fn(i, charCount, &Value{Val: resolved.Slice(i, i+1)}, nil) {
 						return
 					}
@@ -685,6 +721,9 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		return
 	case reflect.Struct:
 		if resolved.Type() != TypeDict {
+			if logging.Enabled() {
+				log.Errorf("Value.Iterate() not available for type: %s\n", resolved.Kind().String())
+			}
 		}
 		dict := resolved.Interface().(Dict)
 		keys := dict.Keys()
@@ -715,12 +754,15 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		}
 
 	default:
+		if logging.Enabled() {
+			log.Errorf("Value.Iterate() not available for type: %s\n", resolved.Kind().String())
+		}
 	}
 	empty()
 }
 
 // Interface returns the underlying value.
-func (v *Value) Interface() interface{} {
+func (v *Value) Interface() any {
 	if v.Val.IsValid() && v.Val.CanInterface() {
 		return v.Val.Interface()
 	}
@@ -777,7 +819,7 @@ func (v *Value) Items() []*Pair {
 	return out
 }
 
-func ToValue(data interface{}) *Value {
+func ToValue(data any) *Value {
 	var isSafe bool
 	// if data == nil {
 	// 	return AsValue(nil), nil
@@ -797,9 +839,9 @@ func ToValue(data interface{}) *Value {
 		return AsValue(nil)
 	}
 
-	if val.Type() == reflect.TypeOf(reflect.Value{}) {
+	if val.Type() == reflect.TypeFor[reflect.Value]() {
 		val = val.Interface().(reflect.Value)
-	} else if val.Type() == reflect.TypeOf(&reflect.Value{}) {
+	} else if val.Type() == reflect.TypeFor[*reflect.Value]() {
 		val = *(val.Interface().(*reflect.Value))
 	}
 
@@ -843,7 +885,7 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 	if val.IsValid() {
 		return ToValue(val), true
 	}
-	if v.Val.Kind() == reflect.Ptr {
+	if v.Val.Kind() == reflect.Pointer {
 		val = v.Val.Elem()
 		if !val.IsValid() {
 			// Value is not valid (anymore)
@@ -863,12 +905,12 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 	return AsValue(nil), false // Attr not found
 }
 
-func (v *Value) GetItem(key interface{}) (*Value, bool) {
+func (v *Value) GetItem(key any) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use Getitem on None`)), false
 	}
 	var val reflect.Value
-	if v.Val.Kind() == reflect.Ptr {
+	if v.Val.Kind() == reflect.Pointer {
 		val = v.Val.Elem()
 		if !val.IsValid() {
 			// Value is not valid (anymore)
@@ -931,12 +973,12 @@ func (v *Value) Get(key string) (*Value, bool) {
 	return value, found
 }
 
-func (v *Value) Set(key *Value, value interface{}) error {
+func (v *Value) Set(key *Value, value any) error {
 	if v.IsNil() {
 		return errors.New(`Can't set attribute or item on None`)
 	}
 	val := v.Val
-	for val.Kind() == reflect.Ptr {
+	for val.Kind() == reflect.Pointer {
 		val = val.Elem()
 		if !val.IsValid() {
 			// Value is not valid (anymore)
@@ -1007,12 +1049,7 @@ func (vl ValuesList) String() string {
 }
 
 func (vl ValuesList) Contains(value *Value) bool {
-	for _, val := range vl {
-		if value.EqualValueTo(val) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(vl, value.EqualValueTo)
 }
 
 type Pair struct {
@@ -1068,7 +1105,7 @@ func (d *Dict) Get(key *Value) *Value {
 	return AsValue(nil)
 }
 
-var TypeDict = reflect.TypeOf(Dict{})
+var TypeDict = reflect.TypeFor[Dict]()
 
 type sortRunes []rune
 

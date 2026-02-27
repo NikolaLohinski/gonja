@@ -18,7 +18,6 @@ var _ = Describe("Join", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("should join %v with '%s' as '%s'", tt.it, tt.s, tt.want), func() {
 			Expect(JoinString(tt.s, tt.it)).To(Equal(tt.want))
 		})

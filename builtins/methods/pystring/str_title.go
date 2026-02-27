@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// Return a titlecased version of the string where words start with an uppercase
+// Title returns a titlecased version of the string where words start with an uppercase
 // character and the remaining characters are lowercase.
 //
 // For example:
@@ -41,7 +41,7 @@ func Title(s string) string {
 	return res.String()
 }
 
-// Return a titlecased version of the string where words start with an uppercase
+// Title returns a titlecased version of the string where words start with an uppercase
 // character and the remaining characters are lowercase.
 //
 // For example:

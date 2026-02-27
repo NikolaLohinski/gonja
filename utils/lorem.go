@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const LOREM_IPSUM = `Lorem ipsum dolor sit amet, consectetur adipisici elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquid ex ea commodi consequat. Quis aute iure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat cupiditat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
@@ -42,7 +45,7 @@ var (
 func Lipsum(n int, html bool, min int, max int) string {
 	result := []string{}
 
-	for i := 0; i < n; i++ {
+	for range n {
 		nextCapitalized := true
 		lastComma, lastFullstop := 0, 0
 		word := ""
@@ -60,7 +63,7 @@ func Lipsum(n int, html bool, min int, max int) string {
 			}
 
 			if nextCapitalized {
-				word = strings.Title(word)
+				word = cases.Title(language.English).String(word)
 				nextCapitalized = false
 			}
 

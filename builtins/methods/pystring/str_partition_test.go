@@ -31,7 +31,6 @@ var _ = Describe("Partition", func() {
 	}
 
 	for n, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("%d: For input '%s' and delimiter '%s', should return '%s', '%s', '%s'", n, test.input, test.delim, test.expected[0], test.expected[1], test.expected[2]), func() {
 			r1, r2, r3 := test.input.Partition(test.delim)
 			Expect(r1).To(Equal(test.expected[0]))

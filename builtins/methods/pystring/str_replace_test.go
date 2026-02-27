@@ -32,7 +32,6 @@ var _ = Describe("Replace", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s', old '%s', new '%s', count '%d', should return '%s'", test.input, test.old, test.new, test.count, test.expected), func() {
 			Expect(test.input.Replace(test.old, test.new, test.count)).To(Equal(test.expected))
 		})

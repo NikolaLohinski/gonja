@@ -1,3 +1,4 @@
+// Package pyerrors provides Python-compatible error types.
 package pyerrors
 
 import "fmt"

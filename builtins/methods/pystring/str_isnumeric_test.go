@@ -28,7 +28,6 @@ var _ = Describe("IsNumeric", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is numeric as '%t'", test.input, test.expected), func() {
 			Expect(test.input.IsNumeric()).To(Equal(test.expected))
 		})

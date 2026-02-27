@@ -2,7 +2,7 @@ package pystring
 
 import "unicode"
 
-// Return True if all cased characters ) {} //[4] in the string are uppercase and there is at least one cased character, False otherwise.
+// IsUpper returns True if all cased characters ) {} //[4] in the string are uppercase and there is at least one cased character, False otherwise.
 //
 // >>>
 // >>> 'BANANA'.isupper(){}
@@ -25,7 +25,7 @@ func IsUpper(s string) bool {
 	return hasCased
 }
 
-// Return True if all cased characters ) {} //[4] in the string are uppercase and there is at least one cased character, False otherwise.
+// IsUpper returns True if all cased characters ) {} //[4] in the string are uppercase and there is at least one cased character, False otherwise.
 //
 // >>>
 // >>> 'BANANA'.isupper(){}

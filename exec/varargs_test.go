@@ -38,7 +38,7 @@ var _ = Context("varargs", func() {
 	Context("GetKwarg", func() {
 		var (
 			key      = new(string)
-			fallback = new(interface{})
+			fallback = new(any)
 
 			returnedValue = new(exec.Value)
 		)

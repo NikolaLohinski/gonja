@@ -148,7 +148,7 @@ func MatchFilterCallNode(name string, args []types.GomegaMatcher, kwargs Fields)
 		MatchFields(IgnoreExtras, Fields{
 			"Name": Equal(name),
 			"Args": MatchAllElementsWithIndex(
-				func(index int, element interface{}) string { return strconv.Itoa(index) },
+				func(index int, element any) string { return strconv.Itoa(index) },
 				filterArgs,
 			),
 			"Kwargs": MatchAllKeys(filterKwargs),
@@ -166,7 +166,7 @@ func MatchNodeFilteredExpressionNode(expression types.GomegaMatcher, filters ...
 		MatchFields(IgnoreExtras, Fields{
 			"Expression": PointTo(expression),
 			"Filters": MatchAllElementsWithIndex(
-				func(index int, _ interface{}) string { return strconv.Itoa(index) },
+				func(index int, _ any) string { return strconv.Itoa(index) },
 				filterMatchers,
 			),
 		}),
@@ -183,7 +183,7 @@ func MatchGetItemNode(node, arg types.GomegaMatcher) types.GomegaMatcher {
 	)
 }
 
-func MatchGetAttributeNode(node types.GomegaMatcher, attribute interface{}) types.GomegaMatcher {
+func MatchGetAttributeNode(node types.GomegaMatcher, attribute any) types.GomegaMatcher {
 	return And(
 		BeAssignableToTypeOf(nodes.GetAttribute{}),
 		Or(
@@ -213,7 +213,7 @@ func MatchCallNode(node types.GomegaMatcher, args []types.GomegaMatcher, kwargs 
 		MatchFields(IgnoreExtras, Fields{
 			"Func": PointTo(node),
 			"Args": MatchAllElementsWithIndex(
-				func(index int, element interface{}) string { return strconv.Itoa(index) },
+				func(index int, element any) string { return strconv.Itoa(index) },
 				filterArgs,
 			),
 			"Kwargs": MatchAllKeys(filterKwargs),
@@ -245,7 +245,7 @@ func MatchTestCall(name string, args []types.GomegaMatcher, kwargs Fields) types
 		MatchFields(IgnoreExtras, Fields{
 			"Name": Equal(name),
 			"Args": MatchAllElementsWithIndex(
-				func(index int, element interface{}) string { return strconv.Itoa(index) },
+				func(index int, element any) string { return strconv.Itoa(index) },
 				filterArgs,
 			),
 			"Kwargs": MatchAllKeys(filterKwargs),

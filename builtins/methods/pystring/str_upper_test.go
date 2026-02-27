@@ -21,7 +21,6 @@ var _ = Describe("Upper", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input %q should return %q", test.s, test.expected), func() {
 			result := PyString(test.s).Upper()
 			Expect(string(result)).To(Equal(test.expected))

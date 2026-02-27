@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/v2/nodes"
@@ -11,9 +12,7 @@ func getBlocks(tpl *nodes.Template) map[string]*nodes.Wrapper {
 		return map[string]*nodes.Wrapper{}
 	}
 	blocks := getBlocks(tpl.Parent)
-	for name, wrapper := range tpl.Blocks {
-		blocks[name] = wrapper
-	}
+	maps.Copy(blocks, tpl.Blocks)
 	return blocks
 }
 

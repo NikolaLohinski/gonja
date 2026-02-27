@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// Return a list of the words in the string, using sep as the delimiter string.
+// RSplit returns a list of the words in the string, using sep as the delimiter string.
 // If maxsplit is given, at most maxsplit splits are done, the rightmost ones.
 // If sep is not specified or None, any whitespace string is a separator. Except
 // for splitting from the right, rsplit() behaves like split() which is described
@@ -35,7 +35,7 @@ func RSplit(s string, delim string, maxSplit int) []string {
 	return res
 }
 
-// Return a list of the words in the string, using sep as the delimiter string.
+// RSplit returns a list of the words in the string, using sep as the delimiter string.
 // If maxsplit is given, at most maxsplit splits are done, the rightmost ones.
 // If sep is not specified or None, any whitespace string is a separator. Except
 // for splitting from the right, rsplit() behaves like split() which is described

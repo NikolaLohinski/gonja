@@ -27,7 +27,6 @@ var _ = Describe("ExpandTabs", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("should expand tabs in %q to '%v'", tt.s, tt.want), func() {
 			Expect(ExpandTabs(tt.s, tt.tabSize)).To(Equal(tt.want))
 		})

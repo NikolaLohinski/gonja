@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// Return a copy of the string with its first character capitalized and the rest lowercased.
+// Capitalize returns a copy of the string with its first character capitalized and the rest lowercased.
 func Capitalize(s string) string {
 	var res strings.Builder
 	for idx, char := range s {
@@ -19,7 +19,7 @@ func Capitalize(s string) string {
 	return res.String()
 }
 
-// Return a copy of the string with its first character capitalized and the rest lowercased.
+// Capitalize returns a copy of the string with its first character capitalized and the rest lowercased.
 func (pys PyString) Capitalize() PyString {
 	return PyString(Capitalize(string(pys)))
 }

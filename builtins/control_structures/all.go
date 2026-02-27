@@ -1,3 +1,4 @@
+// Package controlStructures provides built-in control structure implementations.
 package controlStructures
 
 import (

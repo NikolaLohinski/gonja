@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-// Return the string right justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
+// RJust returns the string right justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
 func RJust(s string, width int, fillchar rune) string {
 	requiredPadding := int(width) - utf8.RuneCountInString(s)
 	if requiredPadding <= 0 {
@@ -19,7 +19,7 @@ func RJust(s string, width int, fillchar rune) string {
 	return strings.Repeat(string(fillchar), requiredPadding) + s
 }
 
-// Return the string right justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
+// RJust returns the string right justified in a string of length width. Padding is done using the specified fillchar (default is an ASCII space). The original string is returned if width is less than or equal to len(s).
 func (pys PyString) RJust(width int, fillchar rune) PyString {
 	return PyString(RJust(string(pys), width, fillchar))
 }

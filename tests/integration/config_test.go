@@ -43,7 +43,7 @@ var _ = Context("config", func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: "Accessing data.nope: '{{ data.nope }}'",
 			})
-			(*environment).Context.Set("data", map[string]interface{}{})
+			(*environment).Context.Set("data", map[string]any{})
 		})
 		Context("when Config.StrictUndefined = false", func() {
 			BeforeEach(func() {

@@ -2,12 +2,11 @@ package pystring
 
 import "unicode"
 
-// Return True if all characters in the string are digits and there is at least
-// one character, False otherwise. Digits include decimal characters and digits that
-// need special handling, such as the compatibility superscript digits. This covers
-// digits which cannot be used to form numbers in base 10, like the Kharosthi numbers.
-// Formally, a digit is a character that has the property value Numeric_Type=Digit
-// or Numeric_Type=Decimal.
+// IsNumeric returns True if all characters in the string are numeric and there is at least
+// one character, False otherwise. Numeric characters include digit characters and all characters
+// that have the Unicode numeric value property, e.g. U+2155, VULGAR FRACTION ONE FIFTH.
+// Formally, numeric characters are those with the property value Numeric_Type=Digit,
+// Numeric_Type=Decimal, or Numeric_Type=Numeric.
 func IsNumeric(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -21,12 +20,11 @@ func IsNumeric(s string) bool {
 	return true
 }
 
-// Return True if all characters in the string are digits and there is at least
-// one character, False otherwise. Digits include decimal characters and digits that
-// need special handling, such as the compatibility superscript digits. This covers
-// digits which cannot be used to form numbers in base 10, like the Kharosthi numbers.
-// Formally, a digit is a character that has the property value Numeric_Type=Digit
-// or Numeric_Type=Decimal.
+// IsNumeric returns True if all characters in the string are numeric and there is at least
+// one character, False otherwise. Numeric characters include digit characters and all characters
+// that have the Unicode numeric value property, e.g. U+2155, VULGAR FRACTION ONE FIFTH.
+// Formally, numeric characters are those with the property value Numeric_Type=Digit,
+// Numeric_Type=Decimal, or Numeric_Type=Numeric.
 func (pys PyString) IsNumeric() bool {
 	return IsNumeric(string(pys))
 }

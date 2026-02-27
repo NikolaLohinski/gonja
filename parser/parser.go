@@ -1,9 +1,11 @@
+// Package parser provides the template parser implementation.
 package parser
 
 import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/nikolalohinski/gonja/v2/config"
@@ -20,7 +22,7 @@ type ControlStructureGetter interface {
 	Get(name string) (ControlStructureParser, bool)
 }
 
-// The parser provides you a comprehensive and easy tool to
+// Parser provides a comprehensive and easy tool to
 // work with the template document and arguments provided by
 // the user for your custom tag.
 //
@@ -43,7 +45,7 @@ func (p *Parser) Stream() *tokens.Stream {
 	return p.stream
 }
 
-// Creates a new parser to parse tokens.
+// NewParser creates a new parser to parse tokens.
 // Used inside gonja to parse documents and to provide an easy-to-use
 // parser for tag authors
 func NewParser(identifier string, stream *tokens.Stream, cfg *config.Config, loader loaders.Loader, controlStructures ControlStructureGetter) *Parser {
@@ -74,11 +76,9 @@ func (p *Parser) End() bool {
 // Consumes this token on success.
 func (p *Parser) Match(types ...tokens.Type) *tokens.Token {
 	tok := p.stream.Current()
-	for _, t := range types {
-		if tok.Type == t {
-			p.stream.Next()
-			return tok
-		}
+	if slices.Contains(types, tok.Type) {
+		p.stream.Next()
+		return tok
 	}
 	return nil
 }
@@ -86,10 +86,8 @@ func (p *Parser) Match(types ...tokens.Type) *tokens.Token {
 func (p *Parser) MatchName(names ...string) *tokens.Token {
 	t := p.Current(tokens.Name)
 	if t != nil {
-		for _, name := range names {
-			if t.Val == name {
-				return p.Pop()
-			}
+		if slices.Contains(names, t.Val) {
+			return p.Pop()
 		}
 	}
 	return nil
@@ -109,10 +107,8 @@ func (p *Parser) Current(types ...tokens.Type) *tokens.Token {
 	if types == nil {
 		return tok
 	}
-	for _, t := range types {
-		if tok.Type == t {
-			return tok
-		}
+	if slices.Contains(types, tok.Type) {
+		return tok
 	}
 	return nil
 }
@@ -122,10 +118,8 @@ func (p *Parser) Peek(types ...tokens.Type) *tokens.Token {
 	if types == nil {
 		return tok
 	}
-	for _, t := range types {
-		if tok.Type == t {
-			return tok
-		}
+	if slices.Contains(types, tok.Type) {
+		return tok
 	}
 	return nil
 }
@@ -133,10 +127,8 @@ func (p *Parser) Peek(types ...tokens.Type) *tokens.Token {
 func (p *Parser) CurrentName(names ...string) *tokens.Token {
 	t := p.Current(tokens.Name)
 	if t != nil {
-		for _, name := range names {
-			if t.Val == name {
-				return t
-			}
+		if slices.Contains(names, t.Val) {
+			return t
 		}
 	}
 	return nil

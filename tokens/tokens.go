@@ -1,8 +1,9 @@
+// Package tokens provides lexical token types and the lexer.
 package tokens
 
 import "fmt"
 
-// TokenType identifies the type of a token
+// Type identifies the type of a token.
 type Type int
 
 // Known tokens
@@ -64,7 +65,7 @@ const (
 	EOF
 )
 
-// TokenNames maps token types to their human readable name
+// Names maps token types to their human readable name.
 var Names = map[Type]string{
 	Error:                     "Error",
 	Addition:                  "Add",

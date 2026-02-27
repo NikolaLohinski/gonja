@@ -4,9 +4,9 @@ import (
 	"strings"
 )
 
-// Return True if the string ends with the specified suffix, otherwise return False.
-// suffix can also be a tuple of suffixes to look for. With optional start, test
-// beginning at that position. With optional end, stop comparing at that position.
+// Find returns the lowest index in the string where substring sub is found within the slice [start:end].
+// Optional arguments start and end are interpreted as in slice notation.
+// Returns -1 if sub is not found.
 func Find(s, subStr string, start, end *int) int {
 	s, _ = Idx(s, start, end)
 	if s == "" {
@@ -15,9 +15,9 @@ func Find(s, subStr string, start, end *int) int {
 	return strings.Index(s, subStr)
 }
 
-// Return True if the string ends with the specified suffix, otherwise return False.
-// suffix can also be a tuple of suffixes to look for. With optional start, test
-// beginning at that position. With optional end, stop comparing at that position.
+// Find returns the lowest index in the string where substring sub is found within the slice [start:end].
+// Optional arguments start and end are interpreted as in slice notation.
+// Returns -1 if sub is not found.
 func (pys PyString) Find(substr PyString, start, end *int) int {
 	return Find(string(pys), string(substr), start, end)
 }

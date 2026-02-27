@@ -21,7 +21,6 @@ var _ = Describe("RJust", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s' with width '%d' and fill character '%c', should return '%s'", test.input, test.width, test.fillchar, test.expected), func() {
 			Expect(test.input.RJust(test.width, test.fillchar)).To(Equal(test.expected))
 		})

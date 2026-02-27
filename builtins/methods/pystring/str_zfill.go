@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// Return a copy of the string left filled with ASCII '0' digits to make a
+// ZFill returns a copy of the string left filled with ASCII '0' digits to make a
 // string of length width. A leading sign prefix ('+'/'-') is handled by
 // inserting the padding after the sign character rather than before. The
 // original string is returned if width is less than or equal to len(s).
@@ -30,7 +30,7 @@ func ZFill(s string, width int) string {
 	return sign + strings.Repeat("0", width-origLen) + s
 }
 
-// Return a copy of the string left filled with ASCII '0' digits to make a
+// ZFill returns a copy of the string left filled with ASCII '0' digits to make a
 // string of length width. A leading sign prefix ('+'/'-') is handled by
 // inserting the padding after the sign character rather than before. The
 // original string is returned if width is less than or equal to len(s).

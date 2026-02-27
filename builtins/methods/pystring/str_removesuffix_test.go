@@ -27,7 +27,6 @@ var _ = Describe("RemoveSuffix", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s' and suffix '%s', should return '%s'", test.input, test.suffix, test.expected), func() {
 			Expect(test.input.RemoveSuffix(test.suffix)).To(Equal(test.expected))
 		})
