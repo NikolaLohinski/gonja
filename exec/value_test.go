@@ -198,6 +198,111 @@ var _ = Context("value", func() {
 		}
 	})
 
+	Context("Negate", func() {
+		var (
+			input = new(interface{})
+
+			returnedValue = new(*exec.Value)
+		)
+		JustBeforeEach(func() {
+			*returnedValue = exec.AsValue(*input).Negate()
+		})
+		for _, testCase := range []struct {
+			golangObject interface{}
+			description  string
+			matchers     []func()
+		}{
+			{
+				nil,
+				"a nil value",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of nil should be true") },
+				},
+			},
+			{
+				(*struct{ Field string })(nil),
+				"a nil struct pointer",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of nil pointer should be true") },
+				},
+			},
+			{
+				fmt.Errorf("some error"),
+				"an error value",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of error should be true") },
+				},
+			},
+			{
+				true,
+				"a true boolean",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeFalse(), "negation of true should be false") },
+				},
+			},
+			{
+				false,
+				"a false boolean",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of false should be true") },
+				},
+			},
+			{
+				1,
+				"a non-zero integer",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeFalse(), "negation of 1 should be false") },
+				},
+			},
+			{
+				0,
+				"a zero integer",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of 0 should be true") },
+				},
+			},
+			{
+				"hello",
+				"a non-empty string",
+				[]func(){
+					func() {
+						Expect((*returnedValue).IsTrue()).To(BeFalse(), "negation of non-empty string should be false")
+					},
+				},
+			},
+			{
+				"",
+				"an empty string",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeTrue(), "negation of empty string should be true") },
+				},
+			},
+			{
+				struct{ Field string }{},
+				"a struct value",
+				[]func(){
+					func() { Expect((*returnedValue).IsTrue()).To(BeFalse(), "negation of struct should be false") },
+				},
+			},
+		} {
+			t := testCase
+			Context(fmt.Sprintf("when the value is %s", t.description), func() {
+				BeforeEach(func() {
+					*input = t.golangObject
+				})
+				for _, matcher := range t.matchers {
+					m := matcher
+					It("should return the correctly negated value", func() {
+						By("being defined")
+						Expect(*returnedValue).ToNot(BeNil())
+						By("responding correctly to the expected *exec.Value methods")
+						m()
+					})
+				}
+			})
+		}
+	})
+
 	Context("GetAttribute", func() {
 		var (
 			value     = new(*exec.Value)

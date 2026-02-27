@@ -418,6 +418,9 @@ func (v *Value) IsTrue() bool {
 //
 //	AsValue(1).Negate().IsTrue() == false
 func (v *Value) Negate() *Value {
+	if v.IsNil() || v.IsError() {
+		return AsValue(true)
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
