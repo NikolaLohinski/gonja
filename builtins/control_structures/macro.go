@@ -14,22 +14,22 @@ type MacroControlStructure struct {
 	*nodes.Macro
 }
 
-func (controlStructure *MacroControlStructure) String() string {
-	t := controlStructure.Position()
-	return fmt.Sprintf("MacroControlStructure(Macro=%s Line=%d Col=%d)", controlStructure.Macro, t.Line, t.Col)
+func (mcs *MacroControlStructure) String() string {
+	t := mcs.Position()
+	return fmt.Sprintf("MacroControlStructure(Macro=%s Line=%d Col=%d)", mcs.Macro, t.Line, t.Col)
 }
 
-func (controlStructure *MacroControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	macro, err := exec.MacroNodeToFunc(controlStructure.Macro, r)
+func (mcs *MacroControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	macro, err := exec.MacroNodeToFunc(mcs.Macro, r)
 	if err != nil {
-		return errors.Wrapf(err, `Unable to parse marco '%s'`, controlStructure.Name)
+		return errors.Wrapf(err, `Unable to parse marco '%s'`, mcs.Name)
 	}
-	r.Environment.Context.Set(controlStructure.Name, macro)
+	r.Environment.Context.Set(mcs.Name, macro)
 	return nil
 }
 
 func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &nodes.Macro{
+	macro := &nodes.Macro{
 		Location: p.Current(),
 		Kwargs:   []*nodes.Pair{},
 	}
@@ -38,7 +38,7 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 	if name == nil {
 		return nil, args.Error("Macro-tag needs at least an identifier as name.", nil)
 	}
-	controlStructure.Name = name.Val
+	macro.Name = name.Val
 
 	if args.Match(tokens.LeftParenthesis) == nil {
 		return nil, args.Error("Expected '('.", nil)
@@ -55,7 +55,7 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 			if err != nil {
 				return nil, err
 			}
-			controlStructure.Kwargs = append(controlStructure.Kwargs, &nodes.Pair{
+			macro.Kwargs = append(macro.Kwargs, &nodes.Pair{
 				Key: &nodes.String{
 					Location: argName,
 					Val:      argName.Val,
@@ -79,7 +79,7 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 					Location: argName,
 				}
 			}
-			controlStructure.Kwargs = append(controlStructure.Kwargs, arg)
+			macro.Kwargs = append(macro.Kwargs, arg)
 		}
 
 		if args.Match(tokens.RightParenthesis) != nil {
@@ -98,13 +98,13 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.Wrapper = wrapper
+	macro.Wrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
 	}
 
-	p.Template.Macros[controlStructure.Name] = controlStructure
+	p.Template.Macros[macro.Name] = macro
 
-	return &MacroControlStructure{controlStructure}, nil
+	return &MacroControlStructure{macro}, nil
 }

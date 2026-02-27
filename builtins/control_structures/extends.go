@@ -15,21 +15,21 @@ type ExtendsControlStructure struct {
 	withContext bool
 }
 
-func (controlStructure *ExtendsControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (ecs *ExtendsControlStructure) Position() *tokens.Token {
+	return ecs.location
 }
 
-func (controlStructure *ExtendsControlStructure) String() string {
-	t := controlStructure.Position()
-	return fmt.Sprintf("ExtendsControlStructure(Filename=%s Line=%d Col=%d)", controlStructure.filename, t.Line, t.Col)
+func (ecs *ExtendsControlStructure) String() string {
+	t := ecs.Position()
+	return fmt.Sprintf("ExtendsControlStructure(Filename=%s Line=%d Col=%d)", ecs.filename, t.Line, t.Col)
 }
 
-func (controlStructure *ExtendsControlStructure) Execute(r *exec.Renderer) error {
+func (ecs *ExtendsControlStructure) Execute(r *exec.Renderer) error {
 	return nil
 }
 
 func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &ExtendsControlStructure{
+	cs := &ExtendsControlStructure{
 		location: p.Current(),
 	}
 
@@ -39,9 +39,9 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 
 	// var filename nodes.Node
 	if filename := args.Match(tokens.String); filename != nil {
-		controlStructure.filename = filename.Val
+		cs.filename = filename.Val
 
-		extended, err := p.Extend(controlStructure.filename)
+		extended, err := p.Extend(cs.filename)
 		if err != nil {
 			return nil, fmt.Errorf("unable to load template '%s': %s", filename, err)
 		}
@@ -53,7 +53,7 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 
 	if tok := args.MatchName("with", "without"); tok != nil {
 		if args.MatchName("context") != nil {
-			controlStructure.withContext = tok.Val == "with"
+			cs.withContext = tok.Val == "with"
 		} else {
 			args.Stream().Backup()
 		}
@@ -63,5 +63,5 @@ func extendsParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 		return nil, args.Error("tag 'extends' only takes 1 argument", nil)
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

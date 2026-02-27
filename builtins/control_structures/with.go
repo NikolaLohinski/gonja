@@ -17,18 +17,18 @@ type WithControlStructure struct {
 	wrapper  *nodes.Wrapper
 }
 
-func (controlStructure *WithControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (wcs *WithControlStructure) Position() *tokens.Token {
+	return wcs.location
 }
-func (controlStructure *WithControlStructure) String() string {
-	t := controlStructure.Position()
+func (wcs *WithControlStructure) String() string {
+	t := wcs.Position()
 	return fmt.Sprintf("WithControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *WithControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+func (wcs *WithControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	sub := r.Inherit()
 
-	for key, value := range controlStructure.pairs {
+	for key, value := range wcs.pairs {
 		val := r.Eval(value)
 		if val.IsError() {
 			return errors.Wrapf(val, `unable to evaluate parameter %s`, value)
@@ -36,11 +36,11 @@ func (controlStructure *WithControlStructure) Execute(r *exec.Renderer, tag *nod
 		sub.Environment.Context.Set(key, val)
 	}
 
-	return sub.ExecuteWrapper(controlStructure.wrapper)
+	return sub.ExecuteWrapper(wcs.wrapper)
 }
 
 func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &WithControlStructure{
+	cs := &WithControlStructure{
 		location: p.Current(),
 		pairs:    map[string]nodes.Expression{},
 	}
@@ -49,7 +49,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, 
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.wrapper = wrapper
+	cs.wrapper = wrapper
 
 	if !endargs.End() {
 		return nil, endargs.Error("Arguments not allowed here.", nil)
@@ -67,7 +67,7 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, 
 		if err != nil {
 			return nil, err
 		}
-		controlStructure.pairs[key.Val] = value
+		cs.pairs[key.Val] = value
 
 		if args.Match(tokens.Comma) == nil {
 			break
@@ -78,5 +78,5 @@ func withParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, 
 		return nil, errors.New("")
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

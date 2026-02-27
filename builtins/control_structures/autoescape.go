@@ -14,19 +14,19 @@ type AutoescapeControlStructure struct {
 	Autoescape bool
 }
 
-func (controlStructure *AutoescapeControlStructure) Position() *tokens.Token {
-	return controlStructure.Wrapper.Position()
+func (acs *AutoescapeControlStructure) Position() *tokens.Token {
+	return acs.Wrapper.Position()
 }
-func (controlStructure *AutoescapeControlStructure) String() string {
-	t := controlStructure.Position()
+func (acs *AutoescapeControlStructure) String() string {
+	t := acs.Position()
 	return fmt.Sprintf("AutoescapeControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *AutoescapeControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+func (acs *AutoescapeControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	sub := r.Inherit()
-	sub.Config.AutoEscape = controlStructure.Autoescape
+	sub.Config.AutoEscape = acs.Autoescape
 
-	err := sub.ExecuteWrapper(controlStructure.Wrapper)
+	err := sub.ExecuteWrapper(acs.Wrapper)
 	if err != nil {
 		return err
 	}
@@ -35,29 +35,29 @@ func (controlStructure *AutoescapeControlStructure) Execute(r *exec.Renderer, ta
 }
 
 func autoescapeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &AutoescapeControlStructure{}
+	cs := &AutoescapeControlStructure{}
 
 	wrapper, _, err := p.WrapUntil("endautoescape")
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.Wrapper = wrapper
+	cs.Wrapper = wrapper
 
 	modeToken := args.Match(tokens.Name)
 	if modeToken == nil {
-		return nil, args.Error("A mode is required for autoescape controlStructure.", nil)
+		return nil, args.Error("A mode is required for autoescape cs.", nil)
 	}
 	if modeToken.Val == "true" {
-		controlStructure.Autoescape = true
+		cs.Autoescape = true
 	} else if modeToken.Val == "false" {
-		controlStructure.Autoescape = false
+		cs.Autoescape = false
 	} else {
-		return nil, args.Error("Only 'true' or 'false' is valid as an autoescape controlStructure.", nil)
+		return nil, args.Error("Only 'true' or 'false' is valid as an autoescape cs.", nil)
 	}
 
 	if !args.Stream().End() {
 		return nil, args.Error("Malformed autoescape controlStructure args.", nil)
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

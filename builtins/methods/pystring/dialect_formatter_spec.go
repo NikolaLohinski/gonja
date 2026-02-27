@@ -398,10 +398,9 @@ func (f FormatSpec) Format(v any) (string, error) {
 		s = strings.Join(tmp, string(f.GroupingOption))
 	}
 
+	// Avoid panics in strings.Repeat
 	sLen := utf8.RuneCountInString(s)
-	requiredPadding := max(
-		// Avoid panics in strings.Repeat
-		int(f.MinWidth)-sLen-utf8.RuneCountInString(sign), 0)
+	requiredPadding := max(int(f.MinWidth)-sLen-utf8.RuneCountInString(sign), 0)
 
 	switch f.Align {
 	case '<':
