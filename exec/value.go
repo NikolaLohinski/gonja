@@ -441,7 +441,7 @@ func (v *Value) Negate() *Value {
 		return AsValue(false)
 	default:
 		if logging.Enabled() {
-			log.Errorf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
+			log.Errorf("Value.Negate() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		}
 		return AsValue(true)
 	}
