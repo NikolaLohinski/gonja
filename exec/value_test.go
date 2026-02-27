@@ -200,7 +200,7 @@ var _ = Context("value", func() {
 
 	Context("Negate", func() {
 		var (
-			input = new(interface{})
+			input = new(any)
 
 			returnedValue = new(*exec.Value)
 		)
@@ -208,7 +208,7 @@ var _ = Context("value", func() {
 			*returnedValue = exec.AsValue(*input).Negate()
 		})
 		for _, testCase := range []struct {
-			golangObject interface{}
+			golangObject any
 			description  string
 			matchers     []func()
 		}{
