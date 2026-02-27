@@ -22,28 +22,28 @@ type FilterControlStructure struct {
 	filterChain []*nodes.FilterCall
 }
 
-func (controlStructure *FilterControlStructure) Position() *tokens.Token {
-	return controlStructure.position
+func (fcs *FilterControlStructure) Position() *tokens.Token {
+	return fcs.position
 }
-func (controlStructure *FilterControlStructure) String() string {
-	t := controlStructure.Position()
+func (fcs *FilterControlStructure) String() string {
+	t := fcs.Position()
 	return fmt.Sprintf("FilterControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+func (fcs *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	var out strings.Builder
 	sub := r.Inherit()
 	sub.Output = &out
 	// temp := bytes.NewBuffer(make([]byte, 0, 1024)) // 1 KiB size
 
-	err := sub.ExecuteWrapper(controlStructure.bodyWrapper)
+	err := sub.ExecuteWrapper(fcs.bodyWrapper)
 	if err != nil {
 		return err
 	}
 
 	value := exec.AsValue(out.String())
 
-	for _, call := range controlStructure.filterChain {
+	for _, call := range fcs.filterChain {
 		value = r.Evaluator().ExecuteFilter(call, value)
 		if value.IsError() {
 			return errors.Wrapf(value, `Unable to apply filter %s (Line: %d Col: %d, near %s`,
@@ -57,7 +57,7 @@ func (controlStructure *FilterControlStructure) Execute(r *exec.Renderer, tag *n
 }
 
 func filterParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &FilterControlStructure{
+	cs := &FilterControlStructure{
 		position: p.Current(),
 	}
 
@@ -65,7 +65,7 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.bodyWrapper = wrapper
+	cs.bodyWrapper = wrapper
 
 	for !args.End() {
 		filterCall, err := args.ParseFilter()
@@ -73,7 +73,7 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure
 			return nil, err
 		}
 
-		controlStructure.filterChain = append(controlStructure.filterChain, filterCall)
+		cs.filterChain = append(cs.filterChain, filterCall)
 
 		if args.Match(tokens.Pipe) == nil {
 			break
@@ -84,5 +84,5 @@ func filterParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure
 		return nil, p.Error("Malformed filter-tag args.", nil)
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

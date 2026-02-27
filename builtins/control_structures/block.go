@@ -17,24 +17,24 @@ type BlockControlStructure struct {
 	name     string
 }
 
-func (controlStructure *BlockControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (bcs *BlockControlStructure) Position() *tokens.Token {
+	return bcs.location
 }
-func (controlStructure *BlockControlStructure) String() string {
-	t := controlStructure.Position()
+func (bcs *BlockControlStructure) String() string {
+	t := bcs.Position()
 	return fmt.Sprintf("BlockControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *BlockControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	blocks := r.RootNode.GetBlocks(controlStructure.name)
+func (bcs *BlockControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	blocks := r.RootNode.GetBlocks(bcs.name)
 	block, blocks := blocks[0], blocks[1:]
 
 	if block == nil {
-		return errors.Errorf(`Unable to find block "%s"`, controlStructure.name)
+		return errors.Errorf(`Unable to find block "%s"`, bcs.name)
 	}
 
 	sub := r.Inherit()
-	infos := &BlockInfos{Block: controlStructure, Renderer: sub, Blocks: blocks}
+	infos := &BlockInfos{Block: bcs, Renderer: sub, Blocks: blocks}
 
 	sub.Environment.Context.Set("super", infos.super)
 	sub.Environment.Context.Set("self", exec.Self(sub))

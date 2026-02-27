@@ -14,21 +14,21 @@ type RawControlStructure struct {
 	data *nodes.Data
 }
 
-func (controlStructure *RawControlStructure) Position() *tokens.Token {
-	return controlStructure.data.Position()
+func (rcs *RawControlStructure) Position() *tokens.Token {
+	return rcs.data.Position()
 }
-func (controlStructure *RawControlStructure) String() string {
-	t := controlStructure.Position()
+func (rcs *RawControlStructure) String() string {
+	t := rcs.Position()
 	return fmt.Sprintf("RawControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *RawControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	_, err := io.WriteString(r.Output, controlStructure.data.Data.Val)
+func (rcs *RawControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	_, err := io.WriteString(r.Output, rcs.data.Data.Val)
 	return err
 }
 
 func rawParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &RawControlStructure{}
+	cs := &RawControlStructure{}
 
 	wrapper, _, err := p.WrapUntil("endraw")
 	if err != nil {
@@ -37,7 +37,7 @@ func rawParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	node := wrapper.Nodes[0]
 	data, ok := node.(*nodes.Data)
 	if ok {
-		controlStructure.data = data
+		cs.data = data
 	} else {
 		return nil, p.Error("raw controlStructure can only contains a single data node", node.Position())
 	}
@@ -46,5 +46,5 @@ func rawParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 		return nil, args.Error("raw controlStructure doesn't accept parameters.", args.Current())
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

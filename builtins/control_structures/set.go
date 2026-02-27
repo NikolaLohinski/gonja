@@ -18,38 +18,38 @@ type SetControlStructure struct {
 	alternative nodes.Expression
 }
 
-func (controlStructure *SetControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (scs *SetControlStructure) Position() *tokens.Token {
+	return scs.location
 }
-func (controlStructure *SetControlStructure) String() string {
-	t := controlStructure.Position()
+func (scs *SetControlStructure) String() string {
+	t := scs.Position()
 	return fmt.Sprintf("SetControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+func (scs *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	var value *exec.Value
 	// Evaluate expression
-	if controlStructure.condition != nil && controlStructure.alternative != nil {
-		condition := r.Eval(controlStructure.condition)
+	if scs.condition != nil && scs.alternative != nil {
+		condition := r.Eval(scs.condition)
 		if condition.IsError() {
 			return condition
 		}
 		if condition.Bool() {
-			value = r.Eval(controlStructure.expression)
+			value = r.Eval(scs.expression)
 		} else {
-			value = r.Eval(controlStructure.alternative)
+			value = r.Eval(scs.alternative)
 		}
 	} else {
-		value = r.Eval(controlStructure.expression)
+		value = r.Eval(scs.expression)
 	}
 	if value == nil {
-		return errors.Errorf(`Invalid value in 'set' tag: %s`, controlStructure.expression)
+		return errors.Errorf(`Invalid value in 'set' tag: %s`, scs.expression)
 	}
 	if value.IsError() {
 		return value
 	}
 
-	switch n := controlStructure.target.(type) {
+	switch n := scs.target.(type) {
 	case *nodes.Name:
 		r.Environment.Context.Set(n.Name.Val, value.Interface())
 	case *nodes.GetAttribute:
@@ -80,7 +80,7 @@ func (controlStructure *SetControlStructure) Execute(r *exec.Renderer, tag *node
 }
 
 func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &SetControlStructure{
+	cs := &SetControlStructure{
 		location: p.Current(),
 	}
 
@@ -91,7 +91,7 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	}
 	switch n := ident.(type) {
 	case *nodes.Name, *nodes.Call, *nodes.GetItem, *nodes.GetAttribute:
-		controlStructure.target = n
+		cs.target = n
 	default:
 		return nil, errors.Errorf(`unexpected set target %s`, n)
 	}
@@ -105,17 +105,17 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.expression = expr
+	cs.expression = expr
 	condition, alternative, err := args.ParseCondition()
 	if err != nil {
 		return nil, err
 	}
 	if condition != nil {
-		controlStructure.condition = condition
+		cs.condition = condition
 		if alternative == nil {
 			return nil, args.Error("Malformed 'set' if else condition", args.Current())
 		}
-		controlStructure.alternative = alternative
+		cs.alternative = alternative
 	}
 
 	// Remaining arguments
@@ -123,5 +123,5 @@ func setParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, e
 		return nil, args.Error("Malformed 'set' tag args.", args.Current())
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }

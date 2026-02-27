@@ -18,27 +18,27 @@ type IfControlStructure struct {
 	Wrappers   []*nodes.Wrapper
 }
 
-func (controlStructure *IfControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (ics *IfControlStructure) Position() *tokens.Token {
+	return ics.location
 }
-func (controlStructure *IfControlStructure) String() string {
-	t := controlStructure.Position()
+func (ics *IfControlStructure) String() string {
+	t := ics.Position()
 	return fmt.Sprintf("IfControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (controlStructure *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	for i, condition := range controlStructure.Conditions {
+func (ics *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	for i, condition := range ics.Conditions {
 		result := r.Eval(condition)
 		if result.IsError() {
 			return result
 		}
 
 		if result.IsTrue() {
-			return r.ExecuteIfWrapper(controlStructure.Wrappers[i])
+			return r.ExecuteIfWrapper(ics.Wrappers[i])
 		}
 		// Last condition?
-		if len(controlStructure.Conditions) == i+1 && len(controlStructure.Wrappers) > i+1 {
-			return r.ExecuteIfWrapper(controlStructure.Wrappers[i+1])
+		if len(ics.Conditions) == i+1 && len(ics.Wrappers) > i+1 {
+			return r.ExecuteIfWrapper(ics.Wrappers[i+1])
 		}
 	}
 	return nil

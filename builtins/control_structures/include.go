@@ -19,28 +19,28 @@ type IncludeControlStructure struct {
 	isEmpty            bool
 }
 
-func (controlStructure *IncludeControlStructure) Position() *tokens.Token {
-	return controlStructure.location
+func (ics *IncludeControlStructure) Position() *tokens.Token {
+	return ics.location
 }
 
-func (controlStructure *IncludeControlStructure) String() string {
-	t := controlStructure.Position()
-	return fmt.Sprintf("IncludeControlStructure(Filename=%s Line=%d Col=%d)", controlStructure.filenameExpression, t.Line, t.Col)
+func (ics *IncludeControlStructure) String() string {
+	t := ics.Position()
+	return fmt.Sprintf("IncludeControlStructure(Filename=%s Line=%d Col=%d)", ics.filenameExpression, t.Line, t.Col)
 }
 
-func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	if controlStructure.isEmpty {
+func (ics *IncludeControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	if ics.isEmpty {
 		return nil
 	}
 
-	filenameValue := r.Eval(controlStructure.filenameExpression)
+	filenameValue := r.Eval(ics.filenameExpression)
 	if filenameValue.IsError() {
 		return errors.Wrap(filenameValue, `Unable to evaluate filename`)
 	}
 
 	filename, err := r.Loader.Resolve(filenameValue.String())
 	if err != nil {
-		if controlStructure.ignoreMissing {
+		if ics.ignoreMissing {
 			return nil
 		} else {
 			return errors.Errorf("failed to resolve filename: %s", err)
@@ -49,7 +49,7 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 
 	loader, err := r.Loader.Inherit(filename)
 	if err != nil {
-		if controlStructure.ignoreMissing {
+		if ics.ignoreMissing {
 			return nil
 		} else {
 			return errors.Errorf("failed to inherit loader: %s", err)
@@ -58,7 +58,7 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 
 	included, err := exec.NewTemplate(filename, r.Config, loader, r.Environment)
 	if err != nil {
-		if controlStructure.ignoreMissing {
+		if ics.ignoreMissing {
 			return nil
 		} else {
 			return fmt.Errorf("unable to load template '%s': %s", filename, err)
@@ -69,7 +69,7 @@ func (controlStructure *IncludeControlStructure) Execute(r *exec.Renderer, tag *
 }
 
 func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
-	controlStructure := &IncludeControlStructure{
+	cs := &IncludeControlStructure{
 		location: p.Current(),
 	}
 
@@ -77,11 +77,11 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 	if err != nil {
 		return nil, err
 	}
-	controlStructure.filenameExpression = filenameExpression
+	cs.filenameExpression = filenameExpression
 
 	if args.MatchName("ignore") != nil {
 		if args.MatchName("missing") != nil {
-			controlStructure.ignoreMissing = true
+			cs.ignoreMissing = true
 		} else {
 			args.Stream().Backup()
 		}
@@ -89,7 +89,7 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 
 	if tok := args.MatchName("with", "without"); tok != nil {
 		if args.MatchName("context") != nil {
-			controlStructure.withContext = tok.Val == "with"
+			cs.withContext = tok.Val == "with"
 		} else {
 			args.Stream().Backup()
 		}
@@ -99,5 +99,5 @@ func includeParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructur
 		return nil, args.Error("Malformed 'include'-tag args.", nil)
 	}
 
-	return controlStructure, nil
+	return cs, nil
 }
