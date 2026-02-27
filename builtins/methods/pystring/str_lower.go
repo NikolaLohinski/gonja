@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// Return a copy of the string with all the cased characters ) {} //[4] converted to lowercase.
+// Lower returns a copy of the string with all the cased characters converted to lowercase.
 //
 // The lowercasing algorithm used is described in section 3.13 ‘Default Case Folding’ of the Unicode Standard.
 func Lower(s string) string {
@@ -17,7 +17,7 @@ func Lower(s string) string {
 	return res.String()
 }
 
-// Return a copy of the string with all the cased characters ) {} //[4] converted to lowercase.
+// Lower returns a copy of the string with all the cased characters converted to lowercase.
 //
 // The lowercasing algorithm used is described in section 3.13 ‘Default Case Folding’ of the Unicode Standard.
 func (pys PyString) Lower() PyString {

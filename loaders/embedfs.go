@@ -47,7 +47,6 @@ func (e *EmbedFSLoader) Resolve(path string) (string, error) {
 }
 
 func (e *EmbedFSLoader) Inherit(from string) (Loader, error) {
-	root := e.root
 	if from == "" {
 		return NewEmbedFSLoader(e.root, e.fs)
 	}
@@ -56,6 +55,7 @@ func (e *EmbedFSLoader) Inherit(from string) (Loader, error) {
 		return nil, fmt.Errorf("failed to resolve '%s': %s", from, err)
 	}
 	components := strings.Split(resolvedFrom, "/")
+	var root string
 	if len(components) < 2 {
 		root = "/"
 	} else {

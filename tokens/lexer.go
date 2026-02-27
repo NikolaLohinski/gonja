@@ -11,11 +11,13 @@ import (
 	"unicode/utf8"
 
 	"github.com/nikolalohinski/gonja/v2/config"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/nikolalohinski/gonja/v2/logging"
 )
 
 // EOF is an arbitraty value for End Of File
 const rEOF = -1
-const re_ENDRAW = `%s\s*%s`
 
 var escapedStrings = map[string]string{
 	`\"`: `"`,
@@ -47,7 +49,7 @@ type Lexer struct {
 // TODO: set from env
 type rawControlStructure map[string]*regexp.Regexp
 
-func escape_chars_clashing_regexp(s string) string {
+func escapeCharsClashingRegexp(s string) string {
 	s = strings.ReplaceAll(s, "[", "\\[")
 	s = strings.ReplaceAll(s, "]", "\\]")
 	return s
@@ -60,8 +62,8 @@ func NewLexer(input string, config *config.Config) *Lexer {
 		Tokens: make(chan *Token),
 		Config: config,
 		RawControlStructures: rawControlStructure{
-			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escape_chars_clashing_regexp(config.BlockStartString))),
-			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escape_chars_clashing_regexp(config.BlockStartString))),
+			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escapeCharsClashingRegexp(config.BlockStartString))),
+			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escapeCharsClashingRegexp(config.BlockStartString))),
 		},
 	}
 }
@@ -75,7 +77,7 @@ func Lex(input string, config *config.Config) *Stream {
 // errorf returns an error token and terminates the scan
 // by passing back a nil pointer that will be the next
 // state, terminating Lexer.Run.
-func (l *Lexer) errorf(format string, args ...interface{}) lexFn {
+func (l *Lexer) errorf(format string, args ...any) lexFn {
 	l.Tokens <- &Token{
 		Type: Error,
 		Val:  fmt.Sprintf(format, args...),
@@ -142,11 +144,6 @@ func (l *Lexer) processAndEmit(t Type, fn func(string) string) {
 	l.Start = l.Pos
 }
 
-// ignore skips over the pending input before this point.
-func (l *Lexer) ignore() {
-	l.Start = l.Pos
-}
-
 // backup steps back one rune.
 // Can be called only once per call of next.
 func (l *Lexer) backup() {
@@ -164,18 +161,11 @@ func (l *Lexer) peek() rune {
 // accept consumes the next rune
 // if it's from the valid set.
 func (l *Lexer) accept(valid string) bool {
-	if strings.IndexRune(valid, l.next()) >= 0 {
+	if strings.ContainsRune(valid, l.next()) {
 		return true
 	}
 	l.backup()
 	return false
-}
-
-// acceptRun consumes a run of runes from the valid set.
-func (l *Lexer) acceptRun(valid string) {
-	for strings.IndexRune(valid, l.next()) >= 0 {
-	}
-	l.backup()
 }
 
 func (l *Lexer) pushDelimiter(r rune) {
@@ -283,6 +273,13 @@ func (l *Lexer) lexComment() lexFn {
 }
 
 func (l *Lexer) lexVariable() lexFn {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"pos":       l.Pos,
+			"input":     l.Input,
+			"remaining": l.remaining(),
+		}).Trace("Lexer.lexVariable")
+	}
 	l.Pos += len(l.Config.VariableStartString)
 	l.accept("-")
 	l.emit(VariableBegin)
@@ -329,6 +326,13 @@ func (l *Lexer) lexBlockEnd() lexFn {
 }
 
 func (l *Lexer) lexExpression() lexFn {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"pos":       l.Pos,
+			"input":     l.Input,
+			"remaining": l.remaining(),
+		}).Trace("lexExpression")
+	}
 	for {
 		if !l.expectDelimiter(l.peek()) {
 			if l.hasPrefix(l.Config.VariableEndString) {
@@ -341,6 +345,9 @@ func (l *Lexer) lexExpression() lexFn {
 		}
 
 		r := l.next()
+		if logging.Enabled() {
+			log.WithFields(log.Fields{"rune": r}).Trace("lexExpression")
+		}
 		switch {
 		case isEOF(r):
 			return l.lexEOF

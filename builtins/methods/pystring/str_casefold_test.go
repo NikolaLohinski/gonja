@@ -19,7 +19,6 @@ var _ = Describe("Casefold", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(fmt.Sprintf("should casefold '%s' to '%s'", tt.in, tt.out), func() {
 			pys := PyString(tt.in)
 			Expect(pys.Casefold()).To(Equal(tt.out))

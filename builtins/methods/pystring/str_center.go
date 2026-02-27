@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 )
 
-// Return centered in a string of length width. Padding is done using the specified
+// Center returns the string centered in a string of length width. Padding is done using the specified
 // fillchar (default is an ASCII space). The original string is returned if width
 // is less than or equal to len(s).
 func Center(s string, width int, fillchar rune) string {
@@ -23,7 +23,7 @@ func Center(s string, width int, fillchar rune) string {
 	return strings.Repeat(string(fillchar), leftPad) + s + strings.Repeat(string(fillchar), rightPad)
 }
 
-// Return centered in a string of length width. Padding is done using the specified
+// Center returns the string centered in a string of length width. Padding is done using the specified
 // fillchar (default is an ASCII space). The original string is returned if width
 // is less than or equal to len(s).
 func (pys PyString) Center(width int, fillchar rune) PyString {

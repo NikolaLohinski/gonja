@@ -2,9 +2,9 @@ package pystring
 
 import "strings"
 
-// Return the highest index in the string where substring sub is found, such
-// that sub is contained within s) {} //[start:end]. Optional arguments start
-// and end are interpreted as in slice notation. Return -1 on failure.
+// RFind returns the highest index in the string where substring sub is found, such
+// that sub is contained within s[start:end]. Optional arguments start
+// and end are interpreted as in slice notation. Returns -1 on failure.
 func RFind(s string, substr string, start, end *int) int {
 	if substr == "" {
 		return len(s)
@@ -17,9 +17,9 @@ func RFind(s string, substr string, start, end *int) int {
 	return strings.LastIndex(s, substr)
 }
 
-// Return the highest index in the string where substring sub is found, such
-// that sub is contained within s) {} //[start:end]. Optional arguments start
-// and end are interpreted as in slice notation. Return -1 on failure.
+// RFind returns the highest index in the string where substring sub is found, such
+// that sub is contained within s[start:end]. Optional arguments start
+// and end are interpreted as in slice notation. Returns -1 on failure.
 func (pys PyString) RFind(substr string, start, end *int) int {
 	return RFind(string(pys), substr, start, end)
 }

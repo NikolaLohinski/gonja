@@ -5,5 +5,5 @@ import (
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
-// ControlStructures exports all builtins controlStructures
+// Methods exports all builtins methods.
 var Methods exec.Methods = methods.All

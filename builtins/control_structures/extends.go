@@ -24,7 +24,7 @@ func (controlStructure *ExtendsControlStructure) String() string {
 	return fmt.Sprintf("ExtendsControlStructure(Filename=%s Line=%d Col=%d)", controlStructure.filename, t.Line, t.Col)
 }
 
-func (node *ExtendsControlStructure) Execute(r *exec.Renderer) error {
+func (controlStructure *ExtendsControlStructure) Execute(r *exec.Renderer) error {
 	return nil
 }
 

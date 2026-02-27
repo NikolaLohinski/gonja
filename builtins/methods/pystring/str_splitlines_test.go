@@ -56,7 +56,6 @@ var _ = Describe("SplitLines", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input %q with keepends %v, should return %v", test.input, test.keepends, test.expected), func() {
 			Expect(SplitLines(test.input, test.keepends)).To(Equal(test.expected))
 		})

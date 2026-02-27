@@ -450,7 +450,7 @@ var _ = Context("lexer", func() {
 				}
 				It("should return the expected tokens", func() {
 					Expect(*returnedTokens).To(MatchAllElementsWithIndex(
-						func(index int, _ interface{}) string { return strconv.Itoa(index) },
+						func(index int, _ any) string { return strconv.Itoa(index) },
 						elements,
 					))
 				})
@@ -472,7 +472,7 @@ var _ = Context("lexer", func() {
 		})
 		It("should return the expected tokens", func() {
 			Expect(*returnedTokens).To(MatchAllElementsWithIndex(
-				func(index int, _ interface{}) string { return strconv.Itoa(index) },
+				func(index int, _ any) string { return strconv.Itoa(index) },
 				Elements{
 					"0": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type": Equal(tokens.BlockBegin),

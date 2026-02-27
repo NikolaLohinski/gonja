@@ -2,7 +2,7 @@ package pystring
 
 import "unicode"
 
-// Return True if all characters in the string are printable or the string is
+// IsPrintable returns True if all characters in the string are printable or the string is
 // empty, False otherwise. Nonprintable characters are those characters defined in
 // the Unicode character database as “Other” or “Separator”, excepting the ASCII
 // space (0x20) which is considered printable. (Note that printable characters in

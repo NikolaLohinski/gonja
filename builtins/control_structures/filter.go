@@ -30,20 +30,20 @@ func (controlStructure *FilterControlStructure) String() string {
 	return fmt.Sprintf("FilterControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (node *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+func (controlStructure *FilterControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	var out strings.Builder
 	sub := r.Inherit()
 	sub.Output = &out
 	// temp := bytes.NewBuffer(make([]byte, 0, 1024)) // 1 KiB size
 
-	err := sub.ExecuteWrapper(node.bodyWrapper)
+	err := sub.ExecuteWrapper(controlStructure.bodyWrapper)
 	if err != nil {
 		return err
 	}
 
 	value := exec.AsValue(out.String())
 
-	for _, call := range node.filterChain {
+	for _, call := range controlStructure.filterChain {
 		value = r.Evaluator().ExecuteFilter(call, value)
 		if value.IsError() {
 			return errors.Wrapf(value, `Unable to apply filter %s (Line: %d Col: %d, near %s`,

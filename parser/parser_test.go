@@ -131,7 +131,7 @@ var _ = Context("parser", func() {
 					And(
 						BeAssignableToTypeOf(nodes.List{}),
 						MatchFields(IgnoreExtras, Fields{
-							"Val": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+							"Val": MatchAllElementsWithIndex(func(index int, _ any) string {
 								return strconv.Itoa(index)
 							}, Elements{
 								"0": PointTo(MatchStringNode("a")),
@@ -164,7 +164,7 @@ var _ = Context("parser", func() {
 					And(
 						BeAssignableToTypeOf(nodes.Tuple{}),
 						MatchFields(IgnoreExtras, Fields{
-							"Val": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+							"Val": MatchAllElementsWithIndex(func(index int, _ any) string {
 								return strconv.Itoa(index)
 							}, Elements{
 								"0": PointTo(MatchStringNode("a")),
@@ -197,7 +197,7 @@ var _ = Context("parser", func() {
 					And(
 						BeAssignableToTypeOf(nodes.Dict{}),
 						MatchFields(IgnoreExtras, Fields{
-							"Pairs": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+							"Pairs": MatchAllElementsWithIndex(func(index int, _ any) string {
 								return strconv.Itoa(index)
 							}, Elements{
 								"0": PointTo(And(
@@ -221,7 +221,7 @@ var _ = Context("parser", func() {
 					And(
 						BeAssignableToTypeOf(nodes.Dict{}),
 						MatchFields(IgnoreExtras, Fields{
-							"Pairs": MatchAllElementsWithIndex(func(index int, _ interface{}) string {
+							"Pairs": MatchAllElementsWithIndex(func(index int, _ any) string {
 								return strconv.Itoa(index)
 							}, Elements{
 								"0": PointTo(And(
@@ -935,7 +935,7 @@ var _ = Context("parser", func() {
 						Expect(returnedTemplate).To(PointTo(MatchFields(IgnoreExtras, Fields{
 							"Identifier": Equal("tests"),
 							"Nodes": MatchAllElementsWithIndex(
-								func(index int, _ interface{}) string { return strconv.Itoa(index) },
+								func(index int, _ any) string { return strconv.Itoa(index) },
 								elements,
 							),
 						})))

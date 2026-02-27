@@ -1,3 +1,4 @@
+// Package config provides configuration types for the template engine.
 package config
 
 // Config holds plexer and parser parameters

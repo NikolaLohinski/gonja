@@ -12,7 +12,7 @@ import (
 var _ = Context("value", func() {
 	Context("AsValue", func() {
 		var (
-			input = new(interface{})
+			input = new(any)
 
 			returnedValue = new(*exec.Value)
 		)
@@ -20,7 +20,7 @@ var _ = Context("value", func() {
 			*returnedValue = exec.AsValue(*input)
 		})
 		for _, testCase := range []struct {
-			golangObject interface{}
+			golangObject any
 			description  string
 			matchers     []func()
 		}{
@@ -144,7 +144,7 @@ var _ = Context("value", func() {
 				},
 			},
 			{
-				map[string]interface{}{
+				map[string]any{
 					"a": "a",
 					"b": "b",
 				},
@@ -254,7 +254,7 @@ var _ = Context("value", func() {
 		})
 		Context("when the holding value is a map", func() {
 			BeforeEach(func() {
-				*value = exec.AsValue(map[string]interface{}{
+				*value = exec.AsValue(map[string]any{
 					"attribute": "attribute",
 				})
 				*attribute = "attribute"
@@ -273,7 +273,7 @@ var _ = Context("value", func() {
 	Context("GetItem", func() {
 		var (
 			value = new(*exec.Value)
-			item  = new(interface{})
+			item  = new(any)
 
 			returnedItem = new(*exec.Value)
 			returnedOk   = new(bool)
@@ -294,7 +294,7 @@ var _ = Context("value", func() {
 		})
 		Context("when the holding value is a map", func() {
 			BeforeEach(func() {
-				*value = exec.AsValue(map[string]interface{}{
+				*value = exec.AsValue(map[string]any{
 					"item": "item",
 				})
 				*item = "item"
@@ -311,7 +311,7 @@ var _ = Context("value", func() {
 		})
 		Context("when the holding value is a map but the item is not found", func() {
 			BeforeEach(func() {
-				*value = exec.AsValue(map[string]interface{}{})
+				*value = exec.AsValue(map[string]any{})
 			})
 			It("should return the expect content", func() {
 				By("returning a not ok flag")
@@ -358,7 +358,7 @@ var _ = Context("value", func() {
 		var (
 			holder = new(*exec.Value)
 			key    = new(*exec.Value)
-			value  = new(interface{})
+			value  = new(any)
 
 			returnedErr = new(error)
 		)
@@ -429,7 +429,7 @@ var _ = Context("value", func() {
 		})
 		Context("when setting a new key on a map", func() {
 			BeforeEach(func() {
-				*holder = exec.AsValue(map[string]interface{}{
+				*holder = exec.AsValue(map[string]any{
 					"existing": "item",
 				})
 				*key = exec.AsValue("new")
@@ -446,7 +446,7 @@ var _ = Context("value", func() {
 		})
 		Context("when setting an existing key on a map", func() {
 			BeforeEach(func() {
-				*holder = exec.AsValue(map[string]interface{}{
+				*holder = exec.AsValue(map[string]any{
 					"existing": "item",
 				})
 				*key = exec.AsValue("existing")
@@ -474,7 +474,7 @@ var _ = Context("value", func() {
 		})
 
 		Context("when the value can not be tested for keys", func() {
-			for _, kind := range []interface{}{
+			for _, kind := range []any{
 				nil,
 				"string",
 				42,
@@ -498,7 +498,7 @@ var _ = Context("value", func() {
 		})
 		Context("when the value is a map", func() {
 			BeforeEach(func() {
-				*value = exec.AsValue(map[string]interface{}{
+				*value = exec.AsValue(map[string]any{
 					"c": "c",
 					"a": "a",
 					"B": "B",

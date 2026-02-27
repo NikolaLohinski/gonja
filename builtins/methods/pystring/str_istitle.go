@@ -2,9 +2,9 @@ package pystring
 
 import "unicode"
 
-// Return True if the string is a titlecased string and there is at least one
+// IsTitle returns True if the string is a titlecased string and there is at least one
 // character, for example uppercase characters may only follow uncased characters
-// and lowercase characters only cased ones. Return False otherwise.
+// and lowercase characters only cased ones. Returns False otherwise.
 func IsTitle(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -36,9 +36,9 @@ func IsTitle(s string) bool {
 	return true
 }
 
-// Return True if the string is a titlecased string and there is at least one
+// IsTitle returns True if the string is a titlecased string and there is at least one
 // character, for example uppercase characters may only follow uncased characters
-// and lowercase characters only cased ones. Return False otherwise.
+// and lowercase characters only cased ones. Returns False otherwise.
 func (pys PyString) IsTitle() bool {
 	return IsTitle(string(pys))
 }

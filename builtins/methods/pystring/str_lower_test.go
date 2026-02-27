@@ -28,7 +28,6 @@ var _ = Describe("Lower", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should lower '%s' to '%s'", test.input, test.expected), func() {
 			Expect(test.input.Lower()).To(Equal(test.expected))
 		})

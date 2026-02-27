@@ -1,3 +1,4 @@
+// Package pybool provides Python-compatible boolean methods.
 package pybool
 
 type PyBool bool

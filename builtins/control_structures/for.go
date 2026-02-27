@@ -35,9 +35,6 @@ type LoopInfos struct {
 	revindex0 int
 	first     bool
 	last      bool
-	length    int
-	depth     int
-	depth0    int
 	PrevItem  *exec.Value
 	NextItem  *exec.Value
 	lastValue *exec.Value
@@ -53,8 +50,8 @@ func (li *LoopInfos) Changed(value *exec.Value) bool {
 	return !same
 }
 
-func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) (forError error) {
-	obj := r.Eval(node.objectEvaluator)
+func (controlStructure *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) (forError error) {
+	obj := r.Eval(controlStructure.objectEvaluator)
 	if obj.IsError() {
 		return obj
 	}
@@ -70,29 +67,29 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 
 		// There's something to iterate over (correct type and at least 1 item)
 		// Update loop infos and public context
-		if node.value != "" && !key.IsString() && key.Len() == 2 {
+		if controlStructure.value != "" && !key.IsString() && key.Len() == 2 {
 			key.Iterate(func(idx, count int, key, value *exec.Value) bool {
 				switch idx {
 				case 0:
-					ctx.Set(node.key, key)
+					ctx.Set(controlStructure.key, key)
 					pair.Key = key
 				case 1:
-					ctx.Set(node.value, key)
+					ctx.Set(controlStructure.value, key)
 					pair.Value = key
 				}
 				return true
 			}, func() {})
 		} else {
-			ctx.Set(node.key, key)
+			ctx.Set(controlStructure.key, key)
 			pair.Key = key
 			if value != nil {
-				ctx.Set(node.value, value)
+				ctx.Set(controlStructure.value, value)
 				pair.Value = value
 			}
 		}
 
-		if node.ifCondition != nil {
-			if !sub.Eval(node.ifCondition).IsTrue() {
+		if controlStructure.ifCondition != nil {
+			if !sub.Eval(controlStructure.ifCondition).IsTrue() {
 				return true
 			}
 		}
@@ -106,8 +103,8 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		first:  true,
 		index0: -1,
 	}
-	if len(items.Pairs) == 0 && node.emptyWrapper != nil {
-		if err := r.Inherit().ExecuteWrapper(node.emptyWrapper); err != nil {
+	if len(items.Pairs) == 0 && controlStructure.emptyWrapper != nil {
+		if err := r.Inherit().ExecuteWrapper(controlStructure.emptyWrapper); err != nil {
 			return err
 		}
 	}
@@ -115,9 +112,9 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		sub := r.Inherit()
 		ctx := sub.Environment.Context
 
-		ctx.Set(node.key, pair.Key)
+		ctx.Set(controlStructure.key, pair.Key)
 		if pair.Value != nil {
-			ctx.Set(node.value, pair.Value)
+			ctx.Set(controlStructure.value, pair.Value)
 		}
 
 		ctx.Set("loop", loop)
@@ -155,7 +152,7 @@ func (node *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStr
 		}
 
 		// Render elements with updated context
-		err := sub.ExecuteWrapper(node.bodyWrapper)
+		err := sub.ExecuteWrapper(controlStructure.bodyWrapper)
 		if err != nil {
 			return err
 		}

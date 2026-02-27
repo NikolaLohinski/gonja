@@ -60,34 +60,32 @@ func (s *pyStringScanner) Next() (Token, string, error) {
 	// If not found, return the rest of the string as characters
 	remainder := s.input[s.index:]
 
-	for {
-		braceIndex := indexFirstNonEscapedRune(remainder, '{')
-		if braceIndex == -1 {
-			s.index = len(s.input)
-			return Characters, string(remainder), nil
-		}
-
-		// is the brace after position 0, then return all that came before it as characters first
-		if braceIndex > 0 {
-			s.index += braceIndex
-			return Characters, string(remainder[:braceIndex]), nil
-		}
-
-		closingBrace := indexOfClosingBrace(remainder)
-		if closingBrace == -1 {
-			return Unknown, "", fmt.Errorf("%w: couldn't find closing brace", pyerrors.ErrValue)
-		}
-		s.index += closingBrace + 1
-
-		var err error
-		res := string(remainder[:closingBrace+1])
-		res, err = s.maybePopulateAutomaticReplacement(res)
-		if err != nil {
-			return Unknown, "", err
-		}
-
-		return ReplacementBlock, res, nil
+	braceIndex := indexFirstNonEscapedRune(remainder, '{')
+	if braceIndex == -1 {
+		s.index = len(s.input)
+		return Characters, string(remainder), nil
 	}
+
+	// is the brace after position 0, then return all that came before it as characters first
+	if braceIndex > 0 {
+		s.index += braceIndex
+		return Characters, string(remainder[:braceIndex]), nil
+	}
+
+	closingBrace := indexOfClosingBrace(remainder)
+	if closingBrace == -1 {
+		return Unknown, "", fmt.Errorf("%w: couldn't find closing brace", pyerrors.ErrValue)
+	}
+	s.index += closingBrace + 1
+
+	var err error
+	res := string(remainder[:closingBrace+1])
+	res, err = s.maybePopulateAutomaticReplacement(res)
+	if err != nil {
+		return Unknown, "", err
+	}
+
+	return ReplacementBlock, res, nil
 }
 
 func (s *pyStringScanner) maybePopulateAutomaticReplacement(block string) (string, error) {

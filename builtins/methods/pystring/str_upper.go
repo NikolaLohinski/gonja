@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// Return a copy of the string with all the cased characters
+// Upper returns a copy of the string with all the cased characters
 // converted to uppercase. Note that s.upper().isupper() might be False
 // if s contains uncased characters or if the Unicode category of the resulting
 // character(s) is not “Lu” (Letter, uppercase), but e.g. “Lt” (Letter, titlecase).
@@ -21,7 +21,7 @@ func Upper(s string) string {
 	return res.String()
 }
 
-// Return a copy of the string with all the cased characters
+// Upper returns a copy of the string with all the cased characters
 // converted to uppercase. Note that s.upper().isupper() might be False
 // if s contains uncased characters or if the Unicode category of the resulting
 // character(s) is not “Lu” (Letter, uppercase), but e.g. “Lt” (Letter, titlecase).

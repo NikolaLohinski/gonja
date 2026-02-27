@@ -44,7 +44,6 @@ var _ = Describe("CapWords", func() {
 	}
 
 	for _, tt := range tests {
-		tt := tt // capture range variable
 		It(tt.name, func() {
 			result := PyString(tt.input).CapWords()
 			Expect(result).To(Equal(tt.expected))

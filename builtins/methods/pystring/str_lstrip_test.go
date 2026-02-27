@@ -33,7 +33,6 @@ var _ = Describe("LStrip", func() {
 	}
 
 	for n, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("%d: For input '%s' and cutset '%s', should return '%s'", n, test.input, test.cutset, test.expected), func() {
 			Expect(test.input.LStrip(test.cutset)).To(Equal(test.expected))
 		})

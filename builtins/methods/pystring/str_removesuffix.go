@@ -2,7 +2,7 @@ package pystring
 
 import "strings"
 
-// If the string ends with the suffix string and that suffix is not empty, return string) {} //[:-len(suffix)]. Otherwise, return a copy of the original string:
+// RemoveSuffix returns the string with the suffix removed. If the string ends with the suffix string and that suffix is not empty, return string) {} //[:-len(suffix)]. Otherwise, return a copy of the original string:
 //
 // >>>
 // >>> 'MiscTests'.removesuffix('Tests'){}
@@ -18,7 +18,7 @@ func RemoveSuffix(s string, prefix string) string {
 	return s
 }
 
-// If the string ends with the suffix string and that suffix is not empty, return string) {} //[:-len(suffix)]. Otherwise, return a copy of the original string:
+// RemoveSuffix returns the string with the suffix removed. If the string ends with the suffix string and that suffix is not empty, return string) {} //[:-len(suffix)]. Otherwise, return a copy of the original string:
 //
 // >>>
 // >>> 'MiscTests'.removesuffix('Tests'){}

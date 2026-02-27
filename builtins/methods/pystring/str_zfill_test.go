@@ -20,7 +20,6 @@ var _ = Describe("ZFill", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input %q with width %d should return %q", test.s, test.width, test.expected), func() {
 			result := PyString(test.s).ZFill(test.width)
 			Expect(string(result)).To(Equal(test.expected))

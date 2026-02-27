@@ -12,7 +12,7 @@ func IRIEncode(in string) string {
 	var b bytes.Buffer
 
 	for _, r := range in {
-		if strings.IndexRune(filterIRIChars, r) >= 0 {
+		if strings.ContainsRune(filterIRIChars, r) {
 			b.WriteRune(r)
 		} else {
 			b.WriteString(url.QueryEscape(string(r)))

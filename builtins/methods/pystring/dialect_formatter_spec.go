@@ -267,7 +267,7 @@ func (f FormatSpec) Validate() error {
 	}
 
 	if f.GroupingOption != 0 && (f.Type != 'd' && f.Type != 'b' && f.Type != 'o' && f.Type != 'x' && f.Type != 'X') {
-		return fmt.Errorf("%w: Cannot specify '%s' with '%s'.", pyerrors.ErrValue, string(f.GroupingOption), string(f.Type))
+		return fmt.Errorf("%w: Cannot specify '%s' with '%s'", pyerrors.ErrValue, string(f.GroupingOption), string(f.Type))
 	}
 
 	expectedIntType := f.ExpectIntType()
@@ -399,11 +399,9 @@ func (f FormatSpec) Format(v any) (string, error) {
 	}
 
 	sLen := utf8.RuneCountInString(s)
-	requiredPadding := int(f.MinWidth) - sLen - utf8.RuneCountInString(sign)
-	// Avoid panics in strings.Repeat
-	if requiredPadding < 0 {
-		requiredPadding = 0
-	}
+	requiredPadding := max(
+		// Avoid panics in strings.Repeat
+		int(f.MinWidth)-sLen-utf8.RuneCountInString(sign), 0)
 
 	switch f.Align {
 	case '<':
@@ -419,7 +417,7 @@ func (f FormatSpec) Format(v any) (string, error) {
 		var res strings.Builder
 
 		res.WriteString(sign)
-		for i := 0; i < requiredPadding; i++ {
+		for i := range requiredPadding {
 			posFromLast := (requiredPadding + sLen) - i
 			writePadding := (posFromLast)%(groupingInterval+1) == 0
 			if writePadding && f.GroupingOption != 0 {

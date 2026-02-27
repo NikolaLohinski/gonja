@@ -32,7 +32,6 @@ var _ = Describe("StartsWith", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input %q.StartsWith(%q, %v, %v) should return %v", test.s, test.prefix, test.start, test.end, test.expected), func() {
 			result := PyString(test.s).StartsWith(test.prefix, test.start, test.end)
 			Expect(result).To(Equal(test.expected))

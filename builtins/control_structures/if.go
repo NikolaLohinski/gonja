@@ -3,7 +3,10 @@ package controlStructures
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/logging"
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/parser"
 	"github.com/nikolalohinski/gonja/v2/tokens"
@@ -23,25 +26,31 @@ func (controlStructure *IfControlStructure) String() string {
 	return fmt.Sprintf("IfControlStructure(Line=%d Col=%d)", t.Line, t.Col)
 }
 
-func (node *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
-	for i, condition := range node.conditions {
+func (controlStructure *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
+	for i, condition := range controlStructure.conditions {
 		result := r.Eval(condition)
 		if result.IsError() {
 			return result
 		}
 
 		if result.IsTrue() {
-			return r.ExecuteIfWrapper(node.wrappers[i])
+			return r.ExecuteIfWrapper(controlStructure.wrappers[i])
 		}
 		// Last condition?
-		if len(node.conditions) == i+1 && len(node.wrappers) > i+1 {
-			return r.ExecuteIfWrapper(node.wrappers[i+1])
+		if len(controlStructure.conditions) == i+1 && len(controlStructure.wrappers) > i+1 {
+			return r.ExecuteIfWrapper(controlStructure.wrappers[i+1])
 		}
 	}
 	return nil
 }
 
 func ifParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure, error) {
+	if logging.Enabled() {
+		log.WithFields(log.Fields{
+			"arg":     args.Current(),
+			"current": p.Current(),
+		}).Trace("ParseIf")
+	}
 	ifNode := &IfControlStructure{
 		location: args.Current(),
 	}

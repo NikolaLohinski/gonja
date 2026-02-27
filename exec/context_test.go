@@ -16,7 +16,7 @@ var _ = Context("context", func() {
 		name = new(string)
 
 		returnedOk    = new(bool)
-		returnedValue = new(interface{})
+		returnedValue = new(any)
 	)
 	BeforeEach(func() {
 		*ctx = exec.EmptyContext()

@@ -13,10 +13,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
 
-var (
-	typeOfValuePtr   = reflect.TypeOf(new(Value))
-	typeOfExecCtxPtr = reflect.TypeOf(new(Context))
-)
+var typeOfValuePtr = reflect.TypeFor[*Value]()
 
 type ErrInvalidCall error
 
@@ -104,7 +101,7 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 				return AsValue(errors.Wrapf(right, `Unable to concatenate list to %s`, node.Right))
 			}
 
-			v := &Value{Val: reflect.ValueOf([]interface{}{})}
+			v := &Value{Val: reflect.ValueOf([]any{})}
 
 			for ix := 0; ix < left.getResolvedValue().Len(); ix++ {
 				v.Val = reflect.Append(v.Val, left.getResolvedValue().Index(ix))
@@ -306,7 +303,7 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 	}
 
 	argument := e.Eval(node.Arg)
-	var key interface{}
+	var key any
 	switch {
 	case argument != nil && argument.IsString():
 		key = argument.String()
@@ -408,144 +405,6 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 		}
 		return item
 	}
-}
-
-func (e *Evaluator) evalVariable(node *nodes.Variable) (*Value, error) {
-	var current reflect.Value
-	var isSafe bool
-
-	for idx, part := range node.Parts {
-		if idx == 0 {
-			val, ok := e.Environment.Context.Get(node.Parts[0].S)
-			if !ok && e.Config.StrictUndefined {
-				return nil, errors.Errorf(`Unable to evaluate name "%s"`, node.Parts[0].S)
-			}
-			current = reflect.ValueOf(val) // Get the initial value
-		} else {
-			// Next parts, resolve it from current
-
-			// Before resolving the pointer, let's see if we have a method to call
-			// Problem with resolving the pointer is we're changing the receiver
-			isFunc := false
-			if part.Type == nodes.VarTypeIdent {
-				funcValue := current.MethodByName(part.S)
-				if funcValue.IsValid() {
-					current = funcValue
-					isFunc = true
-				}
-			}
-
-			if !isFunc {
-				// If current a pointer, resolve it
-				if current.Kind() == reflect.Ptr {
-					current = current.Elem()
-					if !current.IsValid() {
-						// Value is not valid (anymore)
-						return AsValue(nil), nil
-					}
-				}
-
-				// Look up which part must be called now
-				switch part.Type {
-				case nodes.VarTypeInt:
-					// Calling an index is only possible for:
-					// * slices/arrays/strings
-					switch current.Kind() {
-					case reflect.String, reflect.Array, reflect.Slice:
-						if part.I >= 0 && current.Len() > part.I {
-							current = current.Index(part.I)
-						} else {
-							// In Django, exceeding the length of a list is just empty.
-							return AsValue(nil), nil
-						}
-					default:
-						return nil, errors.Errorf("Can't access an index on type %s (variable %s)",
-							current.Kind().String(), node.String())
-					}
-				case nodes.VarTypeIdent:
-					// Calling a field or key
-					switch current.Kind() {
-					case reflect.Struct:
-						current = current.FieldByName(part.S)
-					case reflect.Map:
-						current = current.MapIndex(reflect.ValueOf(part.S))
-					default:
-						return nil, errors.Errorf("Can't access a field by name on type %s (variable %s)",
-							current.Kind().String(), node.String())
-					}
-				default:
-					panic("unimplemented")
-				}
-			}
-		}
-
-		if !current.IsValid() {
-			// Value is not valid (anymore)
-			return AsValue(nil), nil
-		}
-
-		// If current is a reflect.ValueOf(gonja.Value), then unpack it
-		// Happens in function calls (as a return value) or by injecting
-		// into the execution context (e.g. in a for-loop)
-		if current.Type() == typeOfValuePtr {
-			tmpValue := current.Interface().(*Value)
-			current = tmpValue.Val
-			isSafe = tmpValue.Safe
-		}
-
-		// Check whether this is an interface and resolve it where required
-		if current.Kind() == reflect.Interface {
-			current = reflect.ValueOf(current.Interface())
-		}
-
-		// Check if the part is a function call
-		if part.IsFunctionCall {
-
-			var params []reflect.Value
-			var err error
-			t := current.Type()
-
-			if t.NumIn() == 1 && t.In(0) == reflect.TypeOf(&VarArgs{}) {
-				// params, err = e.evalVarArgs(node, t, part)
-			} else {
-				// params, err = e.evalParams(node, t, part)
-			}
-			if err != nil {
-				return nil, err
-			}
-
-			// Call it and get first return parameter back
-			values := current.Call(params)
-			rv := values[0]
-			if t.NumOut() == 2 {
-				e := values[1].Interface()
-				if e != nil {
-					err, ok := e.(error)
-					if !ok {
-						return nil, errors.Errorf("The second return value is not an error")
-					}
-					if err != nil {
-						return nil, err
-					}
-				}
-			}
-
-			if rv.Type() != typeOfValuePtr {
-				current = reflect.ValueOf(rv.Interface())
-			} else {
-				// Return the function call value
-				current = rv.Interface().(*Value).Val
-				isSafe = rv.Interface().(*Value).Safe
-			}
-		}
-
-		if !current.IsValid() {
-			// Value is not valid (e. g. NIL value)
-			return AsValue(nil), nil
-		}
-	}
-
-	return &Value{Val: current, Safe: isSafe}, nil
 }
 
 func (e *Evaluator) evalVarArgs(node *nodes.Call) ([]reflect.Value, error) {

@@ -2,7 +2,7 @@ package pystring
 
 import "unicode"
 
-// Return True if all characters in the string are alphanumeric and there is at
+// IsAlnum returns True if all characters in the string are alphanumeric and there is at
 // least one character, False otherwise.
 func IsAlnum(s string) bool {
 	if len(s) == 0 {
@@ -17,7 +17,7 @@ func IsAlnum(s string) bool {
 	return true
 }
 
-// Return True if all characters in the string are alphanumeric and there is at least one character, False otherwise.
+// IsAlnum returns True if all characters in the string are alphanumeric and there is at least one character, False otherwise.
 func (pys PyString) IsAlnum() bool {
 	return IsAlnum(string(pys))
 }

@@ -27,7 +27,6 @@ var _ = Describe("IsPrintable", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("should determine if '%s' is printable as '%t'", test.input, test.expected), func() {
 			Expect(IsPrintable(test.input)).To(Equal(test.expected))
 		})

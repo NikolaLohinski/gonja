@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var GlobalFunctions = exec.NewContext(map[string]interface{}{
+var GlobalFunctions = exec.NewContext(map[string]any{
 	"cycler":    cyclerFunction,
 	"dict":      dictFunction,
 	"joiner":    joinerFunction,
@@ -69,7 +69,7 @@ func dictFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 type cycler struct {
 	values  []string
 	idx     int
-	getters map[string]interface{}
+	getters map[string]any
 }
 
 func (c *cycler) Reset() {
@@ -92,7 +92,7 @@ func cyclerFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	for _, arg := range params.Args {
 		c.values = append(c.values, arg.String())
 	}
-	c.getters = map[string]interface{}{
+	c.getters = map[string]any{
 		"next":  c.Next,
 		"reset": c.Reset,
 	}
@@ -126,8 +126,8 @@ func joinerFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 	return exec.AsValue(j.String)
 }
 
-func namespaceFunction(_ *exec.Evaluator, params *exec.VarArgs) map[string]interface{} {
-	ns := map[string]interface{}{}
+func namespaceFunction(_ *exec.Evaluator, params *exec.VarArgs) map[string]any {
+	ns := map[string]any{}
 	for key, value := range params.KwArgs {
 		ns[key] = value
 	}

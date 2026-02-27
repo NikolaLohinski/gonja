@@ -1,3 +1,4 @@
+// Package builtins provides built-in filters, tests, control structures, and global functions.
 package builtins
 
 import (
@@ -13,6 +14,8 @@ import (
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/nikolalohinski/gonja/v2/utils"
@@ -115,14 +118,14 @@ func filterBatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'batch'"))
 	}
 	size := p.First().Integer()
-	out := make([]interface{}, 0)
-	var row []interface{}
+	out := make([]any, 0)
+	var row []any
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		if math.Mod(float64(idx), float64(size)) == 0 {
 			if row != nil {
 				out = append(out, exec.AsValue(row).Interface())
 			}
-			row = make([]interface{}, 0)
+			row = make([]any, 0)
 		}
 		row = append(row, key.Interface())
 		return true
@@ -181,17 +184,17 @@ func filterCenter(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		in.String(), strings.Repeat(" ", right)))
 }
 
-func sortByKey(in *exec.Value, caseSensitive bool, reverse bool) [][2]interface{} {
-	out := make([][2]interface{}, 0)
+func sortByKey(in *exec.Value, caseSensitive bool, reverse bool) [][2]any {
+	out := make([][2]any, 0)
 	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
-		out = append(out, [2]interface{}{key.Interface(), value.Interface()})
+		out = append(out, [2]any{key.Interface(), value.Interface()})
 		return true
 	}, func() {}, reverse, true, caseSensitive)
 	return out
 }
 
-func sortByValue(in *exec.Value, caseSensitive, reverse bool) [][2]interface{} {
-	out := make([][2]interface{}, 0)
+func sortByValue(in *exec.Value, caseSensitive, reverse bool) [][2]any {
+	out := make([][2]any, 0)
 	items := in.Items()
 	var sorter func(i, j int) bool
 	switch {
@@ -214,7 +217,7 @@ func sortByValue(in *exec.Value, caseSensitive, reverse bool) [][2]interface{} {
 	}
 	sort.Slice(items, sorter)
 	for _, item := range items {
-		out = append(out, [2]interface{}{item.Key.Interface(), item.Value.Interface()})
+		out = append(out, [2]any{item.Key.Interface(), item.Value.Interface()})
 	}
 	return out
 }
@@ -341,7 +344,7 @@ func filterFormat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	args := []interface{}{}
+	args := []any{}
 	for _, arg := range params.Args {
 		args = append(args, arg.Interface())
 	}
@@ -357,8 +360,8 @@ func filterGroupBy(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'groupby"))
 	}
 	field := p.First().String()
-	groups := make(map[interface{}][]interface{})
-	groupers := []interface{}{}
+	groups := make(map[any][]any)
+	groupers := []any{}
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		attr, found := key.Get(field)
@@ -367,7 +370,7 @@ func filterGroupBy(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		}
 		lst, exists := groups[attr.Interface()]
 		if !exists {
-			lst = make([]interface{}, 0)
+			lst = make([]any, 0)
 			groupers = append(groupers, attr.Interface())
 		}
 		lst = append(lst, key.Interface())
@@ -375,9 +378,9 @@ func filterGroupBy(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		return true
 	}, func() {})
 
-	out := make([]map[string]interface{}, 0)
+	out := make([]map[string]any, 0)
 	for _, grouper := range groupers {
-		out = append(out, map[string]interface{}{
+		out = append(out, map[string]any{
 			"grouper": exec.AsValue(grouper).Interface(),
 			"list":    exec.AsValue(groups[grouper]).Interface(),
 		})
@@ -493,7 +496,7 @@ func filterList(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		}
 		return exec.AsValue(out)
 	}
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, key.Interface())
 		return true
@@ -526,7 +529,7 @@ func filterMap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	filter := p.KwArgs["filter"].String()
 	attribute := p.KwArgs["attribute"].String()
 	defaultVal := p.KwArgs["default"]
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
 		if len(attribute) > 0 {
@@ -709,7 +712,7 @@ func filterReject(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		}
 	}
 
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		if !test(key) {
@@ -755,7 +758,7 @@ func filterRejectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		}
 	}
 
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	var err *exec.Value
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
@@ -808,7 +811,7 @@ func filterReverse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 		}, func() {}, true, false, false)
 		return exec.AsValue(out.String())
 	}
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, key.Interface())
 		return true
@@ -881,7 +884,7 @@ func filterSelect(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		}
 	}
 
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		if test(key) {
@@ -899,7 +902,7 @@ func filterSlice(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	}
 	var (
 		slices   int
-		fillWith interface{}
+		fillWith any
 	)
 	if err := params.Take(
 		exec.PositionalArgument("slices", nil, exec.IntArgument(&slices)),
@@ -915,18 +918,18 @@ func filterSlice(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	}
 	quotient := int(math.Ceil(float64(in.Len()) / float64(slices)))
 	remainder := in.Len() % slices
-	output := make([]interface{}, 0)
+	output := make([]any, 0)
 	in.Iterate(func(index, _ int, value, _ *exec.Value) bool {
 		if index%quotient == 0 {
-			output = append(output, []interface{}{value.Interface()})
+			output = append(output, []any{value.Interface()})
 		} else {
-			output[len(output)-1] = append(output[len(output)-1].([]interface{}), value.Interface())
+			output[len(output)-1] = append(output[len(output)-1].([]any), value.Interface())
 		}
 		return true
 	}, func() {})
 	if remainder > 0 && fillWith != nil {
-		for len(output[len(output)-1].([]interface{})) < quotient {
-			output[len(output)-1] = append(output[len(output)-1].([]interface{}), fillWith)
+		for len(output[len(output)-1].([]any)) < quotient {
+			output[len(output)-1] = append(output[len(output)-1].([]any), fillWith)
 		}
 	}
 	return exec.AsValue(output)
@@ -942,7 +945,7 @@ func filterSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	}
 	reverse := p.KwArgs["reverse"].Bool()
 	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, key.Interface())
 		return true
@@ -994,7 +997,7 @@ func filterSum(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 		if attribute.IsString() {
 			val := key
 			found := true
-			for _, attr := range strings.Split(attribute.String(), ".") {
+			for attr := range strings.SplitSeq(attribute.String(), ".") {
 				val, found = val.Get(attr)
 				if !found {
 					err = errors.Errorf("'%s' has no attribute '%s'", key.String(), attribute.String())
@@ -1033,7 +1036,7 @@ func filterTitle(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if !in.IsString() {
 		return exec.AsValue("")
 	}
-	return exec.AsValue(strings.Title(strings.ToLower(in.String())))
+	return exec.AsValue(cases.Title(language.English).String(strings.ToLower(in.String())))
 }
 
 func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -1057,7 +1060,7 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	// Monkey patching because arrays handling is broken
 	if in.IsList() {
-		inCast := make([]interface{}, in.Len())
+		inCast := make([]any, in.Len())
 		for index := range inCast {
 			item := exec.ToValue(in.Index(index).Val)
 			inCast[index] = item.Val.Interface()
@@ -1151,8 +1154,8 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	caseSensitive := p.KwArgs["case_sensitive"].Bool()
 	attribute := p.KwArgs["attribute"]
 
-	out := make([]interface{}, 0)
-	tracker := map[interface{}]bool{}
+	out := make([]any, 0)
+	tracker := map[any]bool{}
 	var err error
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
@@ -1317,7 +1320,7 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 
 	linecount := wordsLen/wrapAt + wordsLen%wrapAt
 	lines := make([]string, 0, linecount)
-	for i := 0; i < linecount; i++ {
+	for i := range linecount {
 		min := wrapAt * (i + 1)
 		if wordsLen < min {
 			min = wordsLen
@@ -1403,7 +1406,7 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		}
 	}
 
-	out := make([]interface{}, 0)
+	out := make([]any, 0)
 	var err *exec.Value
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {

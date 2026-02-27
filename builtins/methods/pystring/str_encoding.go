@@ -7,7 +7,7 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
-// Return the string encoded to bytes.
+// Encode returns the string encoded to bytes.
 // encoding defaults to 'utf-8'; see Standard Encodings for possible values.
 // errors controls how encoding errors are handled. If 'strict' (the default), a UnicodeError exception is raised. Other possible values are 'ignore', 'replace', 'xmlcharrefreplace', 'backslashreplace' and any other name registered via codecs.register_error(). See Error Handlers for details.
 // For performance reasons, the value of errors is not checked for validity unless an encoding error actually occurs, Python Development Mode is enabled or a debug build is used.
@@ -27,7 +27,7 @@ func Encode(str, encoding, errors string) ([]byte, error) {
 	}
 }
 
-// Return the string encoded to bytes.
+// Encode returns the string encoded to bytes.
 // encoding defaults to 'utf-8'; see Standard Encodings for possible values.
 // errors controls how encoding errors are handled. If 'strict' (the default), a UnicodeError exception is raised. Other possible values are 'ignore', 'replace', 'xmlcharrefreplace', 'backslashreplace' and any other name registered via codecs.register_error(). See Error Handlers for details.
 // For performance reasons, the value of errors is not checked for validity unless an encoding error actually occurs, Python Development Mode is enabled or a debug build is used.

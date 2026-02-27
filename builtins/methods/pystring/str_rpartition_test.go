@@ -21,7 +21,6 @@ var _ = Describe("RPartition", func() {
 	}
 
 	for _, test := range tests {
-		test := test // capture range variable
 		It(fmt.Sprintf("For input '%s' with substring '%s', should return (%s, %s, %s)", test.input, test.substr, test.expected.Before, test.expected.Separator, test.expected.After), func() {
 			before, separator, after := test.input.RPartition(test.substr)
 			Expect(before).To(Equal(test.expected.Before))
