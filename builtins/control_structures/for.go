@@ -31,6 +31,7 @@ func (fcs *ForControlStructure) String() string {
 type LoopInfos struct {
 	index     int
 	index0    int
+	length    int
 	revindex  int
 	revindex0 int
 	first     bool
@@ -102,6 +103,7 @@ func (fcs *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 	loop := &LoopInfos{
 		first:  true,
 		index0: -1,
+		length: length,
 	}
 	if len(items.Pairs) == 0 && fcs.EmptyWrapper != nil {
 		if err := r.Inherit().ExecuteWrapper(fcs.EmptyWrapper); err != nil {
