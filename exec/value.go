@@ -225,15 +225,7 @@ func (v *Value) String() string {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return strconv.FormatUint(resolved.Uint(), 10)
 	case reflect.Float32, reflect.Float64:
-		formated := strconv.FormatFloat(resolved.Float(), 'f', 11, 64)
-		if !strings.Contains(formated, ".") {
-			formated = formated + "."
-		}
-		formated = strings.TrimRight(formated, "0")
-		if formated[len(formated)-1] == '.' {
-			formated += "0"
-		}
-		return formated
+		return formatFloatString(resolved.Float())
 	case reflect.Bool:
 		if v.Bool() {
 			return "True"
@@ -300,6 +292,74 @@ func (v *Value) String() string {
 		log.Errorf("Value.String() not implemented for type: %s\n", resolved.Kind().String())
 	}
 	return resolved.String()
+}
+
+func formatFloatString(f float64) string {
+	formatted := strconv.FormatFloat(f, 'g', -1, 64)
+	if formatted == "NaN" || strings.HasSuffix(formatted, "Inf") {
+		return formatted
+	}
+	if strings.ContainsAny(formatted, "eE") {
+		mantissa, exponent, ok := splitScientificFloat(formatted)
+		if ok && exponent >= -4 && exponent < 16 {
+			return ensureFloatSuffix(expandScientificFloat(mantissa, exponent))
+		}
+		return formatted
+	}
+	return ensureFloatSuffix(formatted)
+}
+
+func splitScientificFloat(formatted string) (string, int, bool) {
+	index := strings.IndexAny(formatted, "eE")
+	if index < 0 {
+		return "", 0, false
+	}
+	exponent, err := strconv.Atoi(formatted[index+1:])
+	if err != nil {
+		return "", 0, false
+	}
+	return formatted[:index], exponent, true
+}
+
+func expandScientificFloat(mantissa string, exponent int) string {
+	sign := ""
+	switch {
+	case strings.HasPrefix(mantissa, "-"):
+		sign = "-"
+		mantissa = mantissa[1:]
+	case strings.HasPrefix(mantissa, "+"):
+		sign = "+"
+		mantissa = mantissa[1:]
+	}
+
+	digits := strings.ReplaceAll(mantissa, ".", "")
+	decimalPos := 1 + exponent
+
+	var expanded string
+	switch {
+	case decimalPos <= 0:
+		expanded = "0." + strings.Repeat("0", -decimalPos) + digits
+	case decimalPos >= len(digits):
+		expanded = digits + strings.Repeat("0", decimalPos-len(digits))
+	default:
+		expanded = digits[:decimalPos] + "." + digits[decimalPos:]
+	}
+
+	if strings.Contains(expanded, ".") {
+		expanded = strings.TrimRight(expanded, "0")
+		expanded = strings.TrimSuffix(expanded, ".")
+	}
+	return sign + expanded
+}
+
+func ensureFloatSuffix(formatted string) string {
+	if formatted == "" || formatted == "-0" || formatted == "+0" {
+		return formatted + ".0"
+	}
+	if strings.ContainsAny(formatted, ".eE") {
+		return formatted
+	}
+	return formatted + ".0"
 }
 
 // Escaped returns the escaped version of String()

@@ -461,6 +461,18 @@ var _ = Context("parser", func() {
 			},
 		},
 		{
+			"is a variable attribute hexadecimal integer access",
+			[]string{"{{ var.0x10 }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetAttributeNode(
+						MatchNameNode("var"),
+						16,
+					),
+				),
+			},
+		},
+		{
 			"is a variable item access with a string",
 			[]string{"{{ var['item'] }}", `{{ var["item"] }}`, `{{ var[("item")] }}`},
 			[]types.GomegaMatcher{
@@ -480,6 +492,18 @@ var _ = Context("parser", func() {
 					MatchGetItemNode(
 						MatchNameNode("var"),
 						MatchIntegerNode(123),
+					),
+				),
+			},
+		},
+		{
+			"is a variable item access with a hexadecimal integer",
+			[]string{"{{ var[0x10] }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(
+					MatchGetItemNode(
+						MatchNameNode("var"),
+						MatchIntegerNode(16),
 					),
 				),
 			},
