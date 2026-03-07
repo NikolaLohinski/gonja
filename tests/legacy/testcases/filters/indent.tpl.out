@@ -5,7 +5,6 @@ This is a simple text.
     Right?
 
     Yep!
-
 # indent 2
 This is a simple text.
 
@@ -13,7 +12,6 @@ This is a simple text.
   Right?
 
   Yep!
-
 # indent 2, first=true
   This is a simple text.
 
@@ -21,7 +19,6 @@ This is a simple text.
   Right?
 
   Yep!
-
 # indent 2, blank=true
 This is a simple text.
   
@@ -29,7 +26,6 @@ This is a simple text.
   Right?
   
   Yep!
-
 # indent 2, first=true, blank=true
   This is a simple text.
   
@@ -37,4 +33,3 @@ This is a simple text.
   Right?
   
   Yep!
-

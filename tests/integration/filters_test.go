@@ -63,9 +63,14 @@ var _ = Context("filters", func() {
 		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
 	Context("indent", func() {
-		shouldRender("{{ '\nfoo\nbar' | indent }}", "\n    foo\n    bar\n")
+		shouldRender("{{ 'jinja' | indent }}", "jinja")
+		shouldRender("{{ '\nfoo\nbar' | indent }}", "\n    foo\n    bar")
+		shouldRender(`{{ '\nfoo bar\n"baz"\n' | indent(2) }}`, "\n  foo bar\n  \"baz\"\n")
+		shouldRender(`{{ '\nfoo bar\n"baz"\n' | indent(2, true) }}`, "  \n  foo bar\n  \"baz\"\n")
+		shouldRender(`{{ 'jinja\nflask' | indent(width='>>> ', first=True) }}`, ">>> jinja\n>>> flask")
+		shouldRender(`{% autoescape true %}{{ '\n<b>foo</b>\n<i>bar</i>\n' | safe | indent(2, true) }}{% endautoescape %}`, "  \n  <b>foo</b>\n  <i>bar</i>\n")
 		shouldFail("{{ True | indent }}", "invalid call to filter 'indent': True is not a string")
-		shouldFail("{{ True | indent(width='yolo') }}", "invalid call to filter 'indent': failed to validate argument 'width': yolo is not an integer")
+		shouldFail("{{ 'jinja' | indent(width=True) }}", "invalid call to filter 'indent': failed to validate argument 'width': True is neither a string nor an integer")
 	})
 	Context("slice", func() {
 		shouldRender("{{ [1, 2, 3, 4, 5, 6] | slice(2) }}", "[[1, 2, 3], [4, 5, 6]]")

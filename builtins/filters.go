@@ -393,12 +393,27 @@ func filterIndent(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 	var (
-		width int
-		first bool
-		blank bool
+		indent string
+		first  bool
+		blank  bool
 	)
 	if err := params.Take(
-		exec.KeywordArgument("width", exec.AsValue(4), exec.IntArgument(&width)),
+		exec.KeywordArgument("width", exec.AsValue(4), func(v *exec.Value) error {
+			switch {
+			case v.IsInteger():
+				width := v.Integer()
+				if width < 0 {
+					indent = ""
+				} else {
+					indent = strings.Repeat(" ", width)
+				}
+			case v.IsString():
+				indent = v.String()
+			default:
+				return fmt.Errorf("%s is neither a string nor an integer", v.String())
+			}
+			return nil
+		}),
 		exec.KeywordArgument("first", exec.AsValue(false), exec.BoolArgument(&first)),
 		exec.KeywordArgument("blank", exec.AsValue(false), exec.BoolArgument(&blank)),
 	); err != nil {
@@ -407,21 +422,24 @@ func filterIndent(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if !in.IsString() {
 		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
 	}
-	indent := strings.Repeat(" ", width)
 	lines := strings.Split(in.String(), "\n")
-	var out strings.Builder
 	for idx, line := range lines {
-		if line == "" && !blank {
-			out.WriteByte('\n')
+		if idx == 0 {
+			if first {
+				lines[idx] = indent + line
+			}
 			continue
 		}
-		if idx > 0 || first {
-			out.WriteString(indent)
+		if line == "" && !blank {
+			continue
 		}
-		out.WriteString(line)
-		out.WriteByte('\n')
+		lines[idx] = indent + line
 	}
-	return exec.AsValue(out.String())
+	out := strings.Join(lines, "\n")
+	if in.Safe {
+		return exec.AsSafeValue(out)
+	}
+	return exec.AsValue(out)
 }
 
 func filterInteger(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
