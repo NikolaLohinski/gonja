@@ -69,8 +69,7 @@ var _ = Context("expressions", func() {
 				    Negated
 
 				Output 2:
-				    Negated
-			`)
+				    Negated`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})

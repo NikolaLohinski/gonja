@@ -76,8 +76,15 @@ var _ = Context("parser", func() {
 			},
 		},
 		{
-			"is a single quoted string with nested spaces, lines and tabs",
-			[]string{"{{ '  \r\n\ttest' }}", `{{ '  \r\n\ttest' }}`},
+			"is a single quoted string with embedded source newlines",
+			[]string{"{{ '  \r\n\ttest' }}"},
+			[]types.GomegaMatcher{
+				MatchNodeOutput(MatchStringNode("  \n\ttest")),
+			},
+		},
+		{
+			"is a single quoted string with escaped newlines and tabs",
+			[]string{`{{ '  \r\n\ttest' }}`},
 			[]types.GomegaMatcher{
 				MatchNodeOutput(MatchStringNode("  \r\n\ttest")),
 			},

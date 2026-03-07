@@ -482,8 +482,8 @@ var _ = Context("lexer", func() {
 					{"Type": Equal(tokens.CommentBegin), "Val": Equal("{#"), "Pos": Equal(6), "Line": Equal(2), "Col": Equal(1)},
 					{"Type": Equal(tokens.Data), "Val": Equal("\n    Multiline comment\n"), "Pos": Equal(8), "Line": Equal(2), "Col": Equal(3)},
 					{"Type": Equal(tokens.CommentEnd), "Val": Equal("#}"), "Pos": Equal(31), "Line": Equal(4), "Col": Equal(1)},
-					{"Type": Equal(tokens.Data), "Val": Equal("\nWorld\n"), "Pos": Equal(33), "Line": Equal(4), "Col": Equal(3)},
-					{"Type": Equal(tokens.EOF), "Val": Equal(""), "Pos": Equal(40), "Line": Equal(6), "Col": Equal(1)},
+					{"Type": Equal(tokens.Data), "Val": Equal("\nWorld"), "Pos": Equal(33), "Line": Equal(4), "Col": Equal(3)},
+					{"Type": Equal(tokens.EOF), "Val": Equal(""), "Pos": Equal(39), "Line": Equal(5), "Col": Equal(6)},
 				},
 			},
 		} {
@@ -565,6 +565,30 @@ var _ = Context("lexer", func() {
 						"Type": Equal(tokens.CommentEnd),
 					})),
 					"13": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.EOF),
+					})),
+				},
+			))
+		})
+	})
+	Context("when trimming comments aggressively", func() {
+		BeforeEach(func() {
+			*lexer = tokens.NewLexer("{#-#}", config.New())
+		})
+
+		It("should not panic and should return the expected tokens", func() {
+			Expect(*returnedTokens).To(MatchAllElementsWithIndex(
+				func(index int, _ any) string { return strconv.Itoa(index) },
+				Elements{
+					"0": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.CommentBegin),
+						"Val":  Equal("{#-"),
+					})),
+					"1": PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type": Equal(tokens.CommentEnd),
+						"Val":  Equal("#}"),
+					})),
+					"2": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type": Equal(tokens.EOF),
 					})),
 				},

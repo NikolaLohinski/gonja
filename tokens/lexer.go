@@ -44,26 +44,49 @@ type Lexer struct {
 	delimiters           []rune
 	RawControlStructures rawControlStructure
 	rawEnd               *regexp.Regexp
+	expressionEnd        Type
+	lineStatement        bool
 }
 
 // TODO: set from env
 type rawControlStructure map[string]*regexp.Regexp
 
-func escapeCharsClashingRegexp(s string) string {
-	s = strings.ReplaceAll(s, "[", "\\[")
-	s = strings.ReplaceAll(s, "]", "\\]")
-	return s
+func normalizeInput(input string, cfg *config.Config) string {
+	input = strings.ReplaceAll(input, "\r\n", "\n")
+	input = strings.ReplaceAll(input, "\r", "\n")
+	if !cfg.KeepTrailingNewline && strings.HasSuffix(input, "\n") {
+		input = input[:len(input)-1]
+	}
+	return input
+}
+
+func normalizeNewlines(input, newline string) string {
+	if newline == "" || newline == "\n" {
+		return input
+	}
+	return strings.ReplaceAll(input, "\n", newline)
+}
+
+func trimLeadingWhitespaceFromLastLine(input string) string {
+	lineStart := strings.LastIndex(input, "\n") + 1
+	for i := lineStart; i < len(input); i++ {
+		if input[i] != ' ' && input[i] != '\t' {
+			return input
+		}
+	}
+	return input[:lineStart]
 }
 
 // NewLexer creates a new scanner for the input string.
 func NewLexer(input string, config *config.Config) *Lexer {
+	normalizedInput := normalizeInput(input, config)
 	return &Lexer{
-		Input:  input,
+		Input:  normalizedInput,
 		Tokens: make(chan *Token),
 		Config: config,
 		RawControlStructures: rawControlStructure{
-			"raw":     regexp.MustCompile(fmt.Sprintf(`%s-?\s*endraw`, escapeCharsClashingRegexp(config.BlockStartString))),
-			"comment": regexp.MustCompile(fmt.Sprintf(`%s-?\s*endcomment`, escapeCharsClashingRegexp(config.BlockStartString))),
+			"raw":     regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endraw`, regexp.QuoteMeta(config.BlockStartString))),
+			"comment": regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endcomment`, regexp.QuoteMeta(config.BlockStartString))),
 		},
 	}
 }
@@ -176,6 +199,197 @@ func (l *Lexer) hasPrefix(prefix string) bool {
 	return strings.HasPrefix(l.Input[l.Pos:], prefix)
 }
 
+func (l *Lexer) hasPrefixAt(pos int, prefix string) bool {
+	if pos < 0 || pos > len(l.Input) {
+		return false
+	}
+	return strings.HasPrefix(l.Input[pos:], prefix)
+}
+
+func (l *Lexer) atLineStart(pos int) bool {
+	return pos == 0 || l.Input[pos-1] == '\n'
+}
+
+func (l *Lexer) emitData(stripLeadingWhitespace bool) {
+	if l.Pos <= l.Start {
+		return
+	}
+	line, col := ReadablePosition(l.Start, l.Input)
+	val := l.Input[l.Start:l.Pos]
+	if stripLeadingWhitespace {
+		val = trimLeadingWhitespaceFromLastLine(val)
+	}
+	val = normalizeNewlines(val, l.Config.NewlineSequence)
+	if val == "" {
+		l.Start = l.Pos
+		return
+	}
+	l.Tokens <- &Token{
+		Type: Data,
+		Val:  val,
+		Pos:  l.Start,
+		Line: line,
+		Col:  col,
+	}
+	l.Start = l.Pos
+}
+
+func (l *Lexer) consumeWhitespaceControl(allowed string) byte {
+	if l.Pos >= len(l.Input) {
+		return 0
+	}
+	control := l.Input[l.Pos]
+	if !strings.ContainsRune(allowed, rune(control)) {
+		return 0
+	}
+	l.Pos++
+	return control
+}
+
+func (l *Lexer) openingWhitespaceControl(prefix string) byte {
+	pos := l.Pos + len(prefix)
+	if pos >= len(l.Input) {
+		return 0
+	}
+	control := l.Input[pos]
+	if control != '-' && control != '+' {
+		return 0
+	}
+	return control
+}
+
+func (l *Lexer) consumeFollowingNewline() {
+	if l.hasPrefix("\n") {
+		l.Pos++
+		l.Start = l.Pos
+	}
+}
+
+type rootTokenKind int
+
+const (
+	rootTokenNone rootTokenKind = iota
+	rootTokenComment
+	rootTokenVariable
+	rootTokenBlock
+)
+
+func (l *Lexer) currentRootToken() rootTokenKind {
+	var (
+		longest int
+		kind    rootTokenKind
+	)
+	for _, candidate := range []struct {
+		prefix string
+		kind   rootTokenKind
+	}{
+		{l.Config.CommentStartString, rootTokenComment},
+		{l.Config.VariableStartString, rootTokenVariable},
+		{l.Config.BlockStartString, rootTokenBlock},
+	} {
+		if candidate.prefix == "" || !l.hasPrefix(candidate.prefix) {
+			continue
+		}
+		if len(candidate.prefix) > longest {
+			longest = len(candidate.prefix)
+			kind = candidate.kind
+		}
+	}
+	return kind
+}
+
+type linePrefixKind int
+
+const (
+	linePrefixNone linePrefixKind = iota
+	linePrefixStatement
+	linePrefixComment
+)
+
+func (l *Lexer) currentLinePrefix() (linePrefixKind, bool) {
+	if !l.atLineStart(l.Pos) {
+		return linePrefixNone, false
+	}
+	prefixPos := l.Pos
+	for prefixPos < len(l.Input) && isLinePrefixSpace(rune(l.Input[prefixPos])) {
+		prefixPos++
+	}
+	var (
+		longest int
+		kind    linePrefixKind
+	)
+	for _, candidate := range []struct {
+		prefix string
+		kind   linePrefixKind
+	}{
+		{l.Config.LineStatementPrefix, linePrefixStatement},
+		{l.Config.LineCommentPrefix, linePrefixComment},
+	} {
+		if candidate.prefix == "" || !l.hasPrefixAt(prefixPos, candidate.prefix) {
+			continue
+		}
+		if len(candidate.prefix) > longest {
+			longest = len(candidate.prefix)
+			kind = candidate.kind
+		}
+	}
+	return kind, kind != linePrefixNone
+}
+
+func (l *Lexer) hasInlineLineComment() bool {
+	if l.Config.LineCommentPrefix == "" || l.Pos == 0 || l.atLineStart(l.Pos) {
+		return false
+	}
+	prev, _ := utf8.DecodeLastRuneInString(l.Input[:l.Pos])
+	if prev == '\n' || isLinePrefixSpace(prev) {
+		return false
+	}
+	prefixPos := l.Pos
+	for prefixPos < len(l.Input) && isLinePrefixSpace(rune(l.Input[prefixPos])) {
+		prefixPos++
+	}
+	return l.hasPrefixAt(prefixPos, l.Config.LineCommentPrefix)
+}
+
+func (l *Lexer) lineStatementEndLength() (int, bool) {
+	remaining := l.remaining()
+	newlineIdx := strings.IndexByte(remaining, '\n')
+	tail := remaining
+	endLength := len(remaining)
+	if newlineIdx >= 0 {
+		tail = remaining[:newlineIdx]
+		endLength = newlineIdx + 1
+	}
+	if !isLineStatementClosingTail(tail) {
+		return 0, false
+	}
+	return endLength, true
+}
+
+func isLineStatementClosingTail(tail string) bool {
+	index := 0
+	for index < len(tail) && isLinePrefixSpace(rune(tail[index])) {
+		index++
+	}
+	if index == len(tail) {
+		return true
+	}
+	colons := index
+	for colons < len(tail) && tail[colons] == ':' {
+		colons++
+	}
+	if colons == index {
+		return false
+	}
+	for colons < len(tail) {
+		if !isLinePrefixSpace(rune(tail[colons])) {
+			return false
+		}
+		colons++
+	}
+	return true
+}
+
 func (l *Lexer) popDelimiter(r rune) bool {
 	if len(l.delimiters) == 0 {
 		l.errorf(`Unexpected delimiter "%c"`, r)
@@ -203,25 +417,29 @@ func (l *Lexer) expectDelimiter(r rune) bool {
 
 func (l *Lexer) lexData() lexFn {
 	for {
-		if l.hasPrefix(l.Config.CommentStartString) {
-			if l.Pos > l.Start {
-				l.emit(Data)
-			}
+		switch l.currentRootToken() {
+		case rootTokenComment:
+			l.emitData(l.Config.LeftStripBlocks && l.openingWhitespaceControl(l.Config.CommentStartString) != '+')
 			return l.lexComment
-		}
-
-		if l.hasPrefix(l.Config.VariableStartString) {
-			if l.Pos > l.Start {
-				l.emit(Data)
-			}
+		case rootTokenVariable:
+			l.emitData(false)
 			return l.lexVariable
+		case rootTokenBlock:
+			l.emitData(l.Config.LeftStripBlocks && l.openingWhitespaceControl(l.Config.BlockStartString) != '+')
+			return l.lexBlock
 		}
 
-		if l.hasPrefix(l.Config.BlockStartString) {
-			if l.Pos > l.Start {
-				l.emit(Data)
+		if prefix, ok := l.currentLinePrefix(); ok {
+			l.emitData(false)
+			if prefix == linePrefixComment {
+				return l.lexLineComment
 			}
-			return l.lexBlock
+			return l.lexLineStatement
+		}
+
+		if l.hasInlineLineComment() {
+			l.emitData(false)
+			return l.lexLineComment
 		}
 
 		if l.next() == rEOF {
@@ -229,9 +447,7 @@ func (l *Lexer) lexData() lexFn {
 		}
 	}
 	// Correctly reached EOF.
-	if l.Pos > l.Start {
-		l.emit(Data)
-	}
+	l.emitData(false)
 	l.emit(EOF) // Useful to make EOF a token.
 	return nil  // Stop the run loop.
 }
@@ -246,7 +462,7 @@ func (l *Lexer) lexRaw() lexFn {
 		return l.errorf(`Unable to find raw closing controlStructure`)
 	}
 	l.Pos += loc[0]
-	l.emit(Data)
+	l.emitData(false)
 	l.rawEnd = nil
 	return l.lexBlock
 	// regexp.MustCompile(`(?m)(?P<key>\w+):\s+(?P<value>\w+)$`)
@@ -255,20 +471,25 @@ func (l *Lexer) lexRaw() lexFn {
 
 func (l *Lexer) lexComment() lexFn {
 	l.Pos += len(l.Config.CommentStartString)
-	l.accept("-")
+	l.consumeWhitespaceControl("-+")
 	l.emit(CommentBegin)
 	i := strings.Index(l.Input[l.Pos:], l.Config.CommentEndString)
 	if i < 0 {
 		return l.errorf("unclosed comment")
 	}
-	l.Pos += i
-	if l.Input[l.Pos-1] == '-' {
-		l.Pos -= 1
+	contentEnd := l.Pos + i
+	if contentEnd > l.Start && (l.Input[contentEnd-1] == '-' || l.Input[contentEnd-1] == '+') {
+		contentEnd--
 	}
-	l.emit(Data)
-	l.accept("-")
+	l.Pos = contentEnd
+	l.emitData(false)
+	l.Pos = contentEnd
+	control := l.consumeWhitespaceControl("-+")
 	l.Pos += len(l.Config.CommentEndString)
 	l.emit(CommentEnd)
+	if l.Config.TrimBlocks && control != '+' {
+		l.consumeFollowingNewline()
+	}
 	return l.lexData
 }
 
@@ -282,6 +503,7 @@ func (l *Lexer) lexVariable() lexFn {
 	}
 	l.Pos += len(l.Config.VariableStartString)
 	l.accept("-")
+	l.expressionEnd = VariableEnd
 	l.emit(VariableBegin)
 	return l.lexExpression
 }
@@ -295,8 +517,8 @@ func (l *Lexer) lexVariableEnd() lexFn {
 
 func (l *Lexer) lexBlock() lexFn {
 	l.Pos += len(l.Config.BlockStartString)
-	l.accept("-")
-	l.accept("+")
+	l.consumeWhitespaceControl("-+")
+	l.expressionEnd = BlockEnd
 	l.emit(BlockBegin)
 	for isSpace(l.peek()) {
 		l.next()
@@ -313,11 +535,52 @@ func (l *Lexer) lexBlock() lexFn {
 	return l.lexExpression
 }
 
+func (l *Lexer) lexLineStatement() lexFn {
+	for isLinePrefixSpace(l.peek()) {
+		l.next()
+	}
+	l.Start = l.Pos
+	l.Pos += len(l.Config.LineStatementPrefix)
+	l.expressionEnd = BlockEnd
+	l.lineStatement = true
+	l.emit(BlockBegin)
+	for isSpace(l.peek()) {
+		l.next()
+	}
+	if len(l.Current()) > 0 {
+		l.emit(Whitespace)
+	}
+	controlStructure := l.nextIdentifier()
+	l.emit(Name)
+	if re, exists := l.RawControlStructures[controlStructure]; exists {
+		l.rawEnd = re
+	}
+	return l.lexExpression
+}
+
+func (l *Lexer) lexLineComment() lexFn {
+	for isLinePrefixSpace(l.peek()) {
+		l.next()
+	}
+	l.Pos += len(l.Config.LineCommentPrefix)
+	for {
+		r := l.peek()
+		if r == '\n' || r == rEOF {
+			break
+		}
+		l.next()
+	}
+	l.Start = l.Pos
+	return l.lexData
+}
+
 func (l *Lexer) lexBlockEnd() lexFn {
-	l.accept("-")
-	l.accept("+")
+	control := l.consumeWhitespaceControl("-+")
 	l.Pos += len(l.Config.BlockEndString)
 	l.emit(BlockEnd)
+	if l.Config.TrimBlocks && control != '+' {
+		l.consumeFollowingNewline()
+	}
 	if l.rawEnd != nil {
 		return l.lexRaw
 	} else {
@@ -334,12 +597,21 @@ func (l *Lexer) lexExpression() lexFn {
 		}).Trace("lexExpression")
 	}
 	for {
+		if len(l.delimiters) == 0 && l.lineStatement {
+			if endLength, ok := l.lineStatementEndLength(); ok {
+				l.Pos += endLength
+				l.lineStatement = false
+				l.emit(BlockEnd)
+				return l.lexData
+			}
+		}
+
 		if !l.expectDelimiter(l.peek()) {
-			if l.hasPrefix(l.Config.VariableEndString) {
+			if l.expressionEnd == VariableEnd && l.hasPrefix(l.Config.VariableEndString) {
 				return l.lexVariableEnd
 			}
 
-			if l.hasPrefix(l.Config.BlockEndString) {
+			if l.expressionEnd == BlockEnd && l.hasPrefix(l.Config.BlockEndString) {
 				return l.lexBlockEnd
 			}
 		}
@@ -681,12 +953,18 @@ func (l *Lexer) lexString() lexFn {
 			return l.errorf(`%s`, string(near))
 		}
 	}
-	l.processAndEmit(String, unescape)
+	l.processAndEmit(String, func(value string) string {
+		return normalizeNewlines(unescape(value), l.Config.NewlineSequence)
+	})
 	return l.lexExpression
 }
 
 // isSpace reports whether r is a space character.
 func isSpace(r rune) bool {
+	return r == ' ' || r == '\t'
+}
+
+func isLinePrefixSpace(r rune) bool {
 	return r == ' ' || r == '\t'
 }
 

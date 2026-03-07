@@ -61,8 +61,7 @@ var _ = Context("dicts", func() {
 					['exists']: content
 					['nope']: 
 					["nope"]: 
-					["exi" ~ "sts"]: content
-				`)
+					["exi" ~ "sts"]: content`)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})

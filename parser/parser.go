@@ -4,7 +4,6 @@ package parser
 import (
 	"fmt"
 	"io"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -12,10 +11,6 @@ import (
 	"github.com/nikolalohinski/gonja/v2/loaders"
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
-)
-
-var (
-	lineReturnWithOnlyWhiteSpace = regexp.MustCompile("^(\n|\r\n)[ \t]*$")
 )
 
 type ControlStructureGetter interface {
@@ -198,13 +193,6 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 				n.Trim.Right = true
 			}
 		}
-		if p.Config.LeftStripBlocks {
-			if next := p.Peek(tokens.BlockBegin); next != nil {
-				if len(next.Val) == 0 || next.Val[len(next.Val)-1] != '+' {
-					n.RemoveTrailingWhiteSpaceFromLastLine = true
-				}
-			}
-		}
 		p.Consume()
 		return n, nil
 	case tokens.EOF:
@@ -216,14 +204,6 @@ func (p *Parser) parseDocElement() (nodes.Node, error) {
 		return p.ParseExpressionNode()
 	case tokens.BlockBegin:
 		node, err := p.ParseControlStructureBlock()
-		if err != nil {
-			return node, err
-		}
-		if p.Config.TrimBlocks && !p.End() && p.Peek(tokens.BlockBegin) != nil {
-			if data := p.Current(tokens.Data); data != nil && lineReturnWithOnlyWhiteSpace.MatchString(data.Val) {
-				p.Consume() // Consume whitespace
-			}
-		}
 		return node, err
 	}
 	return nil, p.Error("Unexpected token (only HTML/tags/filters in templates allowed)", t)
