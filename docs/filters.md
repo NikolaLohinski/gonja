@@ -136,6 +136,7 @@ For example, a list of User objects with a city attribute can be rendered in gro
 | ---------------------------------------------------------------------------------------- |
 
 Return a copy of the string with each line indented by 4 spaces. The first line and blank lines are not indented by default.
+The `width` argument can be either an integer number of spaces or a string prefix.
 
 ## The `int` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.int) |
