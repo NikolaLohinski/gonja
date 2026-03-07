@@ -90,12 +90,89 @@ var _ = Context("config", func() {
 			Expect(*returnedErr).To(BeNil())
 			By("returning the expected result")
 			expected := heredoc.Doc(`
-
+				
 				I am cornered
 				but pointy
-
 			`)
 			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
+	Context("when toggling Config.KeepTrailingNewline behavior", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "with\nnewline\n",
+			})
+		})
+
+		Context("when Config.KeepTrailingNewline = false", func() {
+			It("should drop a single trailing newline", func() {
+				Expect(*returnedErr).To(BeNil())
+				AssertPrettyDiff("with\nnewline", *returnedResult)
+			})
+		})
+
+		Context("when Config.KeepTrailingNewline = true", func() {
+			BeforeEach(func() {
+				(*configuration).KeepTrailingNewline = true
+			})
+
+			It("should preserve the trailing newline", func() {
+				Expect(*returnedErr).To(BeNil())
+				AssertPrettyDiff("with\nnewline\n", *returnedResult)
+			})
+		})
+	})
+	Context("when changing Config.NewlineSequence", func() {
+		BeforeEach(func() {
+			(*configuration).NewlineSequence = "\r\n"
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "line1\n{{ \"line2\nline3\" }}",
+			})
+		})
+
+		It("should normalize template data and multiline strings", func() {
+			Expect(*returnedErr).To(BeNil())
+			AssertPrettyDiff("line1\r\nline2\r\nline3", *returnedResult)
+		})
+	})
+	Context("when using Config.LineStatementPrefix", func() {
+		BeforeEach(func() {
+			(*configuration).LineStatementPrefix = "#"
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "# for item in [1, 2]\n* {{ item }}\n# endfor",
+			})
+		})
+
+		It("should render line-based statements like block tags", func() {
+			Expect(*returnedErr).To(BeNil())
+			AssertPrettyDiff("* 1\n* 2\n", *returnedResult)
+		})
+	})
+	Context("when using Config.LineCommentPrefix", func() {
+		BeforeEach(func() {
+			(*configuration).LineCommentPrefix = "##"
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "## comment\nhello",
+			})
+		})
+
+		It("should ignore the rest of the comment line", func() {
+			Expect(*returnedErr).To(BeNil())
+			AssertPrettyDiff("\nhello", *returnedResult)
+		})
+	})
+	Context("when using PHP-style block delimiters", func() {
+		BeforeEach(func() {
+			(*configuration).BlockStartString = "<?"
+			(*configuration).BlockEndString = "?>"
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: "<? if True ?>ok<? endif ?>",
+			})
+		})
+
+		It("should parse the template correctly", func() {
+			Expect(*returnedErr).To(BeNil())
+			AssertPrettyDiff("ok", *returnedResult)
 		})
 	})
 	Context("when toggling Config.AutoEscape behavior", func() {
@@ -154,8 +231,7 @@ var _ = Context("config", func() {
 
 					The empty line should have been removed
 
-					The empty line above should stay
-				`), *returnedResult)
+					The empty line above should stay`), *returnedResult)
 			})
 		})
 		Context("when Config.TrimBlocks = true", func() {
@@ -171,8 +247,7 @@ var _ = Context("config", func() {
 						Some text
 						The empty line should have been removed
 
-						The empty line above should stay
-					`), *returnedResult)
+						The empty line above should stay`), *returnedResult)
 				})
 			})
 			Context("when block trimming is disabled locally", func() {
@@ -198,8 +273,7 @@ var _ = Context("config", func() {
 
 						The empty line should have been removed
 
-						The empty line above should stay
-					`), *returnedResult)
+						The empty line above should stay`), *returnedResult)
 				})
 			})
 		})
@@ -225,8 +299,7 @@ var _ = Context("config", func() {
 				AssertPrettyDiff(heredoc.Doc(`
 					  	block indented with spaces and tabs
 					-
-					  variable indented with spaces
-				`), *returnedResult)
+					  variable indented with spaces`), *returnedResult)
 			})
 		})
 		Context("when Config.LeftStripBlocks = true", func() {
@@ -241,8 +314,7 @@ var _ = Context("config", func() {
 					AssertPrettyDiff(heredoc.Doc(`
 						block indented with spaces and tabs
 						-
-						  variable indented with spaces
-					`), *returnedResult)
+						  variable indented with spaces`), *returnedResult)
 				})
 			})
 			Context("when left stripping is disabled locally", func() {
@@ -262,8 +334,7 @@ var _ = Context("config", func() {
 					AssertPrettyDiff(heredoc.Doc(`
 						  	block indented with spaces and tabs
 						-
-						  variable indented with spaces
-					`), *returnedResult)
+						  variable indented with spaces`), *returnedResult)
 				})
 			})
 		})
@@ -293,10 +364,10 @@ var _ = Context("config", func() {
 			Expect(*returnedErr).To(BeNil())
 			By("returning the expected result")
 			expected := heredoc.Doc(`
-				
 				- 1
 				- 2
-				- 3`)
+				- 3
+			`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})

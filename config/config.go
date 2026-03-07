@@ -27,6 +27,14 @@ type Config struct {
 	TrimBlocks bool
 	// If is set to true, the leading spaces and tabes are stripped from the start of a line to a block
 	LeftStripBlocks bool
+	// Preserve a single trailing newline at the end of the template source.
+	KeepTrailingNewline bool
+	// The newline sequence to use in rendered template data and multiline string literals.
+	NewlineSequence string
+	// Prefix that turns an entire line into a statement block when set.
+	LineStatementPrefix string
+	// Prefix that turns the remainder of a line into a comment when set.
+	LineCommentPrefix string
 }
 
 func New() *Config {
@@ -41,6 +49,10 @@ func New() *Config {
 		StrictUndefined:     false,
 		TrimBlocks:          false,
 		LeftStripBlocks:     false,
+		KeepTrailingNewline: false,
+		NewlineSequence:     "\n",
+		LineStatementPrefix: "",
+		LineCommentPrefix:   "",
 	}
 }
 
@@ -56,5 +68,9 @@ func (c *Config) Inherit() *Config {
 		StrictUndefined:     c.StrictUndefined,
 		TrimBlocks:          c.TrimBlocks,
 		LeftStripBlocks:     c.LeftStripBlocks,
+		KeepTrailingNewline: c.KeepTrailingNewline,
+		NewlineSequence:     c.NewlineSequence,
+		LineStatementPrefix: c.LineStatementPrefix,
+		LineCommentPrefix:   c.LineCommentPrefix,
 	}
 }

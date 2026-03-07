@@ -29,6 +29,23 @@ var _ = Context("legacy tests", func() {
 		fixturesDir  = "testdata/"
 		testCasesDir = "testcases/"
 	)
+	trimSingleTrailingNewline := func(input string) string {
+		if strings.HasSuffix(input, "\r\n") {
+			return strings.TrimSuffix(input, "\r\n")
+		}
+		return strings.TrimSuffix(input, "\n")
+	}
+	adjustExpectedTrailingNewline := func(expected, source string, cfg *config.Config) string {
+		if cfg == nil || cfg.KeepTrailingNewline {
+			return expected
+		}
+		source = strings.ReplaceAll(source, "\r\n", "\n")
+		source = strings.ReplaceAll(source, "\r", "\n")
+		if !strings.HasSuffix(source, "\n") {
+			return expected
+		}
+		return trimSingleTrailingNewline(expected)
+	}
 	var (
 		identifier = new(string)
 
@@ -44,7 +61,8 @@ var _ = Context("legacy tests", func() {
 	BeforeEach(func() {
 		*identifier = "/test"
 		*environment = gonja.DefaultEnvironment
-		*config = gonja.DefaultConfig
+		*config = gonja.DefaultConfig.Inherit()
+		(*config).KeepTrailingNewline = true
 		*loader = loaders.MustNewMemoryLoader(nil)
 	})
 	JustBeforeEach(func() {
@@ -71,7 +89,9 @@ var _ = Context("legacy tests", func() {
 					By("not returning any error")
 					Expect(*returnedErr).To(BeNil())
 					By("returning the correct result")
+					source := string(MustReturn(os.ReadFile(filePath)).([]byte))
 					expected := string(MustReturn(os.ReadFile(filePath + ".out")).([]byte))
+					expected = adjustExpectedTrailingNewline(expected, source, *config)
 					edits := myers.ComputeEdits("expected", expected, *returnedResult)
 					diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
 					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
@@ -494,8 +514,9 @@ var _ = Context("legacy tests", func() {
 					By("not returning any error")
 					Expect(*returnedErr).To(BeNil())
 					By("not returning the correct result")
-					edits := myers.ComputeEdits("expected", t.expected, *returnedResult)
-					diffs := gotextdiff.ToUnified("expected", "got", t.expected, edits)
+					expected := adjustExpectedTrailingNewline(t.expected, t.template, *config)
+					edits := myers.ComputeEdits("expected", expected, *returnedResult)
+					diffs := gotextdiff.ToUnified("expected", "got", expected, edits)
 					Expect(diffs.Hunks).To(BeEmpty(), "\n"+fmt.Sprint(diffs))
 				})
 			})

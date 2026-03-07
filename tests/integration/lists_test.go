@@ -59,8 +59,7 @@ var _ = Context("lists", func() {
 					[1]:   2
 					[-2]:  4
 					[256]: 
-					[-99]: 
-				`)
+					[-99]: `)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
@@ -92,8 +91,7 @@ var _ = Context("lists", func() {
 					[2:]:  [3, 4, 'five']
 					[:3]:  ['1', 2, 3]
 					[:-2]: ['1', 2, 3]
-					[-4:]: [2, 3, 4, 'five']
-				`)
+					[-4:]: [2, 3, 4, 'five']`)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
@@ -180,8 +178,7 @@ var _ = Context("lists", func() {
 					in: False
 					not in: True
 					is not in: True
-					not (in): True
-				`)
+					not (in): True`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})

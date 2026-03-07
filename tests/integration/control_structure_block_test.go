@@ -60,8 +60,7 @@ var _ = Context("control structure 'block'", func() {
 				first block
 				second block
 				self first block
-				self second block
-			`)
+				self second block`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
@@ -91,8 +90,7 @@ var _ = Context("control structure 'block'", func() {
 				some content in between
 
 				reused content
-				reused content
-			`)
+				reused content`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})

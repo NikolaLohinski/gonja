@@ -56,7 +56,6 @@ func (p *Parser) ParseControlStructureBlock() (*nodes.ControlStructureBlock, err
 	}
 	if data := p.Current(tokens.Data); data != nil {
 		data.Trim = data.Trim || len(end.Val) > 0 && end.Val[0] == '-'
-		data.RemoveFirstLineReturn = p.Config.TrimBlocks && len(end.Val) > 0 && end.Val[0] != '+'
 	}
 
 	if logging.Enabled() {

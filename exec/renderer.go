@@ -62,8 +62,8 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 	case *nodes.Data:
 		output := n.Data.Val
 		if n.RemoveFirstLineReturn {
-			output = strings.TrimSuffix(output, "\n")
-			output = strings.TrimSuffix(output, "\r\n")
+			output = strings.TrimPrefix(output, "\r\n")
+			output = strings.TrimPrefix(output, "\n")
 		}
 		if n.Trim.Left {
 			output = strings.TrimLeft(output, " \r\n\t")

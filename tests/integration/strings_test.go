@@ -62,8 +62,7 @@ var _ = Context("strings", func() {
 					[4]:   i
 					[-3]:  u
 					[256]: 
-					[-99]: 
-				`)
+					[-99]: `)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
@@ -94,8 +93,7 @@ var _ = Context("strings", func() {
 					[2:]:  sting is fun!
 					[:3]:  tes
 					[:-2]: testing is fu
-					[-5:]:  fun!
-				`)
+					[-5:]:  fun!`)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
@@ -220,8 +218,7 @@ var _ = Context("strings", func() {
 				By("returning the expected result")
 				expected := heredoc.Doc(`
 				True
-				bob
-				`)
+				bob`)
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
