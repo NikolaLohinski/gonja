@@ -354,6 +354,7 @@ func (l *Lexer) lexExpression() lexFn {
 		case isSpace(r):
 			return l.lexSpace
 		case isNumeric(r):
+			l.backup()
 			return l.lexNumber
 		case r == '"' || r == '\'':
 			l.backup()
@@ -522,26 +523,141 @@ func (l *Lexer) lexIdentifier() lexFn {
 }
 
 func (l *Lexer) lexNumber() lexFn {
-	tokType := Integer
-	for {
-		switch r := l.next(); {
-		case isNumeric(r):
-			continue
-		case r == '.':
-			if n := l.peek(); isNumeric(n) || isSpace(n) {
-				if tokType != Float {
-					tokType = Float
-					continue
-				}
-				return l.errorf("two dots in numeric token")
-			}
-		case isAlphaNumeric(r) && tokType == Integer:
-			return l.lexIdentifier
-		}
-		l.backup()
-		l.emit(tokType)
-		return l.lexExpression
+	tokType, err := l.scanNumber()
+	if err != nil {
+		return l.errorf("%s", err)
 	}
+	if tokType == Integer && isAlphaNumeric(l.peek()) {
+		return l.lexIdentifier
+	}
+	l.emit(tokType)
+	return l.lexExpression
+}
+
+func (l *Lexer) scanNumber() (Type, error) {
+	if !isNumeric(l.peek()) {
+		return Integer, fmt.Errorf("invalid numeric token")
+	}
+
+	l.next()
+	if l.Current() == "0" {
+		switch unicode.ToLower(l.peek()) {
+		case 'b':
+			l.next()
+			hasDigits, err := l.scanDigits(isBinaryDigit, false)
+			if err != nil {
+				return Integer, err
+			}
+			if !hasDigits {
+				return Integer, fmt.Errorf("invalid numeric token")
+			}
+			return Integer, nil
+		case 'o':
+			l.next()
+			hasDigits, err := l.scanDigits(isOctalDigit, false)
+			if err != nil {
+				return Integer, err
+			}
+			if !hasDigits {
+				return Integer, fmt.Errorf("invalid numeric token")
+			}
+			return Integer, nil
+		case 'x':
+			l.next()
+			hasDigits, err := l.scanDigits(isHexDigit, false)
+			if err != nil {
+				return Integer, err
+			}
+			if !hasDigits {
+				return Integer, fmt.Errorf("invalid numeric token")
+			}
+			return Integer, nil
+		}
+	}
+
+	if _, err := l.scanDigits(isNumeric, true); err != nil {
+		return Integer, err
+	}
+
+	tokType := Integer
+	if l.peek() == '.' {
+		l.next()
+		switch next := l.peek(); {
+		case isNumeric(next):
+			tokType = Float
+			if _, err := l.scanDigits(isNumeric, false); err != nil {
+				return tokType, err
+			}
+		case isSpace(next) || isNumericTerminator(next) || isEOF(next):
+			tokType = Float
+		default:
+			l.backup()
+		}
+	}
+
+	hasExponent, err := l.scanExponent()
+	if err != nil {
+		return Float, err
+	}
+	if hasExponent {
+		tokType = Float
+	}
+
+	if tokType == Float && l.peek() == '.' {
+		l.next()
+		next := l.peek()
+		l.backup()
+		if isNumeric(next) || isSpace(next) || isNumericTerminator(next) || isEOF(next) {
+			return tokType, fmt.Errorf("two dots in numeric token")
+		}
+	}
+
+	return tokType, nil
+}
+
+func (l *Lexer) scanDigits(valid func(rune) bool, sawDigit bool) (bool, error) {
+	underscorePending := false
+	for {
+		switch r := l.peek(); {
+		case valid(r):
+			l.next()
+			sawDigit = true
+			underscorePending = false
+		case r == '_':
+			if !sawDigit || underscorePending {
+				return sawDigit, fmt.Errorf("invalid numeric token")
+			}
+			l.next()
+			underscorePending = true
+		default:
+			if underscorePending {
+				return sawDigit, fmt.Errorf("invalid numeric token")
+			}
+			return sawDigit, nil
+		}
+	}
+}
+
+func (l *Lexer) scanExponent() (bool, error) {
+	if next := l.peek(); next != 'e' && next != 'E' {
+		return false, nil
+	}
+
+	savedPos := l.Pos
+	savedWidth := l.Width
+
+	l.next()
+	if sign := l.peek(); sign == '+' || sign == '-' {
+		l.next()
+	}
+
+	hasDigits, err := l.scanDigits(isNumeric, false)
+	if err != nil || !hasDigits {
+		l.Pos = savedPos
+		l.Width = savedWidth
+		return false, nil
+	}
+	return true, nil
 }
 
 func unescape(str string) string {
@@ -581,6 +697,27 @@ func isAlphaNumeric(r rune) bool {
 
 func isNumeric(r rune) bool {
 	return unicode.IsDigit(r)
+}
+
+func isBinaryDigit(r rune) bool {
+	return r == '0' || r == '1'
+}
+
+func isOctalDigit(r rune) bool {
+	return r >= '0' && r <= '7'
+}
+
+func isHexDigit(r rune) bool {
+	return isNumeric(r) || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+func isNumericTerminator(r rune) bool {
+	switch r {
+	case ',', '|', ':', ')', ']', '}', '+', '-', '*', '/', '%', '<', '>', '=', '!':
+		return true
+	default:
+		return false
+	}
 }
 
 func isEOF(r rune) bool {

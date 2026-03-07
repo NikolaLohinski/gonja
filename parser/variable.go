@@ -12,6 +12,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func normalizeNumericLiteral(val string) string {
+	return strings.ReplaceAll(val, "_", "")
+}
+
+func parseIntegerLiteral(val string) (int, error) {
+	parsed, err := strconv.ParseInt(normalizeNumericLiteral(val), 0, strconv.IntSize)
+	if err != nil {
+		return 0, err
+	}
+	return int(parsed), nil
+}
+
+func parseFloatLiteral(val string) (float64, error) {
+	return strconv.ParseFloat(normalizeNumericLiteral(val), 64)
+}
+
 func (p *Parser) parseNumber() (nodes.Expression, error) {
 	if logging.Enabled() {
 		log.WithFields(log.Fields{
@@ -24,7 +40,7 @@ func (p *Parser) parseNumber() (nodes.Expression, error) {
 	}
 
 	if t.Type == tokens.Integer {
-		i, err := strconv.Atoi(t.Val)
+		i, err := parseIntegerLiteral(t.Val)
 		if err != nil {
 			return nil, p.Error(err.Error(), t)
 		}
@@ -34,7 +50,7 @@ func (p *Parser) parseNumber() (nodes.Expression, error) {
 		}
 		return nr, nil
 	} else {
-		f, err := strconv.ParseFloat(t.Val, 64)
+		f, err := parseFloatLiteral(t.Val)
 		if err != nil {
 			return nil, p.Error(err.Error(), t)
 		}
@@ -289,7 +305,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 		case tokens.Name:
 			getAttributeNode.Attribute = tok.Val
 		case tokens.Integer:
-			i, err := strconv.Atoi(tok.Val)
+			i, err := parseIntegerLiteral(tok.Val)
 			if err != nil {
 				return nil, p.Error(err.Error(), tok)
 			}

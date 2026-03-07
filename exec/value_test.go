@@ -77,7 +77,7 @@ var _ = Context("value", func() {
 				42.5556700089099,
 				"a float over the with maximal precision",
 				[]func(){
-					func() { Expect((*returnedValue).String()).To(Equal("42.55567000891"), ".String()") },
+					func() { Expect((*returnedValue).String()).To(Equal("42.5556700089099"), ".String()") },
 					func() { Expect((*returnedValue).IsInteger()).To(BeFalse(), ".IsInteger()") },
 					func() { Expect((*returnedValue).IsFloat()).To(BeTrue(), ".IsFloat()") },
 					func() { Expect((*returnedValue).IsNumber()).To(BeTrue(), ".IsNumber()") },
