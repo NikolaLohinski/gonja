@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -42,6 +43,7 @@ var Filters = exec.NewFilterSet(map[string]exec.FilterFunction{
 	"indent":         filterIndent,
 	"int":            filterInteger,
 	"join":           filterJoin,
+	"items":          filterItems,
 	"last":           filterLast,
 	"length":         filterLength,
 	"list":           filterList,
@@ -184,40 +186,36 @@ func filterCenter(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		in.String(), strings.Repeat(" ", right)))
 }
 
-func sortByKey(in *exec.Value, caseSensitive bool, reverse bool) [][2]any {
-	out := make([][2]any, 0)
-	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
-		out = append(out, [2]any{key.Interface(), value.Interface()})
-		return true
-	}, func() {}, reverse, true, caseSensitive)
+func sortByKey(in *exec.Value, caseSensitive bool, reverse bool) []tupleValue {
+	items := in.Items()
+	sort.SliceStable(items, func(i, j int) bool {
+		comparison := compareValues(items[i].Key, items[j].Key, caseSensitive)
+		if reverse {
+			return comparison > 0
+		}
+		return comparison < 0
+	})
+
+	out := make([]tupleValue, 0, len(items))
+	for _, item := range items {
+		out = append(out, tupleValue{item.Key.Interface(), item.Value.Interface()})
+	}
 	return out
 }
 
-func sortByValue(in *exec.Value, caseSensitive, reverse bool) [][2]any {
-	out := make([][2]any, 0)
+func sortByValue(in *exec.Value, caseSensitive, reverse bool) []tupleValue {
 	items := in.Items()
-	var sorter func(i, j int) bool
-	switch {
-	case caseSensitive && reverse:
-		sorter = func(i, j int) bool {
-			return items[i].Value.String() > items[j].Value.String()
+	sort.SliceStable(items, func(i, j int) bool {
+		comparison := compareValues(items[i].Value, items[j].Value, caseSensitive)
+		if reverse {
+			return comparison > 0
 		}
-	case caseSensitive && !reverse:
-		sorter = func(i, j int) bool {
-			return items[i].Value.String() < items[j].Value.String()
-		}
-	case !caseSensitive && reverse:
-		sorter = func(i, j int) bool {
-			return strings.ToLower(items[i].Value.String()) > strings.ToLower(items[j].Value.String())
-		}
-	case !caseSensitive && !reverse:
-		sorter = func(i, j int) bool {
-			return strings.ToLower(items[i].Value.String()) < strings.ToLower(items[j].Value.String())
-		}
-	}
-	sort.Slice(items, sorter)
+		return comparison < 0
+	})
+
+	out := make([]tupleValue, 0, len(items))
 	for _, item := range items {
-		out = append(out, [2]any{item.Key.Interface(), item.Value.Interface()})
+		out = append(out, tupleValue{item.Key.Interface(), item.Value.Interface()})
 	}
 	return out
 }
@@ -321,13 +319,20 @@ func filterFloat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
+	p := params.Expect(0, []*exec.KwArg{{Name: "default", Default: 0.0}})
+	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'float'"))
 	}
 	if in.IsNil() {
-		return exec.AsValue(0.0)
+		return p.KwArgs["default"]
 	}
-	return exec.AsValue(in.Float())
+	if in.IsFloat() || in.IsInteger() {
+		return exec.AsValue(in.Float())
+	}
+	if parsed, err := strconv.ParseFloat(in.String(), 64); err == nil {
+		return exec.AsValue(parsed)
+	}
+	return p.KwArgs["default"]
 }
 
 func filterForceEscape(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -355,35 +360,48 @@ func filterGroupBy(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	p := params.ExpectArgs(1)
+	p := params.Expect(1, []*exec.KwArg{
+		{Name: "default", Default: nil},
+		{Name: "case_sensitive", Default: false},
+	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'groupby"))
 	}
-	field := p.First().String()
-	groups := make(map[any][]any)
-	groupers := []any{}
+	attribute := p.First()
+	defaultValue := p.KwArgs["default"]
+	caseSensitive := p.KwArgs["case_sensitive"].Bool()
 
+	items := make([]*exec.Value, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		attr, found := key.Get(field)
-		if !found {
-			return true
-		}
-		lst, exists := groups[attr.Interface()]
-		if !exists {
-			lst = make([]any, 0)
-			groupers = append(groupers, attr.Interface())
-		}
-		lst = append(lst, key.Interface())
-		groups[attr.Interface()] = lst
+		items = append(items, key)
 		return true
 	}, func() {})
 
-	out := make([]map[string]any, 0)
-	for _, grouper := range groupers {
-		out = append(out, map[string]any{
-			"grouper": exec.AsValue(grouper).Interface(),
-			"list":    exec.AsValue(groups[grouper]).Interface(),
-		})
+	sort.SliceStable(items, func(i, j int) bool {
+		left, _ := resolveAttributeValue(items[i], attribute, defaultValue)
+		right, _ := resolveAttributeValue(items[j], attribute, defaultValue)
+		return compareValues(left, right, caseSensitive) < 0
+	})
+
+	out := make([]groupTupleValue, 0)
+	for _, item := range items {
+		key, found := resolveAttributeValue(item, attribute, defaultValue)
+		if !found {
+			continue
+		}
+		if len(out) == 0 {
+			out = append(out, groupTupleValue{key.Interface(), []any{item.Interface()}})
+			continue
+		}
+
+		last := out[len(out)-1]
+		lastKey := exec.AsValue(last[0])
+		if compareValues(lastKey, key, caseSensitive) == 0 {
+			last[1] = append(last[1].([]any), item.Interface())
+			out[len(out)-1] = last
+			continue
+		}
+		out = append(out, groupTupleValue{key.Interface(), []any{item.Interface()}})
 	}
 	return exec.AsValue(out)
 }
@@ -466,15 +484,44 @@ func filterJoin(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'join'"))
 	}
-	if !in.CanSlice() {
+	if !in.IsIterable() {
 		return in
 	}
-	sep := p.KwArgs["d"].String()
-	sl := make([]string, 0, in.Len())
-	for i := 0; i < in.Len(); i++ {
-		sl = append(sl, in.Index(i).String())
+	sepValue := p.KwArgs["d"]
+	sep := stringifyFilterValue(sepValue)
+	if e.Config.AutoEscape && !sepValue.Safe {
+		sep = escapeFilterValue(sepValue)
 	}
-	return exec.AsValue(strings.Join(sl, sep))
+	attribute := p.KwArgs["attribute"]
+
+	parts := make([]string, 0)
+	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+		item := key
+		if !attribute.IsNil() {
+			resolved, found := resolveAttributeValue(item, attribute, nil)
+			if found {
+				item = resolved
+			} else {
+				item = exec.AsValue(nil)
+			}
+		}
+		if e.Config.AutoEscape {
+			if item.Safe {
+				parts = append(parts, stringifyFilterValue(item))
+			} else {
+				parts = append(parts, escapeFilterValue(item))
+			}
+		} else {
+			parts = append(parts, stringifyFilterValue(item))
+		}
+		return true
+	}, func() {})
+
+	joined := strings.Join(parts, sep)
+	if e.Config.AutoEscape {
+		return exec.AsSafeValue(joined)
+	}
+	return exec.AsValue(joined)
 }
 
 func filterLast(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -498,6 +545,30 @@ func filterLength(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'length'"))
 	}
 	return exec.AsValue(in.Len())
+}
+
+func filterItems(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
+	if in.IsError() {
+		return in
+	}
+	if p := params.ExpectNothing(); p.IsError() {
+		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'items'"))
+	}
+	if in.IsNil() {
+		return exec.AsValue([]tupleValue{})
+	}
+	if in.IsList() {
+		return in
+	}
+	if !in.IsDict() {
+		return exec.AsValue(errors.New("items requires a mapping"))
+	}
+	items := in.Items()
+	out := make([]tupleValue, 0, len(items))
+	for _, item := range items {
+		out = append(out, tupleValue{item.Key.Interface(), item.Value.Interface()})
+	}
+	return exec.AsValue(out)
 }
 
 func filterList(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -536,32 +607,44 @@ func filterMap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "filter", Default: ""},
-		{Name: "attribute", Default: nil},
-		{Name: "default", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'map'"))
+	if in.IsNil() {
+		return exec.AsValue([]any{})
 	}
-	filter := p.KwArgs["filter"].String()
-	attribute := p.KwArgs["attribute"].String()
-	defaultVal := p.KwArgs["default"]
+
+	filterName := ""
+	filterArgs := exec.NewVarArgs()
+	attribute := exec.AsValue(nil)
+	defaultVal := exec.AsValue(nil)
+
+	if len(params.Args) > 0 {
+		filterName = params.Args[0].String()
+		filterArgs.Args = append(filterArgs.Args, params.Args[1:]...)
+		filterArgs.KwArgs = params.KwArgs
+	} else {
+		if attributeArg, ok := params.KwArgs["attribute"]; ok {
+			attribute = attributeArg
+		}
+		if defaultArg, ok := params.KwArgs["default"]; ok {
+			defaultVal = defaultArg
+		}
+		if len(params.KwArgs) > 2 {
+			return exec.AsValue(errors.New("Wrong signature for 'map'"))
+		}
+	}
+
 	out := make([]any, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
-		if len(attribute) > 0 {
-			attr, found := val.Get(attribute)
+		if !attribute.IsNil() {
+			attr, found := resolveAttributeValue(val, attribute, defaultVal)
 			if found {
 				val = attr
-			} else if defaultVal != nil {
-				val = defaultVal
 			} else {
 				return true
 			}
 		}
-		if len(filter) > 0 {
-			val = e.ExecuteFilterByName(filter, val, exec.NewVarArgs())
+		if filterName != "" {
+			val = e.ExecuteFilterByName(filterName, val, filterArgs)
 		}
 		out = append(out, val.Interface())
 		return true
@@ -746,54 +829,36 @@ func filterRejectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	if in.IsError() {
 		return in
 	}
-	var test func(*exec.Value) *exec.Value
 	if len(params.Args) < 1 {
 		return exec.AsValue(errors.New("Wrong signature for 'rejectattr', expect at least an attribute name as argument"))
 	}
-	attribute := params.First().String()
-	if len(params.Args) == 1 {
-		// Reject truthy value
-		test = func(in *exec.Value) *exec.Value {
-			attr, found := in.Get(attribute)
-			if !found {
-				return exec.AsValue(errors.Errorf(`%s has no attribute '%s'`, in.String(), attribute))
-			}
-			return attr
-		}
-	} else {
-		name := params.Args[1].String()
-		testParams := &exec.VarArgs{
-			Args:   params.Args[2:],
-			KwArgs: params.KwArgs,
-		}
-		test = func(in *exec.Value) *exec.Value {
-			attr, found := in.Get(attribute)
-			if !found {
-				return exec.AsValue(errors.Errorf(`%s has no attribute '%s'`, in.String(), attribute))
-			}
-			out := e.ExecuteTestByName(name, attr, testParams)
-			return out
-		}
+	attribute := params.First()
+	name := ""
+	testArgs := []*exec.Value{}
+	if len(params.Args) > 2 {
+		testArgs = params.Args[2:]
+	}
+	testParams := &exec.VarArgs{Args: testArgs, KwArgs: params.KwArgs}
+	if len(params.Args) > 1 {
+		name = params.Args[1].String()
 	}
 
 	out := make([]any, 0)
-	var err *exec.Value
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		result := test(key)
-		if result.IsError() {
-			err = result
-			return false
+		attr, _ := resolveAttributeValue(key, attribute, nil)
+		keep := false
+		if name == "" {
+			keep = !attr.IsTrue()
+		} else {
+			keep = !e.ExecuteTestByName(name, attr, testParams).IsTrue()
 		}
-		if !result.IsTrue() {
+		if keep {
 			out = append(out, key.Interface())
 		}
 		return true
 	}, func() {})
 
-	if err != nil {
-		return err
-	}
 	return exec.AsValue(out)
 }
 
@@ -934,21 +999,27 @@ func filterSlice(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if !in.IsList() {
 		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a list", in.String())))
 	}
-	quotient := int(math.Ceil(float64(in.Len()) / float64(slices)))
-	remainder := in.Len() % slices
-	output := make([]any, 0)
+	seq := make([]any, 0, in.Len())
 	in.Iterate(func(index, _ int, value, _ *exec.Value) bool {
-		if index%quotient == 0 {
-			output = append(output, []any{value.Interface()})
-		} else {
-			output[len(output)-1] = append(output[len(output)-1].([]any), value.Interface())
-		}
+		seq = append(seq, value.Interface())
 		return true
 	}, func() {})
-	if remainder > 0 && fillWith != nil {
-		for len(output[len(output)-1].([]any)) < quotient {
-			output[len(output)-1] = append(output[len(output)-1].([]any), fillWith)
+
+	itemsPerSlice := len(seq) / slices
+	slicesWithExtra := len(seq) % slices
+	offset := 0
+	output := make([]any, 0, slices)
+	for sliceNumber := 0; sliceNumber < slices; sliceNumber++ {
+		start := offset + sliceNumber*itemsPerSlice
+		if sliceNumber < slicesWithExtra {
+			offset++
 		}
+		end := offset + (sliceNumber+1)*itemsPerSlice
+		column := append([]any{}, seq[start:end]...)
+		if fillWith != nil && sliceNumber >= slicesWithExtra {
+			column = append(column, fillWith)
+		}
+		output = append(output, column)
 	}
 	return exec.AsValue(output)
 }
@@ -957,17 +1028,51 @@ func filterSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "reverse", Default: false}, {Name: "case_sensitive", Default: false}})
+	p := params.Expect(0, []*exec.KwArg{
+		{Name: "reverse", Default: false},
+		{Name: "case_sensitive", Default: false},
+		{Name: "attribute", Default: nil},
+	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'sort'"))
 	}
 	reverse := p.KwArgs["reverse"].Bool()
 	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	out := make([]any, 0)
-	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
-		out = append(out, key.Interface())
+	attribute := p.KwArgs["attribute"]
+	items := make([]*exec.Value, 0)
+	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+		items = append(items, key)
 		return true
-	}, func() {}, reverse, true, caseSensitive)
+	}, func() {})
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if attribute.IsNil() {
+			comparison := compareValues(items[i], items[j], caseSensitive)
+			if reverse {
+				return comparison > 0
+			}
+			return comparison < 0
+		}
+
+		for _, attr := range strings.Split(attribute.String(), ",") {
+			left, _ := resolveAttributePath(items[i], attr, nil)
+			right, _ := resolveAttributePath(items[j], attr, nil)
+			comparison := compareValues(left, right, caseSensitive)
+			if comparison == 0 {
+				continue
+			}
+			if reverse {
+				return comparison > 0
+			}
+			return comparison < 0
+		}
+		return false
+	})
+
+	out := make([]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, item.Interface())
+	}
 	return exec.AsValue(out)
 }
 
@@ -1009,36 +1114,23 @@ func filterSum(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 
 	attribute := p.KwArgs["attribute"]
 	sum := p.KwArgs["start"].Float()
-	var err error
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		if attribute.IsString() {
-			val := key
-			found := true
-			for attr := range strings.SplitSeq(attribute.String(), ".") {
-				val, found = val.Get(attr)
-				if !found {
-					err = errors.Errorf("'%s' has no attribute '%s'", key.String(), attribute.String())
-					return false
-				}
+		val := key
+		if !attribute.IsNil() {
+			resolved, found := resolveAttributeValue(key, attribute, nil)
+			if !found {
+				return true
 			}
-			if found && val.IsNumber() {
-				sum += val.Float()
-			}
-		} else if attribute.IsInteger() {
-			value, found := key.GetItem(attribute.Integer())
-			if found {
-				sum += value.Float()
-			}
-		} else {
-			sum += key.Float()
+			val = resolved
+		}
+		if val.IsNumber() {
+			sum += val.Float()
 		}
 		return true
 	}, func() {})
 
-	if err != nil {
-		return exec.AsValue(err)
-	} else if sum == math.Trunc(sum) {
+	if sum == math.Trunc(sum) {
 		return exec.AsValue(int64(sum))
 	}
 	return exec.AsValue(sum)
@@ -1174,16 +1266,13 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	out := make([]any, 0)
 	tracker := map[any]bool{}
-	var err error
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
-		if attribute.IsString() {
-			attr := attribute.String()
-			nested, found := key.Get(attr)
+		if !attribute.IsNil() {
+			nested, found := resolveAttributeValue(key, attribute, nil)
 			if !found {
-				err = errors.Errorf(`%s has no attribute %s`, key.String(), attr)
-				return false
+				return true
 			}
 			val = nested
 		}
@@ -1198,9 +1287,6 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return true
 	}, func() {})
 
-	if err != nil {
-		return exec.AsValue(err)
-	}
 	return exec.AsValue(out)
 }
 
@@ -1394,53 +1480,35 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	if in.IsError() {
 		return in
 	}
-	var test func(*exec.Value) *exec.Value
 	if len(params.Args) < 1 {
 		return exec.AsValue(errors.New("Wrong signature for 'selectattr', expect at least an attribute name as argument"))
 	}
-	attribute := params.First().String()
-	if len(params.Args) == 1 {
-		// Reject truthy value
-		test = func(in *exec.Value) *exec.Value {
-			attr, found := in.Get(attribute)
-			if !found {
-				return exec.AsValue(errors.Errorf(`%s has no attribute '%s'`, in.String(), attribute))
-			}
-			return attr
-		}
-	} else {
-		name := params.Args[1].String()
-		testParams := &exec.VarArgs{
-			Args:   params.Args[2:],
-			KwArgs: params.KwArgs,
-		}
-		test = func(in *exec.Value) *exec.Value {
-			attr, found := in.Get(attribute)
-			if !found {
-				return exec.AsValue(errors.Errorf(`%s has no attribute '%s'`, in.String(), attribute))
-			}
-			out := e.ExecuteTestByName(name, attr, testParams)
-			return out
-		}
+	attribute := params.First()
+	name := ""
+	testArgs := []*exec.Value{}
+	if len(params.Args) > 2 {
+		testArgs = params.Args[2:]
+	}
+	testParams := &exec.VarArgs{Args: testArgs, KwArgs: params.KwArgs}
+	if len(params.Args) > 1 {
+		name = params.Args[1].String()
 	}
 
 	out := make([]any, 0)
-	var err *exec.Value
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		result := test(key)
-		if result.IsError() {
-			err = result
-			return false
+		attr, _ := resolveAttributeValue(key, attribute, nil)
+		matched := false
+		if name == "" {
+			matched = attr.IsTrue()
+		} else {
+			matched = e.ExecuteTestByName(name, attr, testParams).IsTrue()
 		}
-		if result.IsTrue() {
+		if matched {
 			out = append(out, key.Interface())
 		}
 		return true
 	}, func() {})
 
-	if err != nil {
-		return err
-	}
 	return exec.AsValue(out)
 }

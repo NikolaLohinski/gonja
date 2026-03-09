@@ -20,6 +20,14 @@ type Value struct {
 	Safe bool // used to indicate whether a Value needs explicit escaping in the template
 }
 
+type AttributeGetter interface {
+	GetAttribute(name string) (*Value, bool)
+}
+
+type ItemGetter interface {
+	GetItem(key any) (*Value, bool)
+}
+
 // AsValue converts any given Value to a gonja.Value.
 // Usually being used within functions passed to a template
 // through a Context or within filter functions.
@@ -215,7 +223,17 @@ func (v *Value) String() string {
 	if v.IsNil() {
 		return ""
 	}
+	if v.Val.IsValid() && v.Val.CanInterface() {
+		if stringer, ok := v.Val.Interface().(fmt.Stringer); ok {
+			return stringer.String()
+		}
+	}
 	resolved := v.getResolvedValue()
+	if resolved.CanInterface() {
+		if stringer, ok := resolved.Interface().(fmt.Stringer); ok {
+			return stringer.String()
+		}
+	}
 
 	switch resolved.Kind() {
 	case reflect.String:
@@ -231,10 +249,6 @@ func (v *Value) String() string {
 			return "True"
 		}
 		return "False"
-	case reflect.Struct:
-		if t, ok := v.Interface().(fmt.Stringer); ok {
-			return t.String()
-		}
 	case reflect.Slice, reflect.Array:
 		var out strings.Builder
 		// Special case for []byte
@@ -386,6 +400,18 @@ func (v *Value) Integer() int {
 		}
 		return int(f)
 	default:
+		if converted, ok := v.Interface().(interface{ Int() int }); ok {
+			return converted.Int()
+		}
+		if converted, ok := v.Interface().(interface{ Int64() int64 }); ok {
+			return int(converted.Int64())
+		}
+		if resolved := v.String(); resolved != "" {
+			f, err := strconv.ParseFloat(resolved, 64)
+			if err == nil {
+				return int(f)
+			}
+		}
 		if logging.Enabled() {
 			log.Errorf("Value.Integer() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		}
@@ -412,6 +438,15 @@ func (v *Value) Float() float64 {
 		}
 		return f
 	default:
+		if converted, ok := v.Interface().(interface{ Float64() float64 }); ok {
+			return converted.Float64()
+		}
+		if resolved := v.String(); resolved != "" {
+			f, err := strconv.ParseFloat(resolved, 64)
+			if err == nil {
+				return f
+			}
+		}
 		if logging.Enabled() {
 			log.Errorf("Value.Float() not available for type: %s\n", v.getResolvedValue().Kind().String())
 		}
@@ -556,7 +591,7 @@ func (v *Value) Index(i int) *Value {
 		if i >= v.Len() {
 			return AsValue(nil)
 		}
-		return AsValue(v.getResolvedValue().Index(i).Interface())
+		return ToValue(v.getResolvedValue().Index(i))
 	case reflect.String:
 		s := v.getResolvedValue().String()
 		runes := []rune(s)
@@ -872,8 +907,8 @@ func (v *Value) Items() []*Pair {
 	iter := resolved.MapRange()
 	for iter.Next() {
 		out = append(out, &Pair{
-			Key:   &Value{Val: iter.Key()},
-			Value: &Value{Val: iter.Value()},
+			Key:   ToValue(iter.Key()),
+			Value: ToValue(iter.Value()),
 		})
 	}
 	return out
@@ -940,6 +975,9 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use getattr on None`)), false
 	}
+	if getter, ok := v.Interface().(AttributeGetter); ok {
+		return getter.GetAttribute(name)
+	}
 	var val reflect.Value
 	val = v.Val.MethodByName(name)
 	if val.IsValid() {
@@ -968,6 +1006,9 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 func (v *Value) GetItem(key any) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use Getitem on None`)), false
+	}
+	if getter, ok := v.Interface().(ItemGetter); ok {
+		return getter.GetItem(key)
 	}
 	var val reflect.Value
 	if v.Val.Kind() == reflect.Pointer {
