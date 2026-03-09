@@ -2,6 +2,7 @@
 package builtins
 
 import (
+	stdjson "encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -19,7 +20,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/utils"
 )
 
 // Filters export all builtin filters
@@ -1163,19 +1163,8 @@ func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 }
 
 func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	// Done not mess around with trying to marshall error pipelines
 	if in.IsError() {
 		return in
-	}
-
-	// Monkey patching because arrays handling is broken
-	if in.IsList() {
-		inCast := make([]any, in.Len())
-		for index := range inCast {
-			item := exec.ToValue(in.Index(index).Val)
-			inCast[index] = item.Val.Interface()
-		}
-		in = exec.AsValue(inCast)
 	}
 
 	p := params.Expect(0, []*exec.KwArg{
@@ -1186,7 +1175,15 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'tojson'"))
 	}
 
-	casted := in.ToGoSimpleType(true)
+	if marshaler, ok := in.Interface().(stdjson.Marshaler); ok && p.KwArgs["indent"].IsNil() {
+		b, err := marshaler.MarshalJSON()
+		if err != nil {
+			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
+		}
+		return exec.AsSafeValue(string(b))
+	}
+
+	casted := in.ToGoSimpleType(false)
 	if err, ok := casted.(error); ok {
 		return exec.AsValue(err)
 	}
@@ -1194,17 +1191,17 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	indent := p.KwArgs["indent"]
 	var out string
 	if indent.IsNil() {
-		b, err := json.ConfigCompatibleWithStandardLibrary.Marshal(casted)
+		encoded, err := marshalJSONCompat(casted)
 		if err != nil {
 			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
 		}
-		out = string(b)
+		out = encoded
 	} else if indent.IsInteger() {
-		b, err := json.ConfigCompatibleWithStandardLibrary.MarshalIndent(casted, "", strings.Repeat(" ", indent.Integer()))
+		b, err := stdjson.MarshalIndent(casted, "", strings.Repeat(" ", indent.Integer()))
 		if err != nil {
 			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
 		}
-		out = string(b)
+		out = strings.ReplaceAll(string(b), "'", `\u0027`)
 	} else {
 		return exec.AsValue(errors.Errorf("Expected an integer for 'indent', got %s", indent.String()))
 	}
@@ -1307,70 +1304,54 @@ func filterUrlencode(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *e
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'urlencode'"))
 	}
-	return exec.AsValue(url.QueryEscape(in.String()))
+	switch {
+	case in.IsString():
+		return exec.AsValue(strings.ReplaceAll(url.PathEscape(in.String()), "%2F", "/"))
+	case in.IsDict():
+		pairs := make([]string, 0)
+		in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
+			pairs = append(pairs, fmt.Sprintf(
+				"%s=%s",
+				url.QueryEscape(stringifyFilterValue(key)),
+				url.QueryEscape(stringifyFilterValue(value)),
+			))
+			return true
+		}, func() {}, false, true, true)
+		return exec.AsValue(strings.Join(pairs, "&"))
+	case in.IsList():
+		pairs := make([]string, 0)
+		in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+			first, second, ok := urlEncodePair(key)
+			if !ok {
+				return true
+			}
+			pairs = append(pairs, fmt.Sprintf(
+				"%s=%s",
+				url.QueryEscape(stringifyFilterValue(first)),
+				url.QueryEscape(stringifyFilterValue(second)),
+			))
+			return true
+		}, func() {})
+		return exec.AsValue(strings.Join(pairs, "&"))
+	default:
+		return exec.AsValue(strings.ReplaceAll(url.PathEscape(stringifyFilterValue(in)), "%2F", "/"))
+	}
 }
 
-// TODO: This regexp could do some work
-var filterUrlizeURLRegexp = regexp.MustCompile(`((((http|https)://)|www\.|((^|[ ])[0-9A-Za-z_\-]+(\.com|\.net|\.org|\.info|\.biz|\.de))))(?U:.*)([ ]+|$)`)
-var filterUrlizeEmailRegexp = regexp.MustCompile(`(\w+@\w+\.\w{2,4})`)
+var (
+	filterURLizeEmailRegexp  = regexp.MustCompile(`^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$`)
+	filterURLizeDomainRegexp = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.[A-Za-z]{2,}[A-Za-z0-9./_-]*$`)
+)
 
-func filterUrlizeHelper(input string, trunc int, rel string, target string) (string, error) {
-	var soutErr error
-	sout := filterUrlizeURLRegexp.ReplaceAllStringFunc(input, func(raw_url string) string {
-		var prefix string
-		var suffix string
-		if strings.HasPrefix(raw_url, " ") {
-			prefix = " "
+func filterUrlizeHelper(input string, trunc int, rel string, target string, extraSchemes []string) (string, error) {
+	parts := strings.Split(input, " ")
+	for idx, part := range parts {
+		link, ok := urlizeToken(part, trunc, rel, target, extraSchemes)
+		if ok {
+			parts[idx] = link
 		}
-		if strings.HasSuffix(raw_url, " ") {
-			suffix = " "
-		}
-
-		raw_url = strings.TrimSpace(raw_url)
-
-		url := utils.IRIEncode(raw_url)
-
-		if !strings.HasPrefix(url, "http") {
-			url = fmt.Sprintf("http://%s", url)
-		}
-
-		title := raw_url
-
-		if trunc > 3 && len(title) > trunc {
-			title = fmt.Sprintf("%s...", title[:trunc-3])
-		}
-
-		title = utils.Escape(title)
-
-		attrs := ""
-		if len(target) > 0 {
-			attrs = fmt.Sprintf(` target="%s"`, target)
-		}
-
-		rels := []string{}
-		cleanedRel := strings.Trim(strings.Replace(rel, "noopener", "", -1), " ")
-		if len(cleanedRel) > 0 {
-			rels = append(rels, cleanedRel)
-		}
-		rels = append(rels, "noopener")
-		rel = strings.Join(rels, " ")
-
-		return fmt.Sprintf(`%s<a href="%s" rel="%s"%s>%s</a>%s`, prefix, url, rel, attrs, title, suffix)
-	})
-	if soutErr != nil {
-		return "", soutErr
 	}
-
-	sout = filterUrlizeEmailRegexp.ReplaceAllStringFunc(sout, func(mail string) string {
-		title := mail
-
-		if trunc > 3 && len(title) > trunc {
-			title = fmt.Sprintf("%s...", title[:trunc-3])
-		}
-
-		return fmt.Sprintf(`<a href="mailto:%s">%s</a>`, mail, title)
-	})
-	return sout, nil
+	return strings.Join(parts, " "), nil
 }
 
 func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -1382,6 +1363,7 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		{Name: "nofollow", Default: false},
 		{Name: "target", Default: nil},
 		{Name: "rel", Default: nil},
+		{Name: "extra_schemes", Default: nil},
 	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'urlize'"))
@@ -1392,12 +1374,43 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 	rel := p.KwArgs["rel"]
 	target := p.KwArgs["target"]
+	extraSchemes := make([]string, 0)
+	if extra := p.KwArgs["extra_schemes"]; !extra.IsNil() {
+		if !extra.IsList() {
+			return exec.AsValue(errors.New("extra_schemes must be a list"))
+		}
+		for i := 0; i < extra.Len(); i++ {
+			item := extra.Index(i)
+			if !item.IsString() {
+				return exec.AsValue(errors.New("extra_schemes must contain strings"))
+			}
+			extraSchemes = append(extraSchemes, item.String())
+		}
+	}
 
-	s, err := filterUrlizeHelper(in.String(), truncate, rel.String(), target.String())
+	relValue := ""
+	if rel.IsNil() {
+		relValue = "noopener"
+	} else {
+		relValue = rel.String()
+	}
+	if p.KwArgs["nofollow"].Bool() {
+		parts := []string{}
+		if relValue != "" {
+			parts = append(parts, relValue)
+		}
+		parts = append(parts, "nofollow")
+		relValue = strings.Join(parts, " ")
+	}
+
+	s, err := filterUrlizeHelper(in.String(), truncate, relValue, target.String(), extraSchemes)
 	if err != nil {
 		return exec.AsValue(err)
 	}
 
+	if e.Config.AutoEscape {
+		return exec.AsSafeValue(s)
+	}
 	return exec.AsValue(s)
 }
 
