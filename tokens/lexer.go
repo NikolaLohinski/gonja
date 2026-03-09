@@ -210,15 +210,19 @@ func (l *Lexer) atLineStart(pos int) bool {
 	return pos == 0 || l.Input[pos-1] == '\n'
 }
 
-func (l *Lexer) emitData(stripLeadingWhitespace bool) {
+func (l *Lexer) emitData() {
+	l.emitDataValue(l.Input[l.Start:l.Pos])
+}
+
+func (l *Lexer) emitLeftStrippedData() {
+	l.emitDataValue(trimLeadingWhitespaceFromLastLine(l.Input[l.Start:l.Pos]))
+}
+
+func (l *Lexer) emitDataValue(val string) {
 	if l.Pos <= l.Start {
 		return
 	}
 	line, col := ReadablePosition(l.Start, l.Input)
-	val := l.Input[l.Start:l.Pos]
-	if stripLeadingWhitespace {
-		val = trimLeadingWhitespaceFromLastLine(val)
-	}
 	val = normalizeNewlines(val, l.Config.NewlineSequence)
 	if val == "" {
 		l.Start = l.Pos
@@ -246,7 +250,7 @@ func (l *Lexer) consumeWhitespaceControl(allowed string) byte {
 	return control
 }
 
-func (l *Lexer) openingWhitespaceControl(prefix string) byte {
+func (l *Lexer) getOpeningWhitespaceControl(prefix string) byte {
 	pos := l.Pos + len(prefix)
 	if pos >= len(l.Input) {
 		return 0
@@ -419,18 +423,26 @@ func (l *Lexer) lexData() lexFn {
 	for {
 		switch l.currentRootToken() {
 		case rootTokenComment:
-			l.emitData(l.Config.LeftStripBlocks && l.openingWhitespaceControl(l.Config.CommentStartString) != '+')
+			if l.Config.LeftStripBlocks && l.getOpeningWhitespaceControl(l.Config.CommentStartString) != '+' {
+				l.emitLeftStrippedData()
+			} else {
+				l.emitData()
+			}
 			return l.lexComment
 		case rootTokenVariable:
-			l.emitData(false)
+			l.emitData()
 			return l.lexVariable
 		case rootTokenBlock:
-			l.emitData(l.Config.LeftStripBlocks && l.openingWhitespaceControl(l.Config.BlockStartString) != '+')
+			if l.Config.LeftStripBlocks && l.getOpeningWhitespaceControl(l.Config.BlockStartString) != '+' {
+				l.emitLeftStrippedData()
+			} else {
+				l.emitData()
+			}
 			return l.lexBlock
 		}
 
 		if prefix, ok := l.currentLinePrefix(); ok {
-			l.emitData(false)
+			l.emitData()
 			if prefix == linePrefixComment {
 				return l.lexLineComment
 			}
@@ -438,7 +450,7 @@ func (l *Lexer) lexData() lexFn {
 		}
 
 		if l.hasInlineLineComment() {
-			l.emitData(false)
+			l.emitData()
 			return l.lexLineComment
 		}
 
@@ -447,7 +459,7 @@ func (l *Lexer) lexData() lexFn {
 		}
 	}
 	// Correctly reached EOF.
-	l.emitData(false)
+	l.emitData()
 	l.emit(EOF) // Useful to make EOF a token.
 	return nil  // Stop the run loop.
 }
@@ -462,7 +474,7 @@ func (l *Lexer) lexRaw() lexFn {
 		return l.errorf(`Unable to find raw closing controlStructure`)
 	}
 	l.Pos += loc[0]
-	l.emitData(false)
+	l.emitData()
 	l.rawEnd = nil
 	return l.lexBlock
 	// regexp.MustCompile(`(?m)(?P<key>\w+):\s+(?P<value>\w+)$`)
@@ -482,7 +494,7 @@ func (l *Lexer) lexComment() lexFn {
 		contentEnd--
 	}
 	l.Pos = contentEnd
-	l.emitData(false)
+	l.emitData()
 	l.Pos = contentEnd
 	control := l.consumeWhitespaceControl("-+")
 	l.Pos += len(l.Config.CommentEndString)
