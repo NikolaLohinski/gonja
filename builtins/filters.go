@@ -5,6 +5,7 @@ import (
 	stdjson "encoding/json"
 	"fmt"
 	"math"
+	"math/big"
 	"math/rand"
 	"net/url"
 	"regexp"
@@ -464,13 +465,60 @@ func filterInteger(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
+	p := params.Expect(0, []*exec.KwArg{
+		{Name: "default", Default: 0},
+		{Name: "base", Default: 10},
+	})
+	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'int'"))
 	}
-	if in.IsNil() {
-		return exec.AsValue(0)
+	defaultValue := p.KwArgs["default"]
+	base := p.KwArgs["base"].Integer()
+
+	switch {
+	case in.IsNil():
+		return defaultValue
+	case in.IsInteger():
+		return exec.AsValue(in.Interface())
+	case in.IsFloat():
+		return exec.AsValue(int(in.Float()))
 	}
-	return exec.AsValue(in.Integer())
+
+	if converted, ok := in.Interface().(interface{ Int() int }); ok {
+		return exec.AsValue(converted.Int())
+	}
+
+	raw := strings.TrimSpace(in.String())
+	if raw == "" {
+		return defaultValue
+	}
+
+	switch {
+	case base == 16 && strings.HasPrefix(strings.ToLower(raw), "0x"):
+		raw = raw[2:]
+	case base == 8 && strings.HasPrefix(strings.ToLower(raw), "0o"):
+		raw = raw[2:]
+	case base == 2 && strings.HasPrefix(strings.ToLower(raw), "0b"):
+		raw = raw[2:]
+	}
+
+	if parsed, ok := new(big.Int).SetString(raw, base); ok {
+		if parsed.IsInt64() {
+			parsedInt := parsed.Int64()
+			maxInt := int64(^uint(0) >> 1)
+			minInt := -maxInt - 1
+			if parsedInt >= minInt && parsedInt <= maxInt {
+				return exec.AsValue(int(parsedInt))
+			}
+		}
+		return exec.AsValue(parsed)
+	}
+
+	if parsed, err := strconv.ParseFloat(raw, 64); err == nil && !math.IsNaN(parsed) && !math.IsInf(parsed, 0) {
+		return exec.AsValue(int(parsed))
+	}
+
+	return defaultValue
 }
 
 func filterJoin(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -770,6 +818,17 @@ func filterPPrint(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'pprint'"))
 	}
+	if in.IsList() {
+		parts := make([]string, 0, in.Len())
+		for i := 0; i < in.Len(); i++ {
+			parts = append(parts, pythonRepr(in.Index(i).Interface()))
+		}
+		if len(parts) == 0 {
+			return exec.AsSafeValue("[]")
+		}
+		return exec.AsSafeValue("[" + strings.Join(parts, ",\n ") + "]")
+	}
+
 	b, err := json.MarshalIndent(in.Interface(), "", "  ")
 	if err != nil {
 		return exec.AsValue(errors.Wrapf(err, `Unable to pretty print '%s'`, in.String()))
@@ -923,14 +982,8 @@ func filterRound(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 		return exec.AsValue(errors.Errorf(`Unknown method '%s', mush be one of 'common, 'floor', 'ceil`, method))
 	}
 	value := in.Float()
-	factor := float64(10 * p.KwArgs["precision"].Integer())
-	if factor > 0 {
-		value = value * factor
-	}
-	value = op(value)
-	if factor > 0 {
-		value = value / factor
-	}
+	factor := math.Pow(10, float64(p.KwArgs["precision"].Integer()))
+	value = op(value*factor) / factor
 	return exec.AsValue(value)
 }
 
@@ -1086,7 +1139,10 @@ func filterString(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	return exec.AsValue(in.String())
 }
 
-var reStriptags = regexp.MustCompile("<[^>]*?>")
+var (
+	reStripComments = regexp.MustCompile(`(?s)<!--.*?-->`)
+	reStriptags     = regexp.MustCompile("<[^>]*?>")
+)
 
 func filterStriptags(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if in.IsError() {
@@ -1096,11 +1152,12 @@ func filterStriptags(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *e
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'striptags'"))
 	}
 	s := in.String()
+	s = reStripComments.ReplaceAllString(s, " ")
 
 	// Strip all tags
-	s = reStriptags.ReplaceAllString(s, "")
+	s = reStriptags.ReplaceAllString(s, " ")
 
-	return exec.AsValue(strings.TrimSpace(s))
+	return exec.AsValue(strings.Join(strings.Fields(s), " "))
 }
 
 func filterSum(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -1143,23 +1200,23 @@ func filterTitle(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if p := params.ExpectNothing(); p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'title'"))
 	}
-	if !in.IsString() {
+	if in.IsNil() {
 		return exec.AsValue("")
 	}
 	return exec.AsValue(cases.Title(language.English).String(strings.ToLower(in.String())))
 }
 
 func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	charsParam := exec.KwArg{
-		Name:    "chars",
-		Default: " ",
-	}
+	charsParam := exec.KwArg{Name: "chars", Default: nil}
 	p := params.ExpectKwArgs([]*exec.KwArg{&charsParam})
 	if p.IsError() || !in.IsString() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'trim'"))
 	}
-	chars := p.GetKeywordArgument(charsParam.Name, charsParam.Default).String()
-	return exec.AsValue(strings.Trim(in.String(), chars))
+	chars := p.GetKeywordArgument(charsParam.Name, charsParam.Default)
+	if chars.IsNil() {
+		return exec.AsValue(strings.TrimSpace(in.String()))
+	}
+	return exec.AsValue(strings.Trim(in.String(), chars.String()))
 }
 
 func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -1216,7 +1273,7 @@ func filterTruncate(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		{Name: "length", Default: 255},
 		{Name: "killwords", Default: false},
 		{Name: "end", Default: "..."},
-		{Name: "leeway", Default: 0},
+		{Name: "leeway", Default: 5},
 	})
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'truncate'"))
@@ -1241,9 +1298,9 @@ func filterTruncate(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 
 	atLength := string(runes[:length-len(rEnd)])
 	if !killwords {
-		atLength = strings.TrimRightFunc(atLength, func(r rune) bool {
-			return !unicode.IsSpace(r)
-		})
+		if split := strings.LastIndexFunc(atLength, unicode.IsSpace); split >= 0 {
+			atLength = atLength[:split]
+		}
 		atLength = strings.TrimRight(atLength, " \n\t")
 	}
 	return exec.AsValue(fmt.Sprintf("%s%s", atLength, end))
@@ -1428,21 +1485,31 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if in.IsError() {
 		return in
 	}
-	words := strings.Fields(in.String())
-	wordsLen := len(words)
-	wrapAt := params.Args[0].Integer()
+	var wrapAt int
+	if err := params.Take(exec.PositionalArgument("width", exec.AsValue(79), exec.IntArgument(&wrapAt))); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
 	if wrapAt <= 0 {
 		return in
 	}
 
-	linecount := wordsLen/wrapAt + wordsLen%wrapAt
-	lines := make([]string, 0, linecount)
-	for i := range linecount {
-		min := wrapAt * (i + 1)
-		if wordsLen < min {
-			min = wordsLen
+	lines := make([]string, 0)
+	for _, paragraph := range strings.Split(in.String(), "\n") {
+		words := strings.Fields(paragraph)
+		if len(words) == 0 {
+			lines = append(lines, "")
+			continue
 		}
-		lines = append(lines, strings.Join(words[wrapAt*i:min], " "))
+		current := words[0]
+		for _, word := range words[1:] {
+			if len([]rune(current))+1+len([]rune(word)) <= wrapAt {
+				current += " " + word
+				continue
+			}
+			lines = append(lines, current)
+			current = word
+		}
+		lines = append(lines, current)
 	}
 	return exec.AsValue(strings.Join(lines, "\n"))
 }
