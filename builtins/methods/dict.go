@@ -22,9 +22,14 @@ var dictMethods = exec.NewMethodSet[map[string]any](map[string]exec.Method[map[s
 		if err := arguments.Take(); err != nil {
 			return nil, exec.ErrInvalidCall(err)
 		}
-		items := make([]any, 0)
-		for _, item := range self {
-			items = append(items, item)
+		keys := make([]string, 0, len(self))
+		for key := range self {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		items := make([]any, 0, len(keys))
+		for _, key := range keys {
+			items = append(items, []any{key, self[key]})
 		}
 		return items, nil
 	},
