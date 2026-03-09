@@ -1,15 +1,39 @@
-[<legacy_test.person Value>,
- <legacy_test.person Value>,
- <legacy_test.person Value>,
- <legacy_test.person Value>,
- <legacy_test.person Value>]
-[1,
- 1,
- 2,
- 3,
- 5,
- 8,
- 13,
- 21,
- 34,
- 55]
+[
+  {
+    "FirstName": "John",
+    "LastName": "Doe",
+    "Gender": "male"
+  },
+  {
+    "FirstName": "Jane",
+    "LastName": "Doe",
+    "Gender": "female"
+  },
+  {
+    "FirstName": "Akira",
+    "LastName": "Toriyama",
+    "Gender": "male"
+  },
+  {
+    "FirstName": "Selina",
+    "LastName": "Kyle",
+    "Gender": "female"
+  },
+  {
+    "FirstName": "Axel",
+    "LastName": "Haustant",
+    "Gender": "male"
+  }
+]
+[
+  1,
+  1,
+  2,
+  3,
+  5,
+  8,
+  13,
+  21,
+  34,
+  55
+]

@@ -24,12 +24,12 @@ func TestScalarAndTextFilterCompatibility(t *testing.T) {
 			want: "12345678901234567890|42",
 		},
 		{
-			name:     "pprint renders simple lists in python style",
+			name:     "pprint renders simple lists as indented json",
 			template: `{{ values|pprint }}`,
 			context: map[string]any{
 				"values": []any{1, 2, 3},
 			},
-			want: "[1,\n 2,\n 3]",
+			want: "[\n  1,\n  2,\n  3\n]",
 		},
 		{
 			name:     "round supports negative precision",
