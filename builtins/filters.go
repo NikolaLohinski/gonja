@@ -818,17 +818,6 @@ func filterPPrint(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if p.IsError() {
 		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'pprint'"))
 	}
-	if in.IsList() {
-		parts := make([]string, 0, in.Len())
-		for i := 0; i < in.Len(); i++ {
-			parts = append(parts, pythonRepr(in.Index(i).Interface()))
-		}
-		if len(parts) == 0 {
-			return exec.AsSafeValue("[]")
-		}
-		return exec.AsSafeValue("[" + strings.Join(parts, ",\n ") + "]")
-	}
-
 	b, err := json.MarshalIndent(in.Interface(), "", "  ")
 	if err != nil {
 		return exec.AsValue(errors.Wrapf(err, `Unable to pretty print '%s'`, in.String()))
