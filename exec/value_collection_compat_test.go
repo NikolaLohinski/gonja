@@ -1,9 +1,10 @@
 package exec_test
 
 import (
-	"testing"
-
 	"github.com/nikolalohinski/gonja/v2/exec"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type testAttributeGetter struct{}
@@ -27,32 +28,20 @@ func (testFloat64Value) Float64() float64 {
 	return 3.5
 }
 
-func TestValueCompatibilityHelpers(t *testing.T) {
-	t.Run("attribute getter is used", func(t *testing.T) {
+var _ = Context("value compatibility helpers", func() {
+	It("uses custom attribute getters", func() {
 		value, ok := exec.AsValue(testAttributeGetter{}).GetAttribute("name")
-		if !ok {
-			t.Fatal("expected custom attribute getter to resolve the attribute")
-		}
-		if got := value.String(); got != "alice" {
-			t.Fatalf("unexpected attribute value: %q", got)
-		}
+		Expect(ok).To(BeTrue())
+		Expect(value.String()).To(Equal("alice"))
 	})
 
-	t.Run("integer parses strings and custom int64 values", func(t *testing.T) {
-		if got := exec.AsValue("12.9").Integer(); got != 12 {
-			t.Fatalf("expected string conversion to int, got %d", got)
-		}
-		if got := exec.AsValue(testInt64Value{}).Integer(); got != 42 {
-			t.Fatalf("expected custom Int64 conversion, got %d", got)
-		}
+	It("parses integers from strings and custom int64 values", func() {
+		Expect(exec.AsValue("12.9").Integer()).To(Equal(12))
+		Expect(exec.AsValue(testInt64Value{}).Integer()).To(Equal(42))
 	})
 
-	t.Run("float parses strings and custom float64 values", func(t *testing.T) {
-		if got := exec.AsValue("12.5").Float(); got != 12.5 {
-			t.Fatalf("expected string conversion to float, got %v", got)
-		}
-		if got := exec.AsValue(testFloat64Value{}).Float(); got != 3.5 {
-			t.Fatalf("expected custom Float64 conversion, got %v", got)
-		}
+	It("parses floats from strings and custom float64 values", func() {
+		Expect(exec.AsValue("12.5").Float()).To(Equal(12.5))
+		Expect(exec.AsValue(testFloat64Value{}).Float()).To(Equal(3.5))
 	})
-}
+})

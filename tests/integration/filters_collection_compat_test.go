@@ -1,8 +1,11 @@
 package integration_test
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-func TestCollectionFilterCompatibility(t *testing.T) {
+var _ = Context("collection filter compatibility", func() {
 	testCases := []struct {
 		name     string
 		template string
@@ -145,10 +148,9 @@ func TestCollectionFilterCompatibility(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := renderTemplate(t, tc.template, tc.context); got != tc.want {
-				t.Fatalf("rendered output mismatch\nwant: %q\ngot:  %q", tc.want, got)
-			}
+		testCase := tc
+		It(testCase.name, func() {
+			Expect(renderTemplate(testCase.template, testCase.context)).To(Equal(testCase.want))
 		})
 	}
-}
+})

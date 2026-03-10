@@ -3,7 +3,7 @@ package builtins
 import (
 	stdjson "encoding/json"
 	"fmt"
-	"sort"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -175,65 +175,106 @@ func compareValues(left, right *exec.Value, caseSensitive bool) int {
 	}
 }
 
-func marshalJSONCompat(value any) (string, error) {
-	switch typed := value.(type) {
-	case nil:
-		return "null", nil
-	case string:
-		b, err := stdjson.Marshal(typed)
-		if err != nil {
-			return "", err
+func takeValueArgument(output **exec.Value) exec.ArgumentTransmuter {
+	return func(v *exec.Value) error {
+		if output == nil {
+			return fmt.Errorf("received nil pointer to value output")
 		}
-		return strings.ReplaceAll(string(b), "'", `\u0027`), nil
-	case bool, float64, float32,
-		int, int8, int16, int32, int64,
-		uint, uint8, uint16, uint32, uint64:
-		b, err := stdjson.Marshal(typed)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	case []any:
-		parts := make([]string, 0, len(typed))
-		for _, item := range typed {
-			encoded, err := marshalJSONCompat(item)
-			if err != nil {
-				return "", err
-			}
-			parts = append(parts, encoded)
-		}
-		return "[" + strings.Join(parts, ", ") + "]", nil
-	case map[string]any:
-		keys := make([]string, 0, len(typed))
-		for key := range typed {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-
-		parts := make([]string, 0, len(keys))
-		for _, key := range keys {
-			encoded, err := marshalJSONCompat(typed[key])
-			if err != nil {
-				return "", err
-			}
-			parts = append(parts, fmt.Sprintf("%s: %s", mustJSONString(key), encoded))
-		}
-		return "{" + strings.Join(parts, ", ") + "}", nil
-	default:
-		b, err := stdjson.Marshal(typed)
-		if err != nil {
-			return "", err
-		}
-		return strings.ReplaceAll(string(b), "'", `\u0027`), nil
+		*output = v
+		return nil
 	}
 }
 
-func mustJSONString(value string) string {
-	b, err := stdjson.Marshal(value)
-	if err != nil {
-		return `""`
+func takeStringArgument(output *string) exec.ArgumentTransmuter {
+	return func(v *exec.Value) error {
+		if output == nil {
+			return fmt.Errorf("received nil pointer to string output")
+		}
+		*output = v.String()
+		return nil
 	}
-	return strings.ReplaceAll(string(b), "'", `\u0027`)
+}
+
+func takeBoolArgument(output *bool) exec.ArgumentTransmuter {
+	return func(v *exec.Value) error {
+		if output == nil {
+			return fmt.Errorf("received nil pointer to bool output")
+		}
+		*output = v.Bool()
+		return nil
+	}
+}
+
+func takeIntArgument(output *int) exec.ArgumentTransmuter {
+	return func(v *exec.Value) error {
+		if output == nil {
+			return fmt.Errorf("received nil pointer to int output")
+		}
+		*output = v.Integer()
+		return nil
+	}
+}
+
+func takeFloatArgument(output *float64) exec.ArgumentTransmuter {
+	return func(v *exec.Value) error {
+		if output == nil {
+			return fmt.Errorf("received nil pointer to float output")
+		}
+		*output = v.Float()
+		return nil
+	}
+}
+
+func normalizeJSONValue(value any) any {
+	switch typed := value.(type) {
+	case nil:
+		return nil
+	case stdjson.Marshaler:
+		return typed
+	case *exec.Dict:
+		object := make(map[string]any, len(typed.Pairs))
+		for _, pair := range typed.Pairs {
+			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		}
+		return object
+	case exec.Dict:
+		object := make(map[string]any, len(typed.Pairs))
+		for _, pair := range typed.Pairs {
+			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		}
+		return object
+	case *exec.Value:
+		return normalizeJSONValue(typed.Interface())
+	}
+
+	resolved := reflect.ValueOf(value)
+	if !resolved.IsValid() {
+		return nil
+	}
+
+	switch resolved.Kind() {
+	case reflect.Slice, reflect.Array:
+		if resolved.Type().Elem().Kind() == reflect.Uint8 {
+			return value
+		}
+		out := make([]any, resolved.Len())
+		for i := 0; i < resolved.Len(); i++ {
+			out[i] = normalizeJSONValue(resolved.Index(i).Interface())
+		}
+		return out
+	case reflect.Map:
+		if resolved.Type().Key().Kind() != reflect.String {
+			return value
+		}
+		out := make(map[string]any, resolved.Len())
+		iter := resolved.MapRange()
+		for iter.Next() {
+			out[iter.Key().String()] = normalizeJSONValue(iter.Value().Interface())
+		}
+		return out
+	default:
+		return value
+	}
 }
 
 func urlEncodePair(item *exec.Value) (*exec.Value, *exec.Value, bool) {
@@ -248,18 +289,18 @@ func urlEncodePair(item *exec.Value) (*exec.Value, *exec.Value, bool) {
 	return first, second, true
 }
 
-func urlizeToken(token string, trunc int, rel string, target string, extraSchemes []string) (string, bool) {
+func urlizeToken(token string, trimURLLimit int, rel string, target string, extraSchemes []string) (string, bool) {
 	lower := strings.ToLower(token)
 	switch {
 	case strings.HasPrefix(lower, "mailto:"):
 		email := token[len("mailto:"):]
-		return buildURLAnchor("mailto:"+email, trimURLTitle(email, trunc), "", target), true
+		return buildURLAnchor("mailto:"+email, trimURLTitle(email, trimURLLimit), "", target), true
 	case filterURLizeEmailRegexp.MatchString(token):
-		return buildURLAnchor("mailto:"+token, trimURLTitle(token, trunc), "", target), true
+		return buildURLAnchor("mailto:"+token, trimURLTitle(token, trimURLLimit), "", target), true
 	case strings.HasPrefix(lower, "http://"), strings.HasPrefix(lower, "https://"), hasURLScheme(lower, extraSchemes):
-		return buildURLAnchor(token, trimURLTitle(token, trunc), rel, target), true
+		return buildURLAnchor(token, trimURLTitle(token, trimURLLimit), rel, target), true
 	case filterURLizeDomainRegexp.MatchString(token):
-		return buildURLAnchor("https://"+token, trimURLTitle(token, trunc), rel, target), true
+		return buildURLAnchor("https://"+token, trimURLTitle(token, trimURLLimit), rel, target), true
 	default:
 		return "", false
 	}
@@ -274,9 +315,9 @@ func hasURLScheme(token string, schemes []string) bool {
 	return false
 }
 
-func trimURLTitle(title string, trunc int) string {
-	if trunc > 3 && len(title) > trunc {
-		return title[:trunc-3] + "..."
+func trimURLTitle(title string, trimURLLimit int) string {
+	if trimURLLimit > 3 && len(title) > trimURLLimit {
+		return title[:trimURLLimit-3] + "..."
 	}
 	return title
 }
