@@ -84,8 +84,8 @@ func filterAbs(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'abs'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsInteger() {
 		asInt := in.Integer()
@@ -103,12 +103,13 @@ func filterAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	p := params.ExpectArgs(1)
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'attr'"))
+	var name string
+	if err := params.Take(
+		exec.PositionalArgument("name", nil, takeStringArgument(&name)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	attr := p.First().String()
-	value, _ := in.GetAttribute(attr)
+	value, _ := in.GetAttribute(name)
 	return value
 }
 
@@ -116,15 +117,20 @@ func filterBatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(1, []*exec.KwArg{{Name: "fill_with", Default: nil}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'batch'"))
+	var (
+		lineCount int
+		fillWith  *exec.Value
+	)
+	if err := params.Take(
+		exec.PositionalArgument("linecount", nil, takeIntArgument(&lineCount)),
+		exec.KeywordArgument("fill_with", exec.AsValue(nil), takeValueArgument(&fillWith)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	size := p.First().Integer()
 	out := make([]any, 0)
 	var row []any
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		if math.Mod(float64(idx), float64(size)) == 0 {
+		if math.Mod(float64(idx), float64(lineCount)) == 0 {
 			if row != nil {
 				out = append(out, exec.AsValue(row).Interface())
 			}
@@ -134,9 +140,8 @@ func filterBatch(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 		return true
 	}, func() {})
 	if len(row) > 0 {
-		fillWith := p.KwArgs["fill_with"]
 		if !fillWith.IsNil() {
-			for len(row) < size {
+			for len(row) < lineCount {
 				row = append(row, fillWith.Interface())
 			}
 		}
@@ -149,8 +154,8 @@ func filterCapitalize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'capitalize'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 
 	if !in.IsString() {
@@ -169,11 +174,12 @@ func filterCenter(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	p := params.ExpectArgs(1)
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'center'"))
+	var width int
+	if err := params.Take(
+		exec.PositionalArgument("width", nil, takeIntArgument(&width)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	width := p.First().Integer()
 	slen := in.Len()
 	if width <= slen {
 		return in
@@ -225,18 +231,18 @@ func filterDictSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "case_sensitive", Default: false},
-		{Name: "by", Default: "key"},
-		{Name: "reverse", Default: false},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'dictsort'"))
+	var (
+		caseSensitive bool
+		by            string
+		reverse       bool
+	)
+	if err := params.Take(
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+		exec.KeywordArgument("by", exec.AsValue("key"), takeStringArgument(&by)),
+		exec.KeywordArgument("reverse", exec.AsValue(false), takeBoolArgument(&reverse)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	by := p.KwArgs["by"].String()
-	reverse := p.KwArgs["reverse"].Bool()
 
 	switch by {
 	case "key":
@@ -252,8 +258,8 @@ func filterEscape(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'escape'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.Safe {
 		return in
@@ -270,12 +276,13 @@ func filterFileSize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "binary", Default: false}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'filesizeformat'"))
+	var binary bool
+	if err := params.Take(
+		exec.KeywordArgument("binary", exec.AsValue(false), takeBoolArgument(&binary)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	bytes := in.Float()
-	binary := p.KwArgs["binary"].Bool()
 	var base float64
 	var prefixes []string
 	if binary {
@@ -307,8 +314,8 @@ func filterFirst(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'first'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.CanSlice() && in.Len() > 0 {
 		return in.Index(0)
@@ -320,12 +327,14 @@ func filterFloat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "default", Default: 0.0}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'float'"))
+	var defaultValue *exec.Value
+	if err := params.Take(
+		exec.KeywordArgument("default", exec.AsValue(0.0), takeValueArgument(&defaultValue)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsNil() {
-		return p.KwArgs["default"]
+		return defaultValue
 	}
 	if in.IsFloat() || in.IsInteger() {
 		return exec.AsValue(in.Float())
@@ -333,15 +342,15 @@ func filterFloat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if parsed, err := strconv.ParseFloat(in.String(), 64); err == nil {
 		return exec.AsValue(parsed)
 	}
-	return p.KwArgs["default"]
+	return defaultValue
 }
 
 func filterForceEscape(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'forceescape'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsSafeValue(in.Escaped())
 }
@@ -361,16 +370,18 @@ func filterGroupBy(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(1, []*exec.KwArg{
-		{Name: "default", Default: nil},
-		{Name: "case_sensitive", Default: false},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'groupby"))
+	var (
+		attribute     *exec.Value
+		defaultValue  *exec.Value
+		caseSensitive bool
+	)
+	if err := params.Take(
+		exec.PositionalArgument("attribute", nil, takeValueArgument(&attribute)),
+		exec.KeywordArgument("default", exec.AsValue(nil), takeValueArgument(&defaultValue)),
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	attribute := p.First()
-	defaultValue := p.KwArgs["default"]
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
 
 	items := make([]*exec.Value, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
@@ -465,15 +476,16 @@ func filterInteger(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "default", Default: 0},
-		{Name: "base", Default: 10},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'int'"))
+	var (
+		defaultValue *exec.Value
+		base         int
+	)
+	if err := params.Take(
+		exec.KeywordArgument("default", exec.AsValue(0), takeValueArgument(&defaultValue)),
+		exec.KeywordArgument("base", exec.AsValue(10), takeIntArgument(&base)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	defaultValue := p.KwArgs["default"]
-	base := p.KwArgs["base"].Integer()
 
 	switch {
 	case in.IsNil():
@@ -525,22 +537,23 @@ func filterJoin(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "d", Default: ""},
-		{Name: "attribute", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'join'"))
+	var (
+		d         *exec.Value
+		attribute *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("d", exec.AsValue(""), takeValueArgument(&d)),
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.IsIterable() {
 		return in
 	}
-	sepValue := p.KwArgs["d"]
-	sep := stringifyFilterValue(sepValue)
-	if e.Config.AutoEscape && !sepValue.Safe {
-		sep = escapeFilterValue(sepValue)
+	delimiter := stringifyFilterValue(d)
+	if e.Config.AutoEscape && !d.Safe {
+		delimiter = escapeFilterValue(d)
 	}
-	attribute := p.KwArgs["attribute"]
 
 	parts := make([]string, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
@@ -565,7 +578,7 @@ func filterJoin(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 		return true
 	}, func() {})
 
-	joined := strings.Join(parts, sep)
+	joined := strings.Join(parts, delimiter)
 	if e.Config.AutoEscape {
 		return exec.AsSafeValue(joined)
 	}
@@ -576,8 +589,8 @@ func filterLast(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'last'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.CanSlice() && in.Len() > 0 {
 		return in.Index(in.Len() - 1)
@@ -589,8 +602,8 @@ func filterLength(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'length'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(in.Len())
 }
@@ -599,8 +612,8 @@ func filterItems(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'items'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsNil() {
 		return exec.AsValue([]tupleValue{})
@@ -623,8 +636,8 @@ func filterList(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'list'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsString() {
 		out := []string{}
@@ -645,8 +658,8 @@ func filterLower(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'lower'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(strings.ToLower(in.String()))
 }
@@ -704,21 +717,22 @@ func filterMax(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "case_sensitive", Default: false},
-		{Name: "attribute", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'max'"))
+	var (
+		caseSensitive bool
+		attribute     *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	attribute := p.KwArgs["attribute"].String()
 
 	var max *exec.Value
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
-		if len(attribute) > 0 {
-			attr, found := val.Get(attribute)
+		if attribute != nil && !attribute.IsNil() {
+			attr, found := resolveAttributeValue(val, attribute, nil)
 			if found {
 				val = attr
 			} else {
@@ -759,21 +773,22 @@ func filterMin(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "case_sensitive", Default: false},
-		{Name: "attribute", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'min'"))
+	var (
+		caseSensitive bool
+		attribute     *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	attribute := p.KwArgs["attribute"].String()
 
 	var min *exec.Value
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
-		if len(attribute) > 0 {
-			attr, found := val.Get(attribute)
+		if attribute != nil && !attribute.IsNil() {
+			attr, found := resolveAttributeValue(val, attribute, nil)
 			if found {
 				val = attr
 			} else {
@@ -814,9 +829,11 @@ func filterPPrint(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "verbose", Default: false}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'pprint'"))
+	var verbose bool
+	if err := params.Take(
+		exec.KeywordArgument("verbose", exec.AsValue(false), takeBoolArgument(&verbose)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	b, err := json.MarshalIndent(in.Interface(), "", "  ")
 	if err != nil {
@@ -829,8 +846,8 @@ func filterRandom(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'random'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if !in.CanSlice() || in.Len() <= 0 {
 		return in
@@ -914,13 +931,18 @@ func filterReplace(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(2, []*exec.KwArg{{Name: "count", Default: nil}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'replace'"))
+	var (
+		old   string
+		new   string
+		count *exec.Value
+	)
+	if err := params.Take(
+		exec.PositionalArgument("old", nil, takeStringArgument(&old)),
+		exec.PositionalArgument("new", nil, takeStringArgument(&new)),
+		exec.KeywordArgument("count", exec.AsValue(nil), takeValueArgument(&count)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	old := p.Args[0].String()
-	new := p.Args[1].String()
-	count := p.KwArgs["count"]
 	if count.IsNil() {
 		return exec.AsValue(strings.ReplaceAll(in.String(), old, new))
 	}
@@ -931,8 +953,8 @@ func filterReverse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'safe'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsString() {
 		var out strings.Builder
@@ -954,11 +976,16 @@ func filterRound(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "precision", Default: 0}, {Name: "method", Default: "common"}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'round'"))
+	var (
+		precision int
+		method    string
+	)
+	if err := params.Take(
+		exec.KeywordArgument("precision", exec.AsValue(0), takeIntArgument(&precision)),
+		exec.KeywordArgument("method", exec.AsValue("common"), takeStringArgument(&method)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	method := p.KwArgs["method"].String()
 	var op func(float64) float64
 	switch method {
 	case "common":
@@ -971,7 +998,7 @@ func filterRound(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 		return exec.AsValue(errors.Errorf(`Unknown method '%s', mush be one of 'common, 'floor', 'ceil`, method))
 	}
 	value := in.Float()
-	factor := math.Pow(10, float64(p.KwArgs["precision"].Integer()))
+	factor := math.Pow(10, float64(precision))
 	value = op(value*factor) / factor
 	return exec.AsValue(value)
 }
@@ -980,8 +1007,8 @@ func filterSafe(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'safe'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	in.Safe = true
 	return in // nothing to do here, just to keep track of the safe application
@@ -1070,17 +1097,18 @@ func filterSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "reverse", Default: false},
-		{Name: "case_sensitive", Default: false},
-		{Name: "attribute", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'sort'"))
+	var (
+		reverse       bool
+		caseSensitive bool
+		attribute     *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("reverse", exec.AsValue(false), takeBoolArgument(&reverse)),
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	reverse := p.KwArgs["reverse"].Bool()
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	attribute := p.KwArgs["attribute"]
 	items := make([]*exec.Value, 0)
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		items = append(items, key)
@@ -1122,8 +1150,8 @@ func filterString(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'string'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(in.String())
 }
@@ -1137,8 +1165,8 @@ func filterStriptags(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *e
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'striptags'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	s := in.String()
 	s = reStripComments.ReplaceAllString(s, " ")
@@ -1153,17 +1181,21 @@ func filterSum(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "attribute", Default: nil}, {Name: "start", Default: 0}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'sum'"))
+	var (
+		attribute *exec.Value
+		start     float64
+	)
+	if err := params.Take(
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+		exec.KeywordArgument("start", exec.AsValue(0), takeFloatArgument(&start)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-
-	attribute := p.KwArgs["attribute"]
-	sum := p.KwArgs["start"].Float()
+	sum := start
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
-		if !attribute.IsNil() {
+		if attribute != nil && !attribute.IsNil() {
 			resolved, found := resolveAttributeValue(key, attribute, nil)
 			if !found {
 				return true
@@ -1186,8 +1218,8 @@ func filterTitle(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'title'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsNil() {
 		return exec.AsValue("")
@@ -1196,12 +1228,15 @@ func filterTitle(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 }
 
 func filterTrim(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	charsParam := exec.KwArg{Name: "chars", Default: nil}
-	p := params.ExpectKwArgs([]*exec.KwArg{&charsParam})
-	if p.IsError() || !in.IsString() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'trim'"))
+	var chars *exec.Value
+	if err := params.Take(
+		exec.KeywordArgument("chars", exec.AsValue(nil), takeValueArgument(&chars)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	chars := p.GetKeywordArgument(charsParam.Name, charsParam.Default)
+	if !in.IsString() {
+		return exec.AsValue(exec.ErrInvalidCall(fmt.Errorf("%s is not a string", in.String())))
+	}
 	if chars.IsNil() {
 		return exec.AsValue(strings.TrimSpace(in.String()))
 	}
@@ -1213,43 +1248,46 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "indent", Default: nil},
-		{Name: "ensure_ascii", Default: exec.AsValue(true)}, // Accepted for compatibility, ignored (Go handles unicode)
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'tojson'"))
+	var (
+		indent      *exec.Value
+		ensureASCII bool
+	)
+	if err := params.Take(
+		exec.KeywordArgument("indent", exec.AsValue(nil), takeValueArgument(&indent)),
+		exec.KeywordArgument("ensure_ascii", exec.AsValue(true), takeBoolArgument(&ensureASCII)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	_ = ensureASCII // Accepted for compatibility, ignored (Go handles unicode differently than Python)
+
+	marshalJSON := func(value any) (string, error) {
+		if indent.IsNil() {
+			b, err := stdjson.Marshal(value)
+			if err != nil {
+				return "", err
+			}
+			return strings.ReplaceAll(string(b), "'", `\u0027`), nil
+		}
+		if !indent.IsInteger() {
+			return "", errors.Errorf("Expected an integer for 'indent', got %s", indent.String())
+		}
+		b, err := stdjson.MarshalIndent(value, "", strings.Repeat(" ", indent.Integer()))
+		if err != nil {
+			return "", err
+		}
+		return strings.ReplaceAll(string(b), "'", `\u0027`), nil
 	}
 
-	if marshaler, ok := in.Interface().(stdjson.Marshaler); ok && p.KwArgs["indent"].IsNil() {
-		b, err := marshaler.MarshalJSON()
+	out, err := marshalJSON(normalizeJSONValue(in.Interface()))
+	if err != nil {
+		casted := in.ToGoSimpleType(false)
+		if castErr, ok := casted.(error); ok {
+			return exec.AsValue(castErr)
+		}
+		out, err = marshalJSON(casted)
 		if err != nil {
 			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
 		}
-		return exec.AsSafeValue(string(b))
-	}
-
-	casted := in.ToGoSimpleType(false)
-	if err, ok := casted.(error); ok {
-		return exec.AsValue(err)
-	}
-
-	indent := p.KwArgs["indent"]
-	var out string
-	if indent.IsNil() {
-		encoded, err := marshalJSONCompat(casted)
-		if err != nil {
-			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
-		}
-		out = encoded
-	} else if indent.IsInteger() {
-		b, err := stdjson.MarshalIndent(casted, "", strings.Repeat(" ", indent.Integer()))
-		if err != nil {
-			return exec.AsValue(errors.Wrap(err, "Unable to marhsall to json"))
-		}
-		out = strings.ReplaceAll(string(b), "'", `\u0027`)
-	} else {
-		return exec.AsValue(errors.Errorf("Expected an integer for 'indent', got %s", indent.String()))
 	}
 	return exec.AsSafeValue(out)
 }
@@ -1258,21 +1296,22 @@ func filterTruncate(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "length", Default: 255},
-		{Name: "killwords", Default: false},
-		{Name: "end", Default: "..."},
-		{Name: "leeway", Default: 5},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'truncate'"))
+	var (
+		length    int
+		killWords bool
+		end       string
+		leeway    int
+	)
+	if err := params.Take(
+		exec.KeywordArgument("length", exec.AsValue(255), takeIntArgument(&length)),
+		exec.KeywordArgument("killwords", exec.AsValue(false), takeBoolArgument(&killWords)),
+		exec.KeywordArgument("end", exec.AsValue("..."), takeStringArgument(&end)),
+		exec.KeywordArgument("leeway", exec.AsValue(5), takeIntArgument(&leeway)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 
 	source := in.String()
-	length := p.KwArgs["length"].Integer()
-	leeway := p.KwArgs["leeway"].Integer()
-	killwords := p.KwArgs["killwords"].Bool()
-	end := p.KwArgs["end"].String()
 	rEnd := []rune(end)
 	fullLength := length + leeway
 	runes := []rune(source)
@@ -1286,7 +1325,7 @@ func filterTruncate(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	}
 
 	atLength := string(runes[:length-len(rEnd)])
-	if !killwords {
+	if !killWords {
 		if split := strings.LastIndexFunc(atLength, unicode.IsSpace); split >= 0 {
 			atLength = atLength[:split]
 		}
@@ -1299,13 +1338,16 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{{Name: "case_sensitive", Default: false}, {Name: "attribute", Default: nil}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'unique'"))
+	var (
+		caseSensitive bool
+		attribute     *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("case_sensitive", exec.AsValue(false), takeBoolArgument(&caseSensitive)),
+		exec.KeywordArgument("attribute", exec.AsValue(nil), takeValueArgument(&attribute)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-
-	caseSensitive := p.KwArgs["case_sensitive"].Bool()
-	attribute := p.KwArgs["attribute"]
 
 	out := make([]any, 0)
 	tracker := map[any]bool{}
@@ -1337,8 +1379,8 @@ func filterUpper(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'upper'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(strings.ToUpper(in.String()))
 }
@@ -1347,8 +1389,8 @@ func filterUrlencode(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *e
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'urlencode'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	switch {
 	case in.IsString():
@@ -1389,10 +1431,10 @@ var (
 	filterURLizeDomainRegexp = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.[A-Za-z]{2,}[A-Za-z0-9./_-]*$`)
 )
 
-func filterUrlizeHelper(input string, trunc int, rel string, target string, extraSchemes []string) (string, error) {
+func filterUrlizeHelper(input string, trimURLLimit int, rel string, target string, extraSchemes []string) (string, error) {
 	parts := strings.Split(input, " ")
 	for idx, part := range parts {
-		link, ok := urlizeToken(part, trunc, rel, target, extraSchemes)
+		link, ok := urlizeToken(part, trimURLLimit, rel, target, extraSchemes)
 		if ok {
 			parts[idx] = link
 		}
@@ -1404,29 +1446,33 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	if in.IsError() {
 		return in
 	}
-	p := params.Expect(0, []*exec.KwArg{
-		{Name: "trim_url_limit", Default: nil},
-		{Name: "nofollow", Default: false},
-		{Name: "target", Default: nil},
-		{Name: "rel", Default: nil},
-		{Name: "extra_schemes", Default: nil},
-	})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'urlize'"))
+	var (
+		trimURLLimitArgument *exec.Value
+		nofollow             bool
+		target               *exec.Value
+		rel                  *exec.Value
+		extraSchemesArgument *exec.Value
+	)
+	if err := params.Take(
+		exec.KeywordArgument("trim_url_limit", exec.AsValue(nil), takeValueArgument(&trimURLLimitArgument)),
+		exec.KeywordArgument("nofollow", exec.AsValue(false), takeBoolArgument(&nofollow)),
+		exec.KeywordArgument("target", exec.AsValue(nil), takeValueArgument(&target)),
+		exec.KeywordArgument("rel", exec.AsValue(nil), takeValueArgument(&rel)),
+		exec.KeywordArgument("extra_schemes", exec.AsValue(nil), takeValueArgument(&extraSchemesArgument)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	truncate := -1
-	if param := p.KwArgs["trim_url_limit"]; param.IsInteger() {
-		truncate = param.Integer()
+	trimURLLimit := -1
+	if trimURLLimitArgument.IsInteger() {
+		trimURLLimit = trimURLLimitArgument.Integer()
 	}
-	rel := p.KwArgs["rel"]
-	target := p.KwArgs["target"]
 	extraSchemes := make([]string, 0)
-	if extra := p.KwArgs["extra_schemes"]; !extra.IsNil() {
-		if !extra.IsList() {
+	if !extraSchemesArgument.IsNil() {
+		if !extraSchemesArgument.IsList() {
 			return exec.AsValue(errors.New("extra_schemes must be a list"))
 		}
-		for i := 0; i < extra.Len(); i++ {
-			item := extra.Index(i)
+		for i := 0; i < extraSchemesArgument.Len(); i++ {
+			item := extraSchemesArgument.Index(i)
 			if !item.IsString() {
 				return exec.AsValue(errors.New("extra_schemes must contain strings"))
 			}
@@ -1440,7 +1486,7 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	} else {
 		relValue = rel.String()
 	}
-	if p.KwArgs["nofollow"].Bool() {
+	if nofollow {
 		parts := []string{}
 		if relValue != "" {
 			parts = append(parts, relValue)
@@ -1449,7 +1495,7 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		relValue = strings.Join(parts, " ")
 	}
 
-	s, err := filterUrlizeHelper(in.String(), truncate, relValue, target.String(), extraSchemes)
+	s, err := filterUrlizeHelper(in.String(), trimURLLimit, relValue, target.String(), extraSchemes)
 	if err != nil {
 		return exec.AsValue(err)
 	}
@@ -1464,8 +1510,8 @@ func filterWordcount(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *e
 	if in.IsError() {
 		return in
 	}
-	if p := params.ExpectNothing(); p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'wordcount'"))
+	if err := params.Take(); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsValue(len(strings.Fields(in.String())))
 }
@@ -1474,11 +1520,11 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	if in.IsError() {
 		return in
 	}
-	var wrapAt int
-	if err := params.Take(exec.PositionalArgument("width", exec.AsValue(79), exec.IntArgument(&wrapAt))); err != nil {
+	var width int
+	if err := params.Take(exec.PositionalArgument("width", exec.AsValue(79), takeIntArgument(&width))); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	if wrapAt <= 0 {
+	if width <= 0 {
 		return in
 	}
 
@@ -1491,7 +1537,7 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 		}
 		current := words[0]
 		for _, word := range words[1:] {
-			if len([]rune(current))+1+len([]rune(word)) <= wrapAt {
+			if len([]rune(current))+1+len([]rune(word)) <= width {
 				current += " " + word
 				continue
 			}
@@ -1507,11 +1553,12 @@ func filterXMLAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
-	p := params.ExpectKwArgs([]*exec.KwArg{{Name: "autospace", Default: true}})
-	if p.IsError() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'xmlattr'"))
+	var autospace bool
+	if err := params.Take(
+		exec.KeywordArgument("autospace", exec.AsValue(true), takeBoolArgument(&autospace)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	autospace := p.KwArgs["autospace"].Bool()
 	kvs := []string{}
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		if !value.IsTrue() {
@@ -1529,18 +1576,21 @@ func filterXMLAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 }
 
 func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
-	p := params.Expect(1, []*exec.KwArg{{
-		Name:    "boolean",
-		Default: false,
-	}})
-	if p.IsError() || !p.GetKeywordArgument("boolean", false).IsBool() {
-		return exec.AsValue(errors.Wrap(p, "Wrong signature for 'default'"))
+	var (
+		defaultValue *exec.Value
+		boolean      bool
+	)
+	if err := params.Take(
+		exec.PositionalArgument("default", nil, takeValueArgument(&defaultValue)),
+		exec.KeywordArgument("boolean", exec.AsValue(false), exec.BoolArgument(&boolean)),
+	); err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	if in.IsError() || in.IsNil() {
-		return p.First()
+		return defaultValue
 	}
-	if p.GetKeywordArgument("boolean", false).Bool() && !in.IsTrue() {
-		return p.First()
+	if boolean && !in.IsTrue() {
+		return defaultValue
 	}
 	return in
 }

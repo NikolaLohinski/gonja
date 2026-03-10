@@ -1,6 +1,9 @@
 package integration_test
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
 type compatJSONMarshaler struct{}
 
@@ -8,7 +11,7 @@ func (compatJSONMarshaler) MarshalJSON() ([]byte, error) {
 	return []byte("42"), nil
 }
 
-func TestURLAndJSONFilterCompatibility(t *testing.T) {
+var _ = Context("url and json filter compatibility", func() {
 	testCases := []struct {
 		name     string
 		template string
@@ -16,12 +19,12 @@ func TestURLAndJSONFilterCompatibility(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "tojson preserves compact spacing and escapes apostrophes",
+			name:     "tojson uses stdlib output and escapes apostrophes",
 			template: `{{ value|tojson }}`,
 			context: map[string]any{
 				"value": map[string]any{"a": "b's"},
 			},
-			want: `{"a": "b\u0027s"}`,
+			want: `{"a":"b\u0027s"}`,
 		},
 		{
 			name:     "tojson honors custom marshalers",
@@ -65,10 +68,9 @@ func TestURLAndJSONFilterCompatibility(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := renderTemplate(t, tc.template, tc.context); got != tc.want {
-				t.Fatalf("rendered output mismatch\nwant: %q\ngot:  %q", tc.want, got)
-			}
+		testCase := tc
+		It(testCase.name, func() {
+			Expect(renderTemplate(testCase.template, testCase.context)).To(Equal(testCase.want))
 		})
 	}
-}
+})

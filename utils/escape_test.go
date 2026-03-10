@@ -1,11 +1,12 @@
 package utils
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-func TestEscapeUsesHTMLCompatibleQuoteEntities(t *testing.T) {
-	got := Escape(`<tag "quote" 'apostrophe'>`)
-	want := "&lt;tag &#34;quote&#34; &#39;apostrophe&#39;&gt;"
-	if got != want {
-		t.Fatalf("unexpected escaped output\nwant: %q\ngot:  %q", want, got)
-	}
-}
+var _ = Context("escape", func() {
+	It("uses HTML-compatible quote entities", func() {
+		Expect(Escape(`<tag "quote" 'apostrophe'>`)).To(Equal("&lt;tag &#34;quote&#34; &#39;apostrophe&#39;&gt;"))
+	})
+})

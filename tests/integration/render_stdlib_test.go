@@ -1,19 +1,15 @@
 package integration_test
 
 import (
-	"testing"
-
 	"github.com/nikolalohinski/gonja/v2"
 	"github.com/nikolalohinski/gonja/v2/exec"
+
+	. "github.com/onsi/gomega"
 )
 
-func renderTemplate(t *testing.T, source string, data map[string]any) string {
-	t.Helper()
-
+func renderTemplate(source string, data map[string]any) string {
 	template, err := gonja.FromString(source)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
+	ExpectWithOffset(1, err).To(BeNil(), "parse template")
 
 	var context *exec.Context
 	if data != nil {
@@ -21,9 +17,7 @@ func renderTemplate(t *testing.T, source string, data map[string]any) string {
 	}
 
 	rendered, err := template.ExecuteToString(context)
-	if err != nil {
-		t.Fatalf("render template: %v", err)
-	}
+	ExpectWithOffset(1, err).To(BeNil(), "render template")
 
 	return rendered
 }
