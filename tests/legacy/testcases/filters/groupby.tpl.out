@@ -1,12 +1,12 @@
 <ul>
+    <li>female<ul>
+        <li>Jane Doe</li>
+        <li>Selina Kyle</li>
+    </ul></li>
     <li>male<ul>
         <li>John Doe</li>
         <li>Akira Toriyama</li>
         <li>Axel Haustant</li>
-    </ul></li>
-    <li>female<ul>
-        <li>Jane Doe</li>
-        <li>Selina Kyle</li>
     </ul></li>
 </ul>
 
