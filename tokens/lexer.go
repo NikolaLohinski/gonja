@@ -47,6 +47,7 @@ type Lexer struct {
 	expressionEnd        Type
 	lineStatement        bool
 	lineOffsets          []int // precomputed line start offsets for O(log N) position lookups
+	lineHint             int   // last known line index for sequential position lookups
 	collected            []*Token // when non-nil, tokens are collected here instead of sent to channel
 	tokenSlab            []Token  // pre-allocated token storage to reduce heap allocations
 	tokenSlabIdx         int      // next free index in tokenSlab
@@ -202,7 +203,8 @@ func (l *Lexer) emit(t Type) {
 }
 
 func (l *Lexer) processAndEmit(t Type, fn func(string) string) {
-	line, col := ReadablePositionFromOffsets(l.Start, l.lineOffsets)
+	line, col, hint := ReadablePositionHinted(l.Start, l.lineOffsets, l.lineHint)
+	l.lineHint = hint
 	val := l.Input[l.Start:l.Pos]
 	if fn != nil {
 		val = fn(val)
@@ -272,7 +274,8 @@ func (l *Lexer) emitDataValue(val string) {
 	if l.Pos <= l.Start {
 		return
 	}
-	line, col := ReadablePositionFromOffsets(l.Start, l.lineOffsets)
+	line, col, hint := ReadablePositionHinted(l.Start, l.lineOffsets, l.lineHint)
+	l.lineHint = hint
 	val = normalizeNewlines(val, l.Config.NewlineSequence)
 	if val == "" {
 		l.Start = l.Pos
