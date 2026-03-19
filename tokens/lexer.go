@@ -46,6 +46,7 @@ type Lexer struct {
 	rawEnd               *regexp.Regexp
 	expressionEnd        Type
 	lineStatement        bool
+	lineOffsets          []int // precomputed line start offsets for O(log N) position lookups
 }
 
 // TODO: set from env
@@ -81,9 +82,10 @@ func trimLeadingWhitespaceFromLastLine(input string) string {
 func NewLexer(input string, config *config.Config) *Lexer {
 	normalizedInput := normalizeInput(input, config)
 	return &Lexer{
-		Input:  normalizedInput,
-		Tokens: make(chan *Token),
-		Config: config,
+		Input:       normalizedInput,
+		Tokens:      make(chan *Token),
+		Config:      config,
+		lineOffsets: PrecomputeLineOffsets(normalizedInput),
 		RawControlStructures: rawControlStructure{
 			"raw":     regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endraw`, regexp.QuoteMeta(config.BlockStartString))),
 			"comment": regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endcomment`, regexp.QuoteMeta(config.BlockStartString))),
@@ -152,7 +154,7 @@ func (l *Lexer) emit(t Type) {
 }
 
 func (l *Lexer) processAndEmit(t Type, fn func(string) string) {
-	line, col := ReadablePosition(l.Start, l.Input)
+	line, col := ReadablePositionFromOffsets(l.Start, l.lineOffsets)
 	val := l.Input[l.Start:l.Pos]
 	if fn != nil {
 		val = fn(val)
@@ -222,7 +224,7 @@ func (l *Lexer) emitDataValue(val string) {
 	if l.Pos <= l.Start {
 		return
 	}
-	line, col := ReadablePosition(l.Start, l.Input)
+	line, col := ReadablePositionFromOffsets(l.Start, l.lineOffsets)
 	val = normalizeNewlines(val, l.Config.NewlineSequence)
 	if val == "" {
 		l.Start = l.Pos
