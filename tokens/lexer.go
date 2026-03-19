@@ -47,6 +47,9 @@ type Lexer struct {
 	expressionEnd        Type
 	lineStatement        bool
 	lineOffsets          []int // precomputed line start offsets for O(log N) position lookups
+	collected            []*Token // when non-nil, tokens are collected here instead of sent to channel
+	tokenSlab            []Token  // pre-allocated token storage to reduce heap allocations
+	tokenSlabIdx         int      // next free index in tokenSlab
 }
 
 // TODO: set from env
@@ -99,15 +102,53 @@ func Lex(input string, config *config.Config) *Stream {
 	return NewStream(l.Tokens)
 }
 
+// LexAll lexes the input synchronously, collecting all tokens into a slice.
+// This avoids goroutine/channel overhead.
+func LexAll(input string, cfg *config.Config) *Stream {
+	l := NewLexer(input, cfg)
+	// Estimate ~1 token per 3 bytes as initial capacity (measured ratio is ~3.8)
+	estTokens := len(l.Input)/3 + 16
+	l.collected = make([]*Token, 0, estTokens)
+	l.tokenSlab = make([]Token, estTokens)
+	l.runSync()
+	return NewStream(l.collected)
+}
+
+// allocToken returns a pointer to a Token from the pre-allocated slab,
+// growing it if necessary. Falls back to a new allocation in channel mode.
+func (l *Lexer) allocToken() *Token {
+	if l.tokenSlab != nil {
+		if l.tokenSlabIdx >= len(l.tokenSlab) {
+			// Grow slab
+			newSlab := make([]Token, len(l.tokenSlab)*2)
+			l.tokenSlab = newSlab
+			l.tokenSlabIdx = 0
+		}
+		tok := &l.tokenSlab[l.tokenSlabIdx]
+		l.tokenSlabIdx++
+		return tok
+	}
+	return &Token{}
+}
+
+// sendToken either appends to the collected slice or sends over the channel.
+func (l *Lexer) sendToken(tok *Token) {
+	if l.collected != nil {
+		l.collected = append(l.collected, tok)
+	} else {
+		l.Tokens <- tok
+	}
+}
+
 // errorf returns an error token and terminates the scan
 // by passing back a nil pointer that will be the next
 // state, terminating Lexer.Run.
 func (l *Lexer) errorf(format string, args ...any) lexFn {
-	l.Tokens <- &Token{
-		Type: Error,
-		Val:  fmt.Sprintf(format, args...),
-		Pos:  l.Pos,
-	}
+	tok := l.allocToken()
+	tok.Type = Error
+	tok.Val = fmt.Sprintf(format, args...)
+	tok.Pos = l.Pos
+	l.sendToken(tok)
 	return nil
 }
 
@@ -131,6 +172,13 @@ func (l *Lexer) Run() {
 		state = state()
 	}
 	close(l.Tokens) // No more tokens will be delivered.
+}
+
+// runSync lexes without using the channel (for synchronous collection mode).
+func (l *Lexer) runSync() {
+	for state := l.lexData; state != nil; {
+		state = state()
+	}
 }
 
 // next returns the next rune in the input.
@@ -159,13 +207,13 @@ func (l *Lexer) processAndEmit(t Type, fn func(string) string) {
 	if fn != nil {
 		val = fn(val)
 	}
-	l.Tokens <- &Token{
-		Type: t,
-		Val:  val,
-		Pos:  l.Start,
-		Line: line,
-		Col:  col,
-	}
+	tok := l.allocToken()
+	tok.Type = t
+	tok.Val = val
+	tok.Pos = l.Start
+	tok.Line = line
+	tok.Col = col
+	l.sendToken(tok)
 	l.Start = l.Pos
 }
 
@@ -230,13 +278,13 @@ func (l *Lexer) emitDataValue(val string) {
 		l.Start = l.Pos
 		return
 	}
-	l.Tokens <- &Token{
-		Type: Data,
-		Val:  val,
-		Pos:  l.Start,
-		Line: line,
-		Col:  col,
-	}
+	tok := l.allocToken()
+	tok.Type = Data
+	tok.Val = val
+	tok.Pos = l.Start
+	tok.Line = line
+	tok.Col = col
+	l.sendToken(tok)
 	l.Start = l.Pos
 }
 

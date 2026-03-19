@@ -254,7 +254,7 @@ func (p *Parser) Extend(identifier string) (*nodes.Template, error) {
 
 	parser := &Parser{
 		identifier:        identifier,
-		stream:            tokens.Lex(source.String(), config),
+		stream:            tokens.LexAll(source.String(), config),
 		controlStructures: p.controlStructures,
 		Config:            config,
 		Loader:            loader,
