@@ -2,14 +2,15 @@ package tokens
 
 import "fmt"
 
+// sentinelEOF is a shared EOF token used to avoid allocating one per SliceIterator.
+var sentinelEOF = &Token{Type: EOF}
+
 type Stream struct {
 	it       TokenIterator
 	previous *Token
 	current  *Token
 	next     *Token
 	backup   *Token
-	buffer   []*Token
-	tokens   []*Token
 }
 
 type TokenIterator interface {
@@ -40,7 +41,7 @@ func SliceIterator(input []*Token) TokenIterator {
 		last = input[length-1]
 	}
 	if last == nil || last.Type != EOF {
-		input = append(input, &Token{Type: EOF})
+		input = append(input, sentinelEOF)
 	}
 	return &sliceIterator{input, 0}
 }
@@ -68,9 +69,7 @@ func NewStream(input any) *Stream {
 	}
 
 	s := &Stream{
-		it:     it,
-		buffer: []*Token{},
-		tokens: []*Token{},
+		it: it,
 	}
 	s.init()
 	return s
