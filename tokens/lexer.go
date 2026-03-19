@@ -332,24 +332,31 @@ const (
 )
 
 func (l *Lexer) currentRootToken() rootTokenKind {
+	if l.Pos >= len(l.Input) {
+		return rootTokenNone
+	}
+	// Fast-path: check first byte before doing full prefix comparisons.
+	// All default delimiters ({#, {{, {%) share the same first byte.
+	ch := l.Input[l.Pos]
 	var (
 		longest int
 		kind    rootTokenKind
 	)
-	for _, candidate := range []struct {
-		prefix string
-		kind   rootTokenKind
-	}{
-		{l.Config.CommentStartString, rootTokenComment},
-		{l.Config.VariableStartString, rootTokenVariable},
-		{l.Config.BlockStartString, rootTokenBlock},
-	} {
-		if candidate.prefix == "" || !l.hasPrefix(candidate.prefix) {
-			continue
+	if p := l.Config.CommentStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			longest = len(p)
+			kind = rootTokenComment
 		}
-		if len(candidate.prefix) > longest {
-			longest = len(candidate.prefix)
-			kind = candidate.kind
+	}
+	if p := l.Config.VariableStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			longest = len(p)
+			kind = rootTokenVariable
+		}
+	}
+	if p := l.Config.BlockStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			kind = rootTokenBlock
 		}
 	}
 	return kind
