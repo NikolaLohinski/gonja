@@ -183,18 +183,26 @@ func (l *Lexer) runSync() {
 }
 
 // next returns the next rune in the input.
-func (l *Lexer) next() (rune rune) {
+func (l *Lexer) next() rune {
 	if l.Pos >= len(l.Input) {
 		l.Width = 0
 		return rEOF
 	}
-	rune, l.Width = utf8.DecodeRuneInString(l.Input[l.Pos:])
-	l.Pos += l.Width
-	if rune == '\n' {
-		l.Line++
-		l.Col = 1
+	b := l.Input[l.Pos]
+	if b < utf8.RuneSelf {
+		// Fast path for ASCII (most template content)
+		l.Width = 1
+		l.Pos++
+		if b == '\n' {
+			l.Line++
+			l.Col = 1
+		}
+		return rune(b)
 	}
-	return rune
+	r, w := utf8.DecodeRuneInString(l.Input[l.Pos:])
+	l.Width = w
+	l.Pos += w
+	return r
 }
 
 // emit passes a Token back to the client.
