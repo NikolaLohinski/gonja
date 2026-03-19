@@ -71,7 +71,7 @@ func (p *Parser) End() bool {
 // Consumes this token on success.
 func (p *Parser) Match(types ...tokens.Type) *tokens.Token {
 	tok := p.stream.Current()
-	if slices.Contains(types, tok.Type) {
+	if containsType(types, tok.Type) {
 		p.stream.Next()
 		return tok
 	}
@@ -102,7 +102,7 @@ func (p *Parser) Current(types ...tokens.Type) *tokens.Token {
 	if types == nil {
 		return tok
 	}
-	if slices.Contains(types, tok.Type) {
+	if containsType(types, tok.Type) {
 		return tok
 	}
 	return nil
@@ -113,10 +113,25 @@ func (p *Parser) Peek(types ...tokens.Type) *tokens.Token {
 	if types == nil {
 		return tok
 	}
-	if slices.Contains(types, tok.Type) {
+	if containsType(types, tok.Type) {
 		return tok
 	}
 	return nil
+}
+
+// containsType checks if a token type is in the list. Optimized for the common
+// case of 1-3 types to avoid the overhead of slices.Contains.
+func containsType(types []tokens.Type, t tokens.Type) bool {
+	switch len(types) {
+	case 1:
+		return types[0] == t
+	case 2:
+		return types[0] == t || types[1] == t
+	case 3:
+		return types[0] == t || types[1] == t || types[2] == t
+	default:
+		return slices.Contains(types, t)
+	}
 }
 
 func (p *Parser) CurrentName(names ...string) *tokens.Token {
