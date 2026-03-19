@@ -488,7 +488,44 @@ func (l *Lexer) expectDelimiter(r rune) bool {
 }
 
 func (l *Lexer) lexData() lexFn {
+	// Determine the first byte of delimiters for fast scanning.
+	// All default Jinja delimiters ({%, {{, {#) share '{' as the first byte.
+	delimByte := byte(0)
+	hasLinePrefixes := l.Config.LineStatementPrefix != "" || l.Config.LineCommentPrefix != ""
+	if s := l.Config.CommentStartString; len(s) > 0 {
+		delimByte = s[0]
+	}
+	// Check if all delimiters share the same first byte (common case)
+	sameFirst := true
+	if s := l.Config.VariableStartString; len(s) > 0 {
+		if delimByte == 0 {
+			delimByte = s[0]
+		} else if s[0] != delimByte {
+			sameFirst = false
+		}
+	}
+	if s := l.Config.BlockStartString; len(s) > 0 {
+		if delimByte == 0 {
+			delimByte = s[0]
+		} else if s[0] != delimByte {
+			sameFirst = false
+		}
+	}
+
 	for {
+		// Fast scan: if all delimiters share a first byte and no line prefixes,
+		// skip directly to the next occurrence of that byte.
+		if sameFirst && delimByte != 0 && !hasLinePrefixes {
+			remaining := l.Input[l.Pos:]
+			idx := strings.IndexByte(remaining, delimByte)
+			if idx < 0 {
+				// No more delimiters — consume rest as data
+				l.Pos = len(l.Input)
+				break
+			}
+			l.Pos += idx
+		}
+
 		switch l.currentRootToken() {
 		case rootTokenComment:
 			if l.Config.LeftStripBlocks && l.getOpeningWhitespaceControl(l.Config.CommentStartString) != '+' {
@@ -509,17 +546,19 @@ func (l *Lexer) lexData() lexFn {
 			return l.lexBlock
 		}
 
-		if prefix, ok := l.currentLinePrefix(); ok {
-			l.emitData()
-			if prefix == linePrefixComment {
+		if hasLinePrefixes {
+			if prefix, ok := l.currentLinePrefix(); ok {
+				l.emitData()
+				if prefix == linePrefixComment {
+					return l.lexLineComment
+				}
+				return l.lexLineStatement
+			}
+
+			if l.hasInlineLineComment() {
+				l.emitData()
 				return l.lexLineComment
 			}
-			return l.lexLineStatement
-		}
-
-		if l.hasInlineLineComment() {
-			l.emitData()
-			return l.lexLineComment
 		}
 
 		if l.next() == rEOF {
