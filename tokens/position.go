@@ -58,3 +58,32 @@ func ReadablePosition(pos int, input string) (int, int) {
 	length := len(lines)
 	return length, len(lines[length-1]) + 1
 }
+
+// PrecomputeLineOffsets builds a table of byte offsets where each line starts.
+// offsets[0] = 0 (first line starts at byte 0), offsets[1] = position after
+// the first '\n', etc. This is an O(N) pass done once per input.
+func PrecomputeLineOffsets(input string) []int {
+	offsets := make([]int, 1, len(input)/60+1)
+	offsets[0] = 0
+	for i := 0; i < len(input); i++ {
+		if input[i] == '\n' {
+			offsets = append(offsets, i+1)
+		}
+	}
+	return offsets
+}
+
+// ReadablePositionFromOffsets returns (line, col) for a byte offset using
+// a precomputed line offset table. O(log N) per call, zero allocations.
+func ReadablePositionFromOffsets(pos int, lineOffsets []int) (int, int) {
+	lo, hi := 0, len(lineOffsets)-1
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		if lineOffsets[mid] <= pos {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	return lo + 1, pos - lineOffsets[lo] + 1
+}
