@@ -1,6 +1,6 @@
 package builtins
 
-import controlStructures "github.com/nikolalohinski/gonja/v2/builtins/control_structures"
+import "github.com/ardanlabs/gonja/builtins/control_structures"
 
-// ControlStructures exports all builtins controlStructures
-var ControlStructures = controlStructures.All
+// ControlStructures exports all builtins control structures.
+var ControlStructures = controlstructures.All

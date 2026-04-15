@@ -7,11 +7,11 @@ import (
 	"io"
 	"path"
 
-	"github.com/nikolalohinski/gonja/v2/builtins"
-	"github.com/nikolalohinski/gonja/v2/config"
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/loaders"
-	"github.com/nikolalohinski/gonja/v2/logging"
+	"github.com/ardanlabs/gonja/builtins"
+	"github.com/ardanlabs/gonja/config"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/loaders"
+	"github.com/ardanlabs/gonja/logging"
 	"github.com/sirupsen/logrus"
 )
 

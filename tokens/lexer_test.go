@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/nikolalohinski/gonja/v2/config"
-	"github.com/nikolalohinski/gonja/v2/tokens"
+	"github.com/ardanlabs/gonja/config"
+	"github.com/ardanlabs/gonja/tokens"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

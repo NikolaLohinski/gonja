@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/nikolalohinski/gonja/v2/builtins"
-	"github.com/nikolalohinski/gonja/v2/config"
-	"github.com/nikolalohinski/gonja/v2/loaders"
-	"github.com/nikolalohinski/gonja/v2/nodes"
-	"github.com/nikolalohinski/gonja/v2/parser"
-	"github.com/nikolalohinski/gonja/v2/tokens"
+	"github.com/ardanlabs/gonja/builtins"
+	"github.com/ardanlabs/gonja/config"
+	"github.com/ardanlabs/gonja/loaders"
+	"github.com/ardanlabs/gonja/nodes"
+	"github.com/ardanlabs/gonja/parser"
+	"github.com/ardanlabs/gonja/tokens"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

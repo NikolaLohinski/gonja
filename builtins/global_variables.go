@@ -1,6 +1,6 @@
 package builtins
 
-import "github.com/nikolalohinski/gonja/v2/exec"
+import "github.com/ardanlabs/gonja/exec"
 
 var GlobalVariables = exec.NewContext(map[string]any{
 	"gonja": map[string]any{

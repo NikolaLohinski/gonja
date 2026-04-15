@@ -3,7 +3,7 @@ package methods
 import (
 	"sort"
 
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja/exec"
 )
 
 var dictMethods = exec.NewMethodSet[map[string]any](map[string]exec.Method[map[string]any]{

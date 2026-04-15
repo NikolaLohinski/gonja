@@ -1,8 +1,8 @@
 package integration_test
 
 import (
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja"
+	"github.com/ardanlabs/gonja/exec"
 
 	. "github.com/onsi/gomega"
 )

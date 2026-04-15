@@ -1,7 +1,7 @@
 // Package methods provides built-in method implementations for template types.
 package methods
 
-import "github.com/nikolalohinski/gonja/v2/exec"
+import "github.com/ardanlabs/gonja/exec"
 
 var All = exec.Methods{
 	Bool:  boolMethods,

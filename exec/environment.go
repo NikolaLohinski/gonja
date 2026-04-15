@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/nikolalohinski/gonja/v2/parser"
+	"github.com/ardanlabs/gonja/parser"
 	"github.com/pkg/errors"
 )
 

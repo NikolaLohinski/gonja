@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
+	"github.com/ardanlabs/gonja/builtins/methods/pyerrors"
 )
 
 // Token represents a token in the input string

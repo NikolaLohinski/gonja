@@ -1,8 +1,8 @@
 package methods
 
 import (
-	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyfloat"
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja/builtins/methods/pyfloat"
+	"github.com/ardanlabs/gonja/exec"
 )
 
 var floatMethods = exec.NewMethodSet[float64](map[string]exec.Method[float64]{

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/v2/logging"
-	u "github.com/nikolalohinski/gonja/v2/utils"
+	"github.com/ardanlabs/gonja/logging"
+	u "github.com/ardanlabs/gonja/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )

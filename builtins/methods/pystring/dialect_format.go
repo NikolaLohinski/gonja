@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
+	"github.com/ardanlabs/gonja/builtins/methods/pyerrors"
 )
 
 // Formatter is implemented by any value that decides how a formatting

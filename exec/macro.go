@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/v2/nodes"
+	"github.com/ardanlabs/gonja/nodes"
 	"github.com/pkg/errors"
 )
 

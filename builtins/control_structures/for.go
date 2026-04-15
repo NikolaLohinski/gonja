@@ -1,13 +1,13 @@
-package controlStructures
+package controlstructures
 
 import (
 	"fmt"
 	"math"
 
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/nodes"
-	"github.com/nikolalohinski/gonja/v2/parser"
-	"github.com/nikolalohinski/gonja/v2/tokens"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/nodes"
+	"github.com/ardanlabs/gonja/parser"
+	"github.com/ardanlabs/gonja/tokens"
 )
 
 type ForControlStructure struct {

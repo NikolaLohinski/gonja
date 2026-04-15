@@ -3,8 +3,8 @@ package integration_test
 import (
 	"os"
 
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja"
+	"github.com/ardanlabs/gonja/exec"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

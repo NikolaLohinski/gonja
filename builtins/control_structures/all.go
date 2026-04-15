@@ -1,9 +1,9 @@
-// Package controlStructures provides built-in control structure implementations.
-package controlStructures
+// Package controlstructures provides built-in control structure implementations.
+package controlstructures
 
 import (
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/parser"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/parser"
 )
 
 var All = exec.NewControlStructureSet(map[string]parser.ControlStructureParser{

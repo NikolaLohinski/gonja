@@ -3,7 +3,7 @@ package loaders_test
 import (
 	"io"
 
-	"github.com/nikolalohinski/gonja/v2/loaders"
+	"github.com/ardanlabs/gonja/loaders"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

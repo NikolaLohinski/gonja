@@ -8,7 +8,7 @@ import (
 
 func generateTemplate(macroCount int) string {
 	var b strings.Builder
-	for i := 0; i < macroCount; i++ {
+	for i := range macroCount {
 		fmt.Fprintf(&b, "{%%- macro test_macro_%d(model, column_name, value) -%%}\n", i)
 		fmt.Fprintf(&b, "select * from {{ model }} where {{ column_name }} = '%d'\n", i)
 		b.WriteString("{%- endmacro -%}\n\n")

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/utils"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/utils"
 )
 
 type tupleValue []any
@@ -94,7 +94,7 @@ func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Val
 		return current, true
 	}
 
-	for _, part := range strings.Split(path, ".") {
+	for part := range strings.SplitSeq(path, ".") {
 		if current == nil || current.IsNil() {
 			if defaultValue != nil {
 				return defaultValue, true

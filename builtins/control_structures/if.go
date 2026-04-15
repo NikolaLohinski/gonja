@@ -1,15 +1,15 @@
-package controlStructures
+package controlstructures
 
 import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/logging"
-	"github.com/nikolalohinski/gonja/v2/nodes"
-	"github.com/nikolalohinski/gonja/v2/parser"
-	"github.com/nikolalohinski/gonja/v2/tokens"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/logging"
+	"github.com/ardanlabs/gonja/nodes"
+	"github.com/ardanlabs/gonja/parser"
+	"github.com/ardanlabs/gonja/tokens"
 )
 
 type IfControlStructure struct {

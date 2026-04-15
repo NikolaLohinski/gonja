@@ -1,8 +1,8 @@
 package builtins
 
 import (
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/utils"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/utils"
 	"github.com/pkg/errors"
 )
 

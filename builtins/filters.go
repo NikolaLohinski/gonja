@@ -20,7 +20,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja/exec"
 )
 
 // Filters export all builtin filters
@@ -1124,7 +1124,7 @@ func filterSort(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 			return comparison < 0
 		}
 
-		for _, attr := range strings.Split(attribute.String(), ",") {
+		for attr := range strings.SplitSeq(attribute.String(), ",") {
 			left, _ := resolveAttributePath(items[i], attr, nil)
 			right, _ := resolveAttributePath(items[j], attr, nil)
 			comparison := compareValues(left, right, caseSensitive)
@@ -1529,7 +1529,7 @@ func filterWordwrap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *ex
 	}
 
 	lines := make([]string, 0)
-	for _, paragraph := range strings.Split(in.String(), "\n") {
+	for paragraph := range strings.SplitSeq(in.String(), "\n") {
 		words := strings.Fields(paragraph)
 		if len(words) == 0 {
 			lines = append(lines, "")

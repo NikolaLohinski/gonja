@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/ardanlabs/gonja"
+	"github.com/ardanlabs/gonja/config"
+	"github.com/ardanlabs/gonja/exec"
+	"github.com/ardanlabs/gonja/loaders"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/config"
-	"github.com/nikolalohinski/gonja/v2/exec"
-	"github.com/nikolalohinski/gonja/v2/loaders"
 	"github.com/yargevad/filepathx"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,8 +30,8 @@ var _ = Context("legacy tests", func() {
 		testCasesDir = "testcases/"
 	)
 	trimSingleTrailingNewline := func(input string) string {
-		if strings.HasSuffix(input, "\r\n") {
-			return strings.TrimSuffix(input, "\r\n")
+		if before, ok := strings.CutSuffix(input, "\r\n"); ok {
+			return before
 		}
 		return strings.TrimSuffix(input, "\n")
 	}

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikolalohinski/gonja/v2/logging"
-	"github.com/nikolalohinski/gonja/v2/nodes"
-	"github.com/nikolalohinski/gonja/v2/tokens"
+	"github.com/ardanlabs/gonja/logging"
+	"github.com/ardanlabs/gonja/nodes"
+	"github.com/ardanlabs/gonja/tokens"
 	log "github.com/sirupsen/logrus"
 )
 

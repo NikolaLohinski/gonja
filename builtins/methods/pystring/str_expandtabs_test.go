@@ -20,7 +20,7 @@ var _ = Describe("ExpandTabs", func() {
 		},
 		{
 			s:       "01\t012\t0123\t01234",
-			tabSize: intP(4),
+			tabSize: new(4),
 			want:    "01  012 0123    01234",
 		},
 		// TODO: Add test cases.
@@ -34,6 +34,8 @@ var _ = Describe("ExpandTabs", func() {
 })
 
 // Mock implementation for intP
+//
+//go:fix inline
 func intP(i int) *int {
-	return &i
+	return new(i)
 }

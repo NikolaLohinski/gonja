@@ -7,7 +7,7 @@ import (
 	"math/bits"
 	"strconv"
 
-	"github.com/nikolalohinski/gonja/v2/builtins/methods/pyerrors"
+	"github.com/ardanlabs/gonja/builtins/methods/pyerrors"
 )
 
 type PyInt int

@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"os"
 
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/ardanlabs/gonja"
+	"github.com/ardanlabs/gonja/exec"
 )
 
 var filterFuncB64Encode exec.FilterFunction = func(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
