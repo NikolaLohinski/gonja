@@ -11,29 +11,48 @@ jobs:
     runs-on: ubuntu-latest
     name: Check modules
     steps:
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version: 1.26
-      - uses: actions/checkout@v5
+          go-version: stable
       - run: go mod tidy && git diff --exit-code go.mod go.sum
+
   build:
-    name: Build the library
     runs-on: ubuntu-latest
+    name: Build the library
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/setup-go@v6
         with:
-          go-version: 1.26
+          go-version: stable
       - name: Build
         run: go build -v ./...
+
+  checks:
+    runs-on: ubuntu-latest
+    name: Run vet, linter, vuln, diff checks
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: Install static analysis tools
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Run vet, linter, vuln, diff checks
+        run: |
+          go vet ./...
+          staticcheck -checks=all ./...
+          govulncheck ./...
+          go fix -diff ./...
+
   test:
     runs-on: ubuntu-latest
     name: Run tests with ginkgo
     steps:
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
         with:
-          go-version: 1.26
-      - uses: actions/checkout@v5
-      - run: go vet ./...
+          go-version: stable
       - run: go run github.com/onsi/ginkgo/v2/ginkgo run -r --randomize-all --randomize-suites --race --trace --keep-going
