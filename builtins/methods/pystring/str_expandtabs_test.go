@@ -33,9 +33,3 @@ var _ = Describe("ExpandTabs", func() {
 	}
 })
 
-// Mock implementation for intP
-//
-//go:fix inline
-func intP(i int) *int {
-	return new(i)
-}
