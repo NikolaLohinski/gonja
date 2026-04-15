@@ -195,7 +195,7 @@ var _ = Context("strings", func() {
 				AssertPrettyDiff("one two", *returnedResult)
 			})
 		})
-		Context("https://github.com/NikolaLohinski/gonja/issues/25", func() {
+		Context("https://github.com/ardanlabs/gonja/issues/25", func() {
 			BeforeEach(func() {
 				*loader = loaders.MustNewMemoryLoader(map[string]string{
 					*identifier: heredoc.Doc(`
@@ -222,7 +222,7 @@ var _ = Context("strings", func() {
 				AssertPrettyDiff(expected, *returnedResult)
 			})
 		})
-		Context("https://github.com/NikolaLohinski/gonja/issues/45", func() {
+		Context("https://github.com/ardanlabs/gonja/issues/45", func() {
 			BeforeEach(func() {
 				*loader = loaders.MustNewMemoryLoader(map[string]string{
 					*identifier: heredoc.Doc(`

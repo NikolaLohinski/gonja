@@ -69,7 +69,7 @@ var _ = Context("tests", func() {
 		shouldRender("{{ 42 is > 31 }}", "True")
 		shouldFail("{{ 42 is greaterthan(True) }}", "True is not a number")
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/19", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/19", func() {
 		BeforeEach(func() {
 			*context = exec.NewContext(map[string]any{
 				"var1": "1",
@@ -97,7 +97,7 @@ var _ = Context("tests", func() {
 			"var1 in ['1', '2'] or var2 == '3': ok",
 		)
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/30", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/30", func() {
 		shouldRender(
 			`{{ "a" < "b" }}`,
 			`True`,
@@ -136,7 +136,7 @@ var _ = Context("tests", func() {
 		)
 	})
 
-	Context("https://github.com/NikolaLohinski/gonja/issues/33", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/33", func() {
 		shouldRender(
 			`{% set prop = "foo" %}{% if 1==1 %}{% set prop = "bar" %}{% endif %}{{ prop }}`,
 			"bar",
@@ -174,7 +174,7 @@ var _ = Context("tests", func() {
 		shouldRender(`{{ var2 is integer() }}`, "False")
 		shouldRender(`{{ var3 is integer() }}`, "True")
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/63", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/63", func() {
 		BeforeEach(func() {
 			*context = exec.NewContext(map[string]any{
 				"var1": uint64(42),

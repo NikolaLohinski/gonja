@@ -339,7 +339,7 @@ var _ = Context("config", func() {
 			})
 		})
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/18", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/18", func() {
 		BeforeEach(func() {
 			(*configuration).TrimBlocks = true
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
@@ -371,7 +371,7 @@ var _ = Context("config", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/27", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/27", func() {
 		BeforeEach(func() {
 			(*configuration).TrimBlocks = true
 			(*configuration).LeftStripBlocks = true

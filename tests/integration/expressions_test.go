@@ -38,7 +38,7 @@ var _ = Context("expressions", func() {
 		}
 		*returnedResult, *returnedErr = t.ExecuteToString(*context)
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/49", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/49", func() {
 		BeforeEach(func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: heredoc.Doc(`
@@ -73,7 +73,7 @@ var _ = Context("expressions", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
-	Context("https://github.com/NikolaLohinski/gonja/issues/40", func() {
+	Context("https://github.com/ardanlabs/gonja/issues/40", func() {
 		BeforeEach(func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: heredoc.Doc(`
