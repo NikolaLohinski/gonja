@@ -41,7 +41,7 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 		source:      source.String(),
 		config:      config,
 		loader:      loader,
-		tokens:      tokens.Lex(source.String(), config),
+		tokens:      tokens.LexAll(source.String(), config),
 		environment: environment,
 	}
 

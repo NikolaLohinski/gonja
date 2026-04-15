@@ -3,7 +3,7 @@ package logging
 
 import "sync/atomic"
 
-var enabled int32 = 1
+var enabled int32 = 0
 
 func SetEnabled(v bool) {
 	if v {

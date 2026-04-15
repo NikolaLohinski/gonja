@@ -46,6 +46,11 @@ type Lexer struct {
 	rawEnd               *regexp.Regexp
 	expressionEnd        Type
 	lineStatement        bool
+	lineOffsets          []int // precomputed line start offsets for O(log N) position lookups
+	lineHint             int   // last known line index for sequential position lookups
+	collected            []*Token // when non-nil, tokens are collected here instead of sent to channel
+	tokenSlab            []Token  // pre-allocated token storage to reduce heap allocations
+	tokenSlabIdx         int      // next free index in tokenSlab
 }
 
 // TODO: set from env
@@ -81,9 +86,10 @@ func trimLeadingWhitespaceFromLastLine(input string) string {
 func NewLexer(input string, config *config.Config) *Lexer {
 	normalizedInput := normalizeInput(input, config)
 	return &Lexer{
-		Input:  normalizedInput,
-		Tokens: make(chan *Token),
-		Config: config,
+		Input:       normalizedInput,
+		Tokens:      make(chan *Token),
+		Config:      config,
+		lineOffsets: PrecomputeLineOffsets(normalizedInput),
 		RawControlStructures: rawControlStructure{
 			"raw":     regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endraw`, regexp.QuoteMeta(config.BlockStartString))),
 			"comment": regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endcomment`, regexp.QuoteMeta(config.BlockStartString))),
@@ -97,15 +103,53 @@ func Lex(input string, config *config.Config) *Stream {
 	return NewStream(l.Tokens)
 }
 
+// LexAll lexes the input synchronously, collecting all tokens into a slice.
+// This avoids goroutine/channel overhead.
+func LexAll(input string, cfg *config.Config) *Stream {
+	l := NewLexer(input, cfg)
+	// Estimate ~1 token per 3 bytes as initial capacity (measured ratio is ~3.8)
+	estTokens := len(l.Input)/3 + 16
+	l.collected = make([]*Token, 0, estTokens)
+	l.tokenSlab = make([]Token, estTokens)
+	l.runSync()
+	return NewStream(l.collected)
+}
+
+// allocToken returns a pointer to a Token from the pre-allocated slab,
+// growing it if necessary. Falls back to a new allocation in channel mode.
+func (l *Lexer) allocToken() *Token {
+	if l.tokenSlab != nil {
+		if l.tokenSlabIdx >= len(l.tokenSlab) {
+			// Grow slab
+			newSlab := make([]Token, len(l.tokenSlab)*2)
+			l.tokenSlab = newSlab
+			l.tokenSlabIdx = 0
+		}
+		tok := &l.tokenSlab[l.tokenSlabIdx]
+		l.tokenSlabIdx++
+		return tok
+	}
+	return &Token{}
+}
+
+// sendToken either appends to the collected slice or sends over the channel.
+func (l *Lexer) sendToken(tok *Token) {
+	if l.collected != nil {
+		l.collected = append(l.collected, tok)
+	} else {
+		l.Tokens <- tok
+	}
+}
+
 // errorf returns an error token and terminates the scan
 // by passing back a nil pointer that will be the next
 // state, terminating Lexer.Run.
 func (l *Lexer) errorf(format string, args ...any) lexFn {
-	l.Tokens <- &Token{
-		Type: Error,
-		Val:  fmt.Sprintf(format, args...),
-		Pos:  l.Pos,
-	}
+	tok := l.allocToken()
+	tok.Type = Error
+	tok.Val = fmt.Sprintf(format, args...)
+	tok.Pos = l.Pos
+	l.sendToken(tok)
 	return nil
 }
 
@@ -131,19 +175,34 @@ func (l *Lexer) Run() {
 	close(l.Tokens) // No more tokens will be delivered.
 }
 
+// runSync lexes without using the channel (for synchronous collection mode).
+func (l *Lexer) runSync() {
+	for state := l.lexData; state != nil; {
+		state = state()
+	}
+}
+
 // next returns the next rune in the input.
-func (l *Lexer) next() (rune rune) {
+func (l *Lexer) next() rune {
 	if l.Pos >= len(l.Input) {
 		l.Width = 0
 		return rEOF
 	}
-	rune, l.Width = utf8.DecodeRuneInString(l.Input[l.Pos:])
-	l.Pos += l.Width
-	if rune == '\n' {
-		l.Line++
-		l.Col = 1
+	b := l.Input[l.Pos]
+	if b < utf8.RuneSelf {
+		// Fast path for ASCII (most template content)
+		l.Width = 1
+		l.Pos++
+		if b == '\n' {
+			l.Line++
+			l.Col = 1
+		}
+		return rune(b)
 	}
-	return rune
+	r, w := utf8.DecodeRuneInString(l.Input[l.Pos:])
+	l.Width = w
+	l.Pos += w
+	return r
 }
 
 // emit passes a Token back to the client.
@@ -152,18 +211,19 @@ func (l *Lexer) emit(t Type) {
 }
 
 func (l *Lexer) processAndEmit(t Type, fn func(string) string) {
-	line, col := ReadablePosition(l.Start, l.Input)
+	line, col, hint := ReadablePositionHinted(l.Start, l.lineOffsets, l.lineHint)
+	l.lineHint = hint
 	val := l.Input[l.Start:l.Pos]
 	if fn != nil {
 		val = fn(val)
 	}
-	l.Tokens <- &Token{
-		Type: t,
-		Val:  val,
-		Pos:  l.Start,
-		Line: line,
-		Col:  col,
-	}
+	tok := l.allocToken()
+	tok.Type = t
+	tok.Val = val
+	tok.Pos = l.Start
+	tok.Line = line
+	tok.Col = col
+	l.sendToken(tok)
 	l.Start = l.Pos
 }
 
@@ -222,19 +282,20 @@ func (l *Lexer) emitDataValue(val string) {
 	if l.Pos <= l.Start {
 		return
 	}
-	line, col := ReadablePosition(l.Start, l.Input)
+	line, col, hint := ReadablePositionHinted(l.Start, l.lineOffsets, l.lineHint)
+	l.lineHint = hint
 	val = normalizeNewlines(val, l.Config.NewlineSequence)
 	if val == "" {
 		l.Start = l.Pos
 		return
 	}
-	l.Tokens <- &Token{
-		Type: Data,
-		Val:  val,
-		Pos:  l.Start,
-		Line: line,
-		Col:  col,
-	}
+	tok := l.allocToken()
+	tok.Type = Data
+	tok.Val = val
+	tok.Pos = l.Start
+	tok.Line = line
+	tok.Col = col
+	l.sendToken(tok)
 	l.Start = l.Pos
 }
 
@@ -279,24 +340,31 @@ const (
 )
 
 func (l *Lexer) currentRootToken() rootTokenKind {
+	if l.Pos >= len(l.Input) {
+		return rootTokenNone
+	}
+	// Fast-path: check first byte before doing full prefix comparisons.
+	// All default delimiters ({#, {{, {%) share the same first byte.
+	ch := l.Input[l.Pos]
 	var (
 		longest int
 		kind    rootTokenKind
 	)
-	for _, candidate := range []struct {
-		prefix string
-		kind   rootTokenKind
-	}{
-		{l.Config.CommentStartString, rootTokenComment},
-		{l.Config.VariableStartString, rootTokenVariable},
-		{l.Config.BlockStartString, rootTokenBlock},
-	} {
-		if candidate.prefix == "" || !l.hasPrefix(candidate.prefix) {
-			continue
+	if p := l.Config.CommentStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			longest = len(p)
+			kind = rootTokenComment
 		}
-		if len(candidate.prefix) > longest {
-			longest = len(candidate.prefix)
-			kind = candidate.kind
+	}
+	if p := l.Config.VariableStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			longest = len(p)
+			kind = rootTokenVariable
+		}
+	}
+	if p := l.Config.BlockStartString; len(p) > 0 && p[0] == ch && l.hasPrefix(p) {
+		if len(p) > longest {
+			kind = rootTokenBlock
 		}
 	}
 	return kind
@@ -420,7 +488,44 @@ func (l *Lexer) expectDelimiter(r rune) bool {
 }
 
 func (l *Lexer) lexData() lexFn {
+	// Determine the first byte of delimiters for fast scanning.
+	// All default Jinja delimiters ({%, {{, {#) share '{' as the first byte.
+	delimByte := byte(0)
+	hasLinePrefixes := l.Config.LineStatementPrefix != "" || l.Config.LineCommentPrefix != ""
+	if s := l.Config.CommentStartString; len(s) > 0 {
+		delimByte = s[0]
+	}
+	// Check if all delimiters share the same first byte (common case)
+	sameFirst := true
+	if s := l.Config.VariableStartString; len(s) > 0 {
+		if delimByte == 0 {
+			delimByte = s[0]
+		} else if s[0] != delimByte {
+			sameFirst = false
+		}
+	}
+	if s := l.Config.BlockStartString; len(s) > 0 {
+		if delimByte == 0 {
+			delimByte = s[0]
+		} else if s[0] != delimByte {
+			sameFirst = false
+		}
+	}
+
 	for {
+		// Fast scan: if all delimiters share a first byte and no line prefixes,
+		// skip directly to the next occurrence of that byte.
+		if sameFirst && delimByte != 0 && !hasLinePrefixes {
+			remaining := l.Input[l.Pos:]
+			idx := strings.IndexByte(remaining, delimByte)
+			if idx < 0 {
+				// No more delimiters — consume rest as data
+				l.Pos = len(l.Input)
+				break
+			}
+			l.Pos += idx
+		}
+
 		switch l.currentRootToken() {
 		case rootTokenComment:
 			if l.Config.LeftStripBlocks && l.getOpeningWhitespaceControl(l.Config.CommentStartString) != '+' {
@@ -441,17 +546,19 @@ func (l *Lexer) lexData() lexFn {
 			return l.lexBlock
 		}
 
-		if prefix, ok := l.currentLinePrefix(); ok {
-			l.emitData()
-			if prefix == linePrefixComment {
+		if hasLinePrefixes {
+			if prefix, ok := l.currentLinePrefix(); ok {
+				l.emitData()
+				if prefix == linePrefixComment {
+					return l.lexLineComment
+				}
+				return l.lexLineStatement
+			}
+
+			if l.hasInlineLineComment() {
+				l.emitData()
 				return l.lexLineComment
 			}
-			return l.lexLineStatement
-		}
-
-		if l.hasInlineLineComment() {
-			l.emitData()
-			return l.lexLineComment
 		}
 
 		if l.next() == rEOF {
