@@ -62,9 +62,7 @@ var _ = Context("version", func() {
 			By("not returning any error")
 			Expect(*returnedErr).To(BeNil())
 			By("returning the correct result")
-			expected := heredoc.Doc(`
-				gonja.version is '` + *version + `'
-			`)
+			expected := heredoc.Doc(`gonja.version is '` + *version + `'`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
