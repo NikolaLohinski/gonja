@@ -155,23 +155,30 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 	case tokens.Tilde:
 		return AsValue(strings.Join([]string{left.String(), right.String()}, ""))
 	case tokens.And:
+		// Python/Jinja2 semantics: `x and y` returns x if x is falsy,
+		// otherwise y. The result is the operand value, not a coerced bool,
+		// so `{{ '' and 'fallback' }}` renders ''  and `{{ 'a' and 'b' }}`
+		// renders 'b'. Short-circuit on the left.
 		if !left.IsTrue() {
-			return AsValue(false)
+			return left
 		}
 		right = e.Eval(node.Right)
 		if right.IsError() {
 			return AsValue(errors.Wrapf(right, `Unable to evaluate right parameter %s`, node.Right))
 		}
-		return AsValue(right.IsTrue())
+		return right
 	case tokens.Or:
+		// Python/Jinja2 semantics: `x or y` returns x if x is truthy,
+		// otherwise y. So `{{ '' or 'fallback' }}` renders 'fallback' and
+		// `{{ 'a' or 'b' }}` renders 'a'. Short-circuit on the left.
 		if left.IsTrue() {
-			return AsValue(true)
+			return left
 		}
 		right = e.Eval(node.Right)
 		if right.IsError() {
 			return AsValue(errors.Wrapf(right, `Unable to evaluate right parameter %s`, node.Right))
 		}
-		return AsValue(right.IsTrue())
+		return right
 	case tokens.LowerThanOrEqual:
 		if left.IsFloat() || right.IsFloat() {
 			return AsValue(left.Float() <= right.Float())
