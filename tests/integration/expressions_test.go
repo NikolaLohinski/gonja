@@ -162,4 +162,35 @@ var _ = Context("expressions", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
+	Context("`{% set v = X if cond else Y %}` honors Pythonic truthiness on cond", func() {
+		// Regression: SetControlStructure.Execute previously used
+		// Value.Bool() which returns true only for reflect.Bool kinds,
+		// silently routing every non-bool-typed condition (int 1,
+		// non-empty string, populated list/map, struct) to the else
+		// branch. Now uses IsTrue() to match the {{ X if c else Y }}
+		// renderer behavior.
+		DescribeTable(
+			"set + ternary with truthy non-bool conditions resolves the X branch",
+			func(template, expected string, ctxKV map[string]interface{}) {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{*identifier: template})
+				for k, v := range ctxKV {
+					(*environment).Context.Set(k, v)
+				}
+				t, err := exec.NewTemplate(*identifier, *configuration, *loader, *environment)
+				Expect(err).To(BeNil())
+				out, err := t.ExecuteToString(*context)
+				Expect(err).To(BeNil())
+				AssertPrettyDiff(expected, out)
+			},
+			Entry("int 1 condition", `{% set v = 'X' if 1 else 'Y' %}{{ v }}`, "X", nil),
+			Entry("string condition", `{% set v = 'X' if 'truthy' else 'Y' %}{{ v }}`, "X", nil),
+			Entry("list condition", `{% set v = 'X' if [1] else 'Y' %}{{ v }}`, "X", nil),
+			Entry("`and` chain returning string", `{% set v = 'X' if ('hello' and 'world') else 'Y' %}{{ v }}`, "X", nil),
+			Entry("attribute access X branch", `{% set v = a.b if 1 else 'Y' %}{{ v }}`, "Z",
+				map[string]interface{}{"a": map[string]interface{}{"b": "Z"}}),
+			Entry("falsy int 0 still goes else", `{% set v = 'X' if 0 else 'Y' %}{{ v }}`, "Y", nil),
+			Entry("empty string still goes else", `{% set v = 'X' if '' else 'Y' %}{{ v }}`, "Y", nil),
+			Entry("empty list still goes else", `{% set v = 'X' if [] else 'Y' %}{{ v }}`, "Y", nil),
+		)
+	})
 })

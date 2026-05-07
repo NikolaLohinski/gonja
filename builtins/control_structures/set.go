@@ -34,7 +34,12 @@ func (scs *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 		if condition.IsError() {
 			return condition
 		}
-		if condition.Bool() {
+		// IsTrue (not Bool) — Bool only returns true for reflect.Bool
+		// kinds, which means `{% set v = X if 1 else Y %}` and any
+		// other non-bool condition (string, int, list, map) silently
+		// took the else branch. Matches the {{ X if c else Y }}
+		// renderer at exec/renderer.go which already uses IsTrue.
+		if !condition.IsNil() && condition.IsTrue() {
 			value = r.Eval(scs.expression)
 		} else {
 			value = r.Eval(scs.alternative)
