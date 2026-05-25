@@ -569,6 +569,9 @@ func (v *Value) Len() int {
 // Slice slices an array, slice or string. Otherwise it will
 // return an empty []int.
 func (v *Value) Slice(i, j int) *Value {
+	n := v.Len()
+	i = max(0, min(i, n))
+	j = max(i, min(j, n))
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Slice:
 		return AsValue(v.getResolvedValue().Slice(i, j).Interface())

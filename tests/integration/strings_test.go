@@ -98,6 +98,18 @@ var _ = Context("strings", func() {
 			})
 		})
 
+		Context("when the multi-byte string is shorter than the slice bounds", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: `{{ value[:10] }}`,
+				})
+				(*environment).Context.Set("value", "héllo")
+			})
+			It("clamps to rune count rather than panicking", func() {
+				AssertPrettyDiff("héllo", *returnedResult)
+			})
+		})
+
 		Context("when accessing a raw string literal", func() {
 			BeforeEach(func() {
 				*loader = loaders.MustNewMemoryLoader(map[string]string{

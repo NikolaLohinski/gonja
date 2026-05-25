@@ -96,6 +96,27 @@ var _ = Context("lists", func() {
 			})
 		})
 
+		Context("when the list is shorter than the slice bounds", func() {
+			BeforeEach(func() {
+				*loader = loaders.MustNewMemoryLoader(map[string]string{
+					*identifier: heredoc.Doc(`
+					[:10]:  {{ value[:10]  }}
+					[:-5]:  {{ value[:-5]  }}
+					[-10:]: {{ value[-10:] }}
+				`),
+				})
+				(*environment).Context.Set("value", []int{1, 2})
+			})
+
+			It("clamps slices past the bounds rather than panicking", func() {
+				Expect(*returnedErr).To(BeNil())
+				expected := heredoc.Doc(`
+					[:10]:  [1, 2]
+					[:-5]:  []
+					[-10:]: [1, 2]`)
+				AssertPrettyDiff(expected, *returnedResult)
+			})
+		})
 	})
 	Context("when accessing a raw list literal", func() {
 		BeforeEach(func() {
