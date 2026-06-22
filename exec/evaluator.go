@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
+
+const maxStringRepeatBytes = 100 * 1024 * 1024 // 100MB
 
 var typeOfValuePtr = reflect.TypeFor[*Value]()
 
@@ -137,7 +140,15 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			return AsValue(left.Float() * right.Float())
 		}
 		if left.IsString() {
-			return AsValue(strings.Repeat(left.String(), right.Integer()))
+			count := right.Integer()
+			if count < 0 {
+				count = 0
+			}
+			resultLen := int64(len(left.String())) * int64(count)
+			if resultLen > maxStringRepeatBytes {
+				return AsValue(fmt.Errorf("string repeat would produce %d bytes, exceeding limit of %d", resultLen, maxStringRepeatBytes))
+			}
+			return AsValue(strings.Repeat(left.String(), count))
 		}
 		// Result will be int
 		return AsValue(left.Integer() * right.Integer())
