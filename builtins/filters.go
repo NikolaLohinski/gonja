@@ -47,6 +47,7 @@ var Filters = exec.NewFilterSet(map[string]exec.FilterFunction{
 	"items":          filterItems,
 	"last":           filterLast,
 	"length":         filterLength,
+	"count":          filterLength,
 	"list":           filterList,
 	"lower":          filterLower,
 	"map":            filterMap,

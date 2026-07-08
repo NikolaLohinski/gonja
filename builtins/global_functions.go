@@ -13,6 +13,9 @@ var GlobalFunctions = exec.NewContext(map[string]any{
 	"lipsum":    lipSumFunction,
 	"namespace": namespaceFunction,
 	"range":     rangeFunction,
+	"_":         gettextFunction,
+	"gettext":   gettextFunction,
+	"ngettext":  ngettextFunction,
 })
 
 func rangeFunction(_ *exec.Evaluator, params *exec.VarArgs) (<-chan int, error) {
@@ -150,4 +153,27 @@ func lipSumFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
 	return exec.AsSafeValue(utils.Lipsum(n, html, min, max))
+}
+
+func gettextFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	if len(params.Args) < 1 {
+		return exec.AsValue("")
+	}
+	// Default: identity (no translation backend registered). Users can override
+	// by setting environment.Context["__gonja_trans_hook__"] = func(s string) string { ... }
+	return exec.AsValue(params.Args[0].String())
+}
+
+func ngettextFunction(_ *exec.Evaluator, params *exec.VarArgs) *exec.Value {
+	// signature: ngettext(singular, plural, n)
+	if len(params.Args) < 3 {
+		return exec.AsValue("")
+	}
+	singular := params.Args[0].String()
+	plural := params.Args[1].String()
+	n := params.Args[2].Integer()
+	if n == 1 {
+		return exec.AsValue(singular)
+	}
+	return exec.AsValue(plural)
 }

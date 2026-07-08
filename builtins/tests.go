@@ -154,8 +154,8 @@ func testMapping(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, e
 }
 
 func testNotEqual(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	param := params.Args[0]
-	return in.Interface() != param.Interface(), nil
+	param := params.First()
+	return !in.EqualValueTo(param), nil
 }
 
 func testNone(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {

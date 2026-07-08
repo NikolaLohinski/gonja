@@ -327,10 +327,14 @@ type GetSlice struct {
 	Node     Node
 	Start    Node
 	End      Node
+	Step     Node // optional; nil means default step of 1
 }
 
 func (g *GetSlice) Position() *tokens.Token { return g.Location }
 func (g *GetSlice) String() string {
+	if g.Step != nil {
+		return fmt.Sprintf("%s[%s:%s:%s]", g.Node, g.Start, g.End, g.Step)
+	}
 	return fmt.Sprintf("%s[%s:%s]", g.Node, g.Start, g.End)
 }
 
@@ -418,10 +422,12 @@ func (w Wrapper) String() string {
 }
 
 type Macro struct {
-	Location *tokens.Token
-	Name     string
-	Kwargs   []*Pair
-	Wrapper  *Wrapper
+	Location    *tokens.Token
+	Name        string
+	Kwargs      []*Pair
+	VarArgsName string // Name of *args parameter (empty if none)
+	KwArgsName  string // Name of **kwargs parameter (empty if none)
+	Wrapper     *Wrapper
 }
 
 func (m *Macro) Position() *tokens.Token { return m.Location }

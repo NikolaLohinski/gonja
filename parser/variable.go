@@ -332,13 +332,26 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 		}
 		if p.Match(tokens.Colon) != nil {
 			var secondArgument nodes.Node
-			if p.Current(tokens.RightBracket) == nil {
+			if p.Current(tokens.Colon, tokens.RightBracket) == nil {
 				expression, err := p.ParseExpression()
 				if err != nil {
 					return nil, p.Error("Invalid expression", p.Current())
 				}
 				secondArgument = expression
 			}
+
+			// Optional third part: the step.
+			var thirdArgument nodes.Node
+			if p.Match(tokens.Colon) != nil {
+				if p.Current(tokens.RightBracket) == nil {
+					expression, err := p.ParseExpression()
+					if err != nil {
+						return nil, p.Error("Invalid step expression", p.Current())
+					}
+					thirdArgument = expression
+				}
+			}
+
 			if p.Match(tokens.RightBracket) == nil {
 				return nil, p.Error("unbalanced bracket", accessor)
 			}
@@ -347,6 +360,7 @@ func (p *Parser) ParseGetter(accessor *tokens.Token, from nodes.Expression) (nod
 				Node:     from,
 				Start:    argument,
 				End:      secondArgument,
+				Step:     thirdArgument,
 			}, nil
 		}
 		return nil, p.Error("unbalanced bracket", accessor)

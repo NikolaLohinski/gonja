@@ -46,8 +46,8 @@ type Lexer struct {
 	rawEnd               *regexp.Regexp
 	expressionEnd        Type
 	lineStatement        bool
-	lineOffsets          []int // precomputed line start offsets for O(log N) position lookups
-	lineHint             int   // last known line index for sequential position lookups
+	lineOffsets          []int    // precomputed line start offsets for O(log N) position lookups
+	lineHint             int      // last known line index for sequential position lookups
 	collected            []*Token // when non-nil, tokens are collected here instead of sent to channel
 	tokenSlab            []Token  // pre-allocated token storage to reduce heap allocations
 	tokenSlabIdx         int      // next free index in tokenSlab

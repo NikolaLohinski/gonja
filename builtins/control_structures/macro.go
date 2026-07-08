@@ -22,7 +22,7 @@ func (mcs *MacroControlStructure) String() string {
 func (mcs *MacroControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStructureBlock) error {
 	macro, err := exec.MacroNodeToFunc(mcs.Macro, r)
 	if err != nil {
-		return errors.Wrapf(err, `Unable to parse marco '%s'`, mcs.Name)
+		return errors.Wrapf(err, `Unable to parse macro '%s'`, mcs.Name)
 	}
 	r.Environment.Context.Set(mcs.Name, macro)
 	return nil
@@ -45,41 +45,63 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 	}
 
 	for args.Match(tokens.RightParenthesis) == nil {
-		argName := args.Match(tokens.Name)
-		if argName == nil {
-			return nil, args.Error("Expected argument name as identifier.", nil)
-		}
-
-		if args.Match(tokens.Assign) != nil {
-			expr, err := args.ParseExpression()
-			if err != nil {
-				return nil, err
+		// Detect Jinja2 *args / **kwargs syntax. The lexer emits these as
+		// Multiply ("*") and Power ("**") tokens respectively.
+		if args.Match(tokens.Power) != nil {
+			argName := args.Match(tokens.Name)
+			if argName == nil {
+				return nil, args.Error("Expected identifier after '**'.", nil)
 			}
-			macro.Kwargs = append(macro.Kwargs, &nodes.Pair{
-				Key: &nodes.String{
-					Location: argName,
-					Val:      argName.Val,
-				},
-				Value: expr,
-			})
+			if macro.KwArgsName != "" {
+				return nil, args.Error("Only one '**kwargs' parameter is allowed.", nil)
+			}
+			macro.KwArgsName = argName.Val
+		} else if args.Match(tokens.Multiply) != nil {
+			argName := args.Match(tokens.Name)
+			if argName == nil {
+				return nil, args.Error("Expected identifier after '*'.", nil)
+			}
+			if macro.VarArgsName != "" {
+				return nil, args.Error("Only one '*args' parameter is allowed.", nil)
+			}
+			macro.VarArgsName = argName.Val
 		} else {
-			arg := &nodes.Pair{
-				Key: &nodes.String{
-					Location: argName,
-					Val:      argName.Val,
-				},
+			argName := args.Match(tokens.Name)
+			if argName == nil {
+				return nil, args.Error("Expected argument name as identifier.", nil)
 			}
-			if p.Config.StrictUndefined {
-				arg.Value = &nodes.Error{
-					Location: argName,
-					Error:    fmt.Errorf("parameter \"%s\" was not provided", argName.Val),
+
+			if args.Match(tokens.Assign) != nil {
+				expr, err := args.ParseExpression()
+				if err != nil {
+					return nil, err
 				}
+				macro.Kwargs = append(macro.Kwargs, &nodes.Pair{
+					Key: &nodes.String{
+						Location: argName,
+						Val:      argName.Val,
+					},
+					Value: expr,
+				})
 			} else {
-				arg.Value = &nodes.None{
-					Location: argName,
+				arg := &nodes.Pair{
+					Key: &nodes.String{
+						Location: argName,
+						Val:      argName.Val,
+					},
 				}
+				if p.Config.StrictUndefined {
+					arg.Value = &nodes.Error{
+						Location: argName,
+						Error:    fmt.Errorf("parameter \"%s\" was not provided", argName.Val),
+					}
+				} else {
+					arg.Value = &nodes.None{
+						Location: argName,
+					}
+				}
+				macro.Kwargs = append(macro.Kwargs, arg)
 			}
-			macro.Kwargs = append(macro.Kwargs, arg)
 		}
 
 		if args.Match(tokens.RightParenthesis) != nil {

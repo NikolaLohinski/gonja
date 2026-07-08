@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strings"
@@ -13,8 +12,6 @@ import (
 	"github.com/nikolalohinski/gonja/v2/nodes"
 	"github.com/nikolalohinski/gonja/v2/tokens"
 )
-
-const maxStringRepeatBytes = 100 * 1024 * 1024 // 100MB
 
 var typeOfValuePtr = reflect.TypeFor[*Value]()
 
@@ -140,15 +137,7 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 			return AsValue(left.Float() * right.Float())
 		}
 		if left.IsString() {
-			count := right.Integer()
-			if count < 0 {
-				count = 0
-			}
-			resultLen := int64(len(left.String())) * int64(count)
-			if resultLen > maxStringRepeatBytes {
-				return AsValue(fmt.Errorf("string repeat would produce %d bytes, exceeding limit of %d", resultLen, maxStringRepeatBytes))
-			}
-			return AsValue(strings.Repeat(left.String(), count))
+			return AsValue(strings.Repeat(left.String(), right.Integer()))
 		}
 		// Result will be int
 		return AsValue(left.Integer() * right.Integer())
@@ -357,38 +346,193 @@ func (e *Evaluator) evalGetSlice(node *nodes.GetSlice) *Value {
 	if !value.CanSlice() {
 		return AsValue(errors.Wrapf(value, `can not slice %s`, node.Node))
 	}
-	start := 0
-	end := value.Len()
-	if node.Start != nil {
+
+	n := value.Len()
+
+	// --- step ---
+	step := 1
+	if node.Step != nil {
+		stepValue := e.Eval(node.Step)
+		if stepValue.IsError() {
+			return AsValue(errors.Wrapf(value, `unable to evaluate slice step %s`, node.Step))
+		}
+		if !stepValue.IsInteger() {
+			return AsValue(errors.Errorf(`slice step is not an integer: %s`, stepValue))
+		}
+		step = stepValue.Integer()
+		if step == 0 {
+			return AsValue(errors.New("slice step cannot be zero"))
+		}
+	}
+
+	// --- start ---
+	var start int
+	startProvided := node.Start != nil
+	if startProvided {
 		startValue := e.Eval(node.Start)
 		if startValue.IsError() {
-			return AsValue(errors.Wrapf(value, `unable to slice starting index %s`, node.Start))
+			return AsValue(errors.Wrapf(value, `unable to evaluate slice start %s`, node.Start))
 		}
 		if !startValue.IsInteger() {
-			return AsValue(errors.Wrapf(value, `slice starting index is not an integer: %s`, startValue))
+			return AsValue(errors.Errorf(`slice start is not an integer: %s`, startValue))
 		}
 		start = startValue.Integer()
-		if start < 0 {
-			start = value.Len() + start
-		}
 	}
-	if node.End != nil {
+
+	// --- end ---
+	var end int
+	endProvided := node.End != nil
+	if endProvided {
 		endValue := e.Eval(node.End)
 		if endValue.IsError() {
-			return AsValue(errors.Wrapf(value, `unable to slice starting index %s`, node.Start))
+			return AsValue(errors.Wrapf(value, `unable to evaluate slice end %s`, node.End))
 		}
 		if !endValue.IsInteger() {
-			return AsValue(errors.Wrapf(value, `slice starting index is not an integer: %s`, endValue))
+			return AsValue(errors.Errorf(`slice end is not an integer: %s`, endValue))
 		}
 		end = endValue.Integer()
-		if end < 0 {
-			end = value.Len() + end
-		}
 	}
 
-	return value.Slice(start, end)
+	// Fast path: step == 1 → use the existing Slice() method (preserves prior behavior).
+	if step == 1 {
+		s := 0
+		if startProvided {
+			s = start
+			if s < 0 {
+				s = n + s
+			}
+		}
+		ee := n
+		if endProvided {
+			ee = end
+			if ee < 0 {
+				ee = n + ee
+			}
+		}
+		return value.Slice(s, ee)
+	}
+
+	// --- general case: emulate Python's slice with start/stop/step (incl. negative step) ---
+	start, end = pythonSliceBounds(n, start, end, step, startProvided, endProvided)
+
+	// Materialise the underlying sequence into items, then walk by `step`.
+	isString := value.getResolvedValue().Kind() == reflect.String
+	var srcRunes []rune
+	var srcLen int
+	if isString {
+		srcRunes = []rune(value.getResolvedValue().String())
+		srcLen = len(srcRunes)
+	} else {
+		srcLen = n
+	}
+
+	if isString {
+		var out []rune
+		if step > 0 {
+			for i := start; i < end && i < srcLen; i += step {
+				if i < 0 {
+					continue
+				}
+				out = append(out, srcRunes[i])
+			}
+		} else {
+			for i := start; i > end && i >= 0; i += step {
+				if i >= srcLen {
+					continue
+				}
+				out = append(out, srcRunes[i])
+			}
+		}
+		return AsValue(string(out))
+	}
+
+	out := make([]any, 0)
+	if step > 0 {
+		for i := start; i < end && i < srcLen; i += step {
+			if i < 0 {
+				continue
+			}
+			item := value.Index(i)
+			if item != nil {
+				out = append(out, item.Interface())
+			}
+		}
+	} else {
+		for i := start; i > end && i >= 0; i += step {
+			if i >= srcLen {
+				continue
+			}
+			item := value.Index(i)
+			if item != nil {
+				out = append(out, item.Interface())
+			}
+		}
+	}
+	return AsValue(out)
 }
 
+// pythonSliceBounds returns (start, stop) indices following Python's slice
+// semantics, including handling of negative indices and negative step.
+func pythonSliceBounds(length, start, stop, step int, startProvided, stopProvided bool) (int, int) {
+	if step > 0 {
+		if !startProvided {
+			start = 0
+		} else {
+			if start < 0 {
+				start += length
+			}
+			if start < 0 {
+				start = 0
+			}
+			if start > length {
+				start = length
+			}
+		}
+		if !stopProvided {
+			stop = length
+		} else {
+			if stop < 0 {
+				stop += length
+			}
+			if stop < 0 {
+				stop = 0
+			}
+			if stop > length {
+				stop = length
+			}
+		}
+		return start, stop
+	}
+
+	// step < 0
+	if !startProvided {
+		start = length - 1
+	} else {
+		if start < 0 {
+			start += length
+		}
+		if start < 0 {
+			start = -1
+		}
+		if start >= length {
+			start = length - 1
+		}
+	}
+	if !stopProvided {
+		stop = -1
+	} else {
+		if stop < 0 {
+			stop += length
+		}
+		if stop < -1 {
+			stop = -1
+		}
+		if stop >= length {
+			stop = length - 1
+		}
+	}
+	return start, stop
+}
 func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 	value := e.Eval(node.Node)
 	if value.IsError() {

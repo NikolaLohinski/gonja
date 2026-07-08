@@ -20,4 +20,9 @@ var All = exec.NewControlStructureSet(map[string]parser.ControlStructureParser{
 	"raw":        rawParser,
 	"set":        setParser,
 	"with":       withParser,
+	"do":         doParser,
+	"break":      breakParser,
+	"continue":   continueParser,
+	"trans":      transParser,
+	"call":       callParser,
 })
