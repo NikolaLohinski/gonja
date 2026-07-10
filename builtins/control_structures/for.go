@@ -52,6 +52,8 @@ type LoopInfos struct {
 
 // GetAttribute implements exec.AttributeGetter so templates can access
 // loop.* fields/methods with Jinja2-style lowercase names.
+// Capitalized aliases (Cycle, Changed, PrevItem, NextItem) are also
+// supported for backward compatibility with older gonja templates.
 func (li *LoopInfos) GetAttribute(name string) (*exec.Value, bool) {
 	switch name {
 	case "index":
@@ -72,11 +74,11 @@ func (li *LoopInfos) GetAttribute(name string) (*exec.Value, bool) {
 		return exec.AsValue(li.depth), true
 	case "depth0":
 		return exec.AsValue(li.depth0), true
-	case "previtem":
+	case "previtem", "PrevItem":
 		return li.PrevItem, true
-	case "nextitem":
+	case "nextitem", "NextItem":
 		return li.NextItem, true
-	case "cycle":
+	case "cycle", "Cycle":
 		fn := func(va *exec.VarArgs) *exec.Value {
 			if len(va.Args) == 0 {
 				return exec.AsValue("")
@@ -88,7 +90,7 @@ func (li *LoopInfos) GetAttribute(name string) (*exec.Value, bool) {
 			return va.Args[idx]
 		}
 		return exec.AsValue(fn), true
-	case "changed":
+	case "changed", "Changed":
 		fn := func(va *exec.VarArgs) *exec.Value {
 			var current *exec.Value
 			if len(va.Args) == 1 {
