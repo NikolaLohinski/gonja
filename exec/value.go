@@ -877,7 +877,62 @@ func (v *Value) EqualValueTo(other *Value) bool {
 	if v.IsNumber() && other.IsNumber() {
 		return v.Float() == other.Float()
 	}
-	return v.Interface() == other.Interface()
+
+	// Both nil → equal.
+	if v.IsNil() && other.IsNil() {
+		return true
+	}
+	if v.IsNil() || other.IsNil() {
+		return false
+	}
+
+	// For lists, compare element by element.
+	if v.IsList() && other.IsList() {
+		if v.Len() != other.Len() {
+			return false
+		}
+		n := v.Len()
+		for i := 0; i < n; i++ {
+			if !v.Index(i).EqualValueTo(other.Index(i)) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// For dicts, compare key sets and values.
+	if v.IsDict() && other.IsDict() {
+		keysA := v.Keys()
+		keysB := other.Keys()
+		if len(keysA) != len(keysB) {
+			return false
+		}
+		for _, k := range keysA {
+			va, foundA := v.GetItem(k.Interface())
+			vb, foundB := other.GetItem(k.Interface())
+			if !foundA || !foundB {
+				return false
+			}
+			if !va.EqualValueTo(vb) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// For strings and other comparable scalars, use reflect.DeepEqual which
+	// handles the "uncomparable" case safely.
+	ai := v.Interface()
+	bi := other.Interface()
+
+	// Fast path for comparable Go types.
+	defer func() {
+		// If someone does something exotic, don't crash the whole render.
+		_ = recover()
+	}()
+
+	// reflect.DeepEqual handles slices, maps, structs safely — no panics.
+	return reflect.DeepEqual(ai, bi)
 }
 
 func (v *Value) Keys() ValuesList {

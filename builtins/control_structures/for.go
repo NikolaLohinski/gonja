@@ -142,6 +142,30 @@ func (fcs *ForControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 	return fcs.renderIterable(r, obj)
 }
 
+// isLoopControlError checks whether err (possibly wrapped multiple times
+// by errors.Wrapf) is or contains a loop-control sentinel of type T.
+func isLoopControlError[T error](err error) bool {
+	for e := err; e != nil; {
+		if _, ok := e.(T); ok {
+			return true
+		}
+		// Try standard Unwrap first
+		type unwrapper interface{ Unwrap() error }
+		if u, ok := e.(unwrapper); ok {
+			e = u.Unwrap()
+			continue
+		}
+		// pkg/errors compatibility
+		type causer interface{ Cause() error }
+		if c, ok := e.(causer); ok {
+			e = c.Cause()
+			continue
+		}
+		return false
+	}
+	return false
+}
+
 // renderIterable contains the main render logic, factored out so the
 // recursive callable can invoke it again with a new iterable while
 // writing to the same outer renderer.
@@ -214,10 +238,12 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 	// Wire recursion if requested.
 	var loopContextValue any = loop
 	if fcs.Recursive {
-		callable := &loopCallable{infos: loop}
-		callable.infos.recurseFn = func(childItems *exec.Value) *exec.Value {
-			// Render the body for the child iterable into a buffer and
-			// return that as a safe string for inline interpolation.
+		// Build the recursion closure.
+		recurseFn := func(va *exec.VarArgs) *exec.Value {
+			if len(va.Args) == 0 {
+				return exec.AsValue("")
+			}
+			childItems := va.Args[0]
 			buf := new(bytes.Buffer)
 			sub := r.Inherit()
 			originalOutput := sub.Output
@@ -229,9 +255,14 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 			sub.Output = originalOutput
 			return exec.AsSafeValue(buf.String())
 		}
-		loopContextValue = callable
+		// Store the recursion function on the loop for attribute access,
+		// AND use the function itself as the loop context so `loop(...)` calls it.
+		loop.recurseFn = func(items *exec.Value) *exec.Value {
+			va := &exec.VarArgs{Args: []*exec.Value{items}}
+			return recurseFn(va)
+		}
+		loopContextValue = recurseFn
 	}
-
 	for idx, pair := range items.Pairs {
 		sub := r.Inherit()
 		ctx := sub.Environment.Context
@@ -277,10 +308,12 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 
 		err := sub.ExecuteWrapper(fcs.BodyWrapper)
 		if err != nil {
-			if _, ok := err.(*LoopBreakError); ok {
+			// Unwrap through any error wrapping (e.g. errors.Wrapf) added by
+			// intermediate control structures like {% if %}.
+			if isLoopControlError[*LoopBreakError](err) {
 				break
 			}
-			if _, ok := err.(*LoopContinueError); ok {
+			if isLoopControlError[*LoopContinueError](err) {
 				continue
 			}
 			return err
