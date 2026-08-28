@@ -6,6 +6,12 @@ import (
 )
 
 var _ = Describe("Macro parameters", func() {
+	It("allows a macro to be declared inside another macro", func() {
+		result := renderTemplate(
+			`{% macro outer() %}{% macro inner(value) %}{{ value }}{% endmacro %}{{ inner("ok") }}{% endmacro %}{{ outer() }}`, nil)
+		Expect(result).To(Equal("ok"))
+	})
+
 	Context("*args (varargs)", func() {
 		It("should collect overflow positional args into a list", func() {
 			result := renderTemplate(

@@ -912,7 +912,11 @@ func filterRejectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	out := make([]any, 0)
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		attr, _ := resolveAttributeValue(key, attribute, nil)
+		item := key
+		if value != nil {
+			item = value
+		}
+		attr, _ := resolveAttributeValue(item, attribute, nil)
 		keep := false
 		if name == "" {
 			keep = !attr.IsTrue()
@@ -920,7 +924,7 @@ func filterRejectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 			keep = !e.ExecuteTestByName(name, attr, testParams).IsTrue()
 		}
 		if keep {
-			out = append(out, key.Interface())
+			out = append(out, item.Interface())
 		}
 		return true
 	}, func() {})
@@ -1617,7 +1621,11 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	out := make([]any, 0)
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
-		attr, _ := resolveAttributeValue(key, attribute, nil)
+		item := key
+		if value != nil {
+			item = value
+		}
+		attr, _ := resolveAttributeValue(item, attribute, nil)
 		matched := false
 		if name == "" {
 			matched = attr.IsTrue()
@@ -1625,7 +1633,7 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 			matched = e.ExecuteTestByName(name, attr, testParams).IsTrue()
 		}
 		if matched {
-			out = append(out, key.Interface())
+			out = append(out, item.Interface())
 		}
 		return true
 	}, func() {})

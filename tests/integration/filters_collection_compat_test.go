@@ -96,6 +96,29 @@ var _ = Context("collection filter compatibility", func() {
 			want: "Alice|Bob,Cara",
 		},
 		{
+			name:     "selectattr compares regex-looking strings literally",
+			template: `{{ users|selectattr("ip", "equalto", "(ip1|ip2)")|map(attribute="ip")|join(",") }}`,
+			context: map[string]any{
+				"users": []any{
+					map[string]any{"ip": "ip1"},
+					map[string]any{"ip": "(ip1|ip2)"},
+					map[string]any{"ip": "ip2"},
+				},
+			},
+			want: "(ip1|ip2)",
+		},
+		{
+			name:     "selectattr tests values in a dictionary",
+			template: `{{ users|selectattr("ip", "equalto", "(ip1|ip2)")|map(attribute="ip")|join(",") }}`,
+			context: map[string]any{
+				"users": map[string]any{
+					"first":  map[string]any{"ip": "ip1"},
+					"second": map[string]any{"ip": "(ip1|ip2)"},
+				},
+			},
+			want: "(ip1|ip2)",
+		},
+		{
 			name:     "sort supports multiple attributes",
 			template: `{{ users|sort(attribute="meta.rank,name")|map(attribute="name")|join(",") }}`,
 			context: map[string]any{
