@@ -9,6 +9,25 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+type taggedAttributeStructure struct {
+	UserID   string `jinja:"user_id"`
+	JSONName string `json:"json_name"`
+	Hidden   string `jinja:"hidden"`
+}
+
+type taggedMethodPrecedenceStructure struct {
+	MethodValue string `jinja:"Method"`
+}
+
+func (taggedMethodPrecedenceStructure) Method() string {
+	return "method"
+}
+
+type taggedFieldPrecedenceStructure struct {
+	UserID     string `jinja:"alias"`
+	AliasValue string `jinja:"UserID"`
+}
+
 var _ = Context("value", func() {
 	Context("AsValue", func() {
 		var (
@@ -355,6 +374,69 @@ var _ = Context("value", func() {
 				Expect((*returnedAttribute).IsError()).To(BeFalse(), ".isError()")
 				By("returning a nil value")
 				Expect((*returnedAttribute).IsNil()).To(BeTrue(), ".isNil()")
+			})
+		})
+		Context("when the struct field has a jinja tag", func() {
+			BeforeEach(func() {
+				*value = exec.AsValue(taggedAttributeStructure{
+					UserID:   "123456",
+					JSONName: "json value",
+					Hidden:   "hidden value",
+				})
+			})
+			Context("when looked up by its alias", func() {
+				BeforeEach(func() { *attribute = "user_id" })
+				It("should resolve the tagged field", func() {
+					Expect(*returnedOk).To(BeTrue())
+					Expect((*returnedAttribute).String()).To(Equal("123456"))
+				})
+			})
+			Context("when the value is a pointer to the tagged struct", func() {
+				BeforeEach(func() {
+					*value = exec.AsValue(&taggedAttributeStructure{UserID: "123456"})
+					*attribute = "user_id"
+				})
+				It("should resolve the tagged field", func() {
+					Expect(*returnedOk).To(BeTrue())
+					Expect((*returnedAttribute).String()).To(Equal("123456"))
+				})
+			})
+			Context("when the alias is missing", func() {
+				BeforeEach(func() { *attribute = "missing" })
+				It("should return not found", func() {
+					Expect(*returnedOk).To(BeFalse())
+					Expect((*returnedAttribute).IsNil()).To(BeTrue())
+				})
+			})
+			Context("when only a json tag matches", func() {
+				BeforeEach(func() { *attribute = "json_name" })
+				It("should not use the json tag as an alias", func() {
+					Expect(*returnedOk).To(BeFalse())
+					Expect((*returnedAttribute).IsNil()).To(BeTrue())
+				})
+			})
+		})
+		Context("when a method and a tag have the same lookup name", func() {
+			BeforeEach(func() {
+				*value = exec.AsValue(taggedMethodPrecedenceStructure{MethodValue: "tag value"})
+				*attribute = "Method"
+			})
+			It("should prefer the method", func() {
+				Expect(*returnedOk).To(BeTrue())
+				Expect((*returnedAttribute).IsCallable()).To(BeTrue())
+			})
+		})
+		Context("when an exact field name and a tag alias have the same lookup name", func() {
+			BeforeEach(func() {
+				*value = exec.AsValue(taggedFieldPrecedenceStructure{
+					UserID:     "exact field",
+					AliasValue: "tag alias",
+				})
+				*attribute = "UserID"
+			})
+			It("should prefer the exact field name", func() {
+				Expect(*returnedOk).To(BeTrue())
+				Expect((*returnedAttribute).String()).To(Equal("exact field"))
 			})
 		})
 		Context("when the holding value is a map", func() {
