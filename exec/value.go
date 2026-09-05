@@ -1056,6 +1056,22 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 		if field.IsValid() {
 			return ToValue(field), true
 		}
+
+		typ := val.Type()
+		for i := 0; i < typ.NumField(); i++ {
+			structField := typ.Field(i)
+
+			rawTag, ok := structField.Tag.Lookup("jinja")
+			if !ok {
+				continue
+			}
+
+			if rawTag != name {
+				continue
+			}
+
+			return ToValue(val.Field(i)), true
+		}
 	}
 
 	return AsValue(nil), false // Attr not found
