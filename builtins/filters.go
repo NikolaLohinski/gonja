@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/url"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -1376,6 +1377,7 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 
 	out := make([]any, 0)
 	tracker := map[any]bool{}
+	var err error
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
@@ -1390,12 +1392,20 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		if !caseSensitive && val.IsString() {
 			tracked = strings.ToLower(val.String())
 		}
+		if t := reflect.TypeOf(tracked); t != nil && !t.Comparable() {
+			err = fmt.Errorf("unhashable type '%T'", tracked)
+			return false
+		}
 		if _, contains := tracker[tracked]; !contains {
 			tracker[tracked] = true
 			out = append(out, key.Interface())
 		}
 		return true
 	}, func() {})
+
+	if err != nil {
+		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
 
 	return exec.AsValue(out)
 }
