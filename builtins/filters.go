@@ -321,6 +321,16 @@ func filterFirst(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if in.CanSlice() && in.Len() > 0 {
 		return in.Index(0)
 	}
+	if in.IsDict() {
+		var first *exec.Value
+		in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+			first = key
+			return false
+		}, func() {})
+		if first != nil {
+			return first
+		}
+	}
 	return exec.AsValue("")
 }
 
@@ -595,6 +605,16 @@ func filterLast(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	}
 	if in.CanSlice() && in.Len() > 0 {
 		return in.Index(in.Len() - 1)
+	}
+	if in.IsDict() {
+		var last *exec.Value
+		in.Iterate(func(idx, count int, key, value *exec.Value) bool {
+			last = key
+			return true
+		}, func() {})
+		if last != nil {
+			return last
+		}
 	}
 	return exec.AsValue("")
 }
