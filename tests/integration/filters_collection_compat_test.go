@@ -177,3 +177,54 @@ var _ = Context("collection filter compatibility", func() {
 		})
 	}
 })
+
+var _ = Context("first and last filters over mappings", func() {
+	testCases := []struct {
+		name     string
+		template string
+		context  map[string]any
+		want     string
+	}{
+		{
+			name:     "first returns the first key of a mapping",
+			template: `{{ values|first }}`,
+			context:  map[string]any{"values": map[string]any{"a": 1, "b": 2, "c": 3}},
+			want:     "a",
+		},
+		{
+			name:     "last returns the last key of a mapping",
+			template: `{{ values|last }}`,
+			context:  map[string]any{"values": map[string]any{"a": 1, "b": 2, "c": 3}},
+			want:     "c",
+		},
+		{
+			name:     "first and last over a mapping agree with piping through list",
+			template: `{{ values|first }}{{ values|list|first }}|{{ values|last }}{{ values|list|last }}`,
+			context:  map[string]any{"values": map[string]any{"a": 1, "b": 2, "c": 3}},
+			want:     "aa|cc",
+		},
+		{
+			name:     "first and last follow insertion order of a dict literal",
+			template: `{{ {"b": 1, "a": 2}|first }}|{{ {"b": 1, "a": 2}|last }}`,
+			want:     "b|a",
+		},
+		{
+			name:     "first and last of an empty mapping render nothing",
+			template: `[{{ values|first }}][{{ values|last }}]`,
+			context:  map[string]any{"values": map[string]any{}},
+			want:     "[][]",
+		},
+		{
+			name:     "first and last still operate on sequences and strings",
+			template: `{{ [1, 2, 3]|first }}{{ [1, 2, 3]|last }}|{{ "hello"|first }}{{ "hello"|last }}`,
+			want:     "13|ho",
+		},
+	}
+
+	for _, tc := range testCases {
+		testCase := tc
+		It(testCase.name, func() {
+			Expect(renderTemplate(testCase.template, testCase.context)).To(Equal(testCase.want))
+		})
+	}
+})
