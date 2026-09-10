@@ -650,7 +650,7 @@ func (v *Value) Contains(other *Value) bool {
 		}
 		for i := 0; i < resolved.Len(); i++ {
 			item := resolved.Index(i)
-			if other.Interface() == item.Interface() {
+			if other.EqualValueTo(ToValue(item)) {
 				return true
 			}
 		}
