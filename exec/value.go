@@ -15,6 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const jinjaTag = "jinja"
+
 type Value struct {
 	Val  reflect.Value
 	Safe bool // used to indicate whether a Value needs explicit escaping in the template
@@ -1061,7 +1063,7 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 		for i := 0; i < typ.NumField(); i++ {
 			structField := typ.Field(i)
 
-			rawTag, ok := structField.Tag.Lookup("jinja")
+			rawTag, ok := structField.Tag.Lookup(jinjaTag)
 			if !ok {
 				continue
 			}
