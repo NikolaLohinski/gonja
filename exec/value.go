@@ -268,7 +268,7 @@ func (v *Value) String() string {
 			if i > 0 {
 				out.WriteString(", ")
 			}
-			item, ok := v.Index(i).Val.Interface().(*Value)
+			item, ok := v.Index(i).Interface().(*Value)
 			if !ok {
 				item = ToValue(v.Index(i).Val)
 			}

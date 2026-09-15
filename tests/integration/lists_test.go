@@ -203,4 +203,31 @@ var _ = Context("lists", func() {
 			AssertPrettyDiff(expected, *returnedResult)
 		})
 	})
+	Context("when a list holds a nil element", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: heredoc.Doc(`
+					from context: {{ value }}
+					list:         {{ [none, 1]|list }}
+					unique:       {{ [none, 1]|unique }}
+					literal:      {{ [none, 1] }}
+					without nil:  {{ [1, 'a'] }}
+				`),
+			})
+			(*environment).Context.Set("value", []any{nil, 1})
+		})
+
+		It("renders the nil element the same way a literal none does", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			expected := heredoc.Doc(`
+					from context: [, 1]
+					list:         [, 1]
+					unique:       [, 1]
+					literal:      [, 1]
+					without nil:  [1, 'a']`)
+			AssertPrettyDiff(expected, *returnedResult)
+		})
+	})
 })
