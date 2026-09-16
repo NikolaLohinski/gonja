@@ -1389,7 +1389,12 @@ func filterUnique(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 			val = nested
 		}
 		tracked := val.Interface()
-		if !caseSensitive && val.IsString() {
+		switch {
+		case val.IsInteger():
+			tracked = val.Integer()
+		case val.IsFloat():
+			tracked = val.Float()
+		case !caseSensitive && val.IsString():
 			tracked = strings.ToLower(val.String())
 		}
 		if t := reflect.TypeOf(tracked); t != nil && !t.Comparable() {
