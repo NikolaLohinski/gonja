@@ -54,6 +54,38 @@ var _ = Context("the unique filter over unhashable elements", func() {
 			want: "[{'x': 1}, {'x': 2}]",
 		},
 		{
+			name:     "integers of different widths are the same value",
+			template: `{{ values|unique }}`,
+			context:  map[string]any{"values": []any{int64(3), int32(3), 3}},
+			want:     "[3]",
+		},
+		{
+			name:     "an unsigned and a signed integer are the same value",
+			template: `{{ values|unique }}`,
+			context:  map[string]any{"values": []any{uint(1), int(1)}},
+			want:     "[1]",
+		},
+		{
+			name:     "floats of different widths are the same value",
+			template: `{{ values|unique }}`,
+			context:  map[string]any{"values": []any{float32(1.5), 1.5}},
+			want:     "[1.5]",
+		},
+		{
+			name:     "floats sharing an integer part stay distinct",
+			template: `{{ values|unique }}`,
+			context:  map[string]any{"values": []any{1.5, 1.7}},
+			want:     "[1.5, 1.7]",
+		},
+		{
+			name:     "an attribute resolving to differently typed integers de-duplicates",
+			template: `{{ rows|unique(attribute='x') }}`,
+			context: map[string]any{
+				"rows": []any{map[string]any{"x": int64(1)}, map[string]any{"x": 1}},
+			},
+			want: "[{'x': 1}]",
+		},
+		{
 			name:     "an empty sequence stays empty",
 			template: `{{ values|unique }}`,
 			context:  map[string]any{"values": []any{}},
