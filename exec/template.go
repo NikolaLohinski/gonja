@@ -49,7 +49,7 @@ func NewTemplate(identifier string, config *config.Config, loader loaders.Loader
 
 	root, err := t.parser.Parse()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template '%s': %s", source, err)
+		return nil, fmt.Errorf("failed to parse template '%s': %w", source, err)
 	}
 	t.root = root
 
