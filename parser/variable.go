@@ -155,7 +155,7 @@ func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
 	if p.Match(tokens.RightParenthesis) != nil {
 		return &nodes.Tuple{Location: t, Val: []nodes.Expression{}}, nil
 	}
-	expression, err := p.ParseExpression()
+	expression, err := p.parseConditionalExpression()
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (p *Parser) parseTupleOrExpression() (nodes.Expression, error) {
 			trailingComa = true
 			break
 		}
-		expr, err := p.ParseExpression()
+		expr, err := p.parseConditionalExpression()
 		if err != nil {
 			return nil, err
 		}
@@ -275,7 +275,7 @@ func (p *Parser) ParseVariable() (nodes.Expression, error) {
 			Val:      true,
 		}
 		return br, nil
-	case "nil", "None":
+	case "nil", "None", "none":
 		br := &nodes.None{
 			Location: t,
 		}

@@ -82,8 +82,8 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		var value *Value
 		if n.Condition != nil {
 			condition := r.Eval(n.Condition)
-			if condition.IsError() {
-				return nil, errors.Wrapf(condition, `Unable to render condition at line %d: %s`, n.Condition.Position().Line, n.Condition)
+			if condition.IsError() || condition.IsStrictUndefined() {
+				return nil, errors.Errorf(`Unable to render condition at line %d: %s`, n.Condition.Position().Line, condition.String())
 			}
 			if !condition.IsNil() && condition.IsTrue() {
 				value = r.Eval(n.Expression)
@@ -101,6 +101,9 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		}
 		if value.IsError() {
 			return nil, errors.Wrapf(value, `Unable to render expression at line %d: %s`, n.Expression.Position().Line, n.Expression)
+		}
+		if value.IsStrictUndefined() {
+			return nil, errors.Errorf(`Unable to render expression at line %d: value is undefined`, n.Expression.Position().Line)
 		}
 		var err error
 		if r.Config.AutoEscape && value.IsString() && !value.Safe {

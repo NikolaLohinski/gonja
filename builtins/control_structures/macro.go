@@ -90,16 +90,7 @@ func macroParser(p *parser.Parser, args *parser.Parser) (nodes.ControlStructure,
 						Val:      argName.Val,
 					},
 				}
-				if p.Config.StrictUndefined {
-					arg.Value = &nodes.Error{
-						Location: argName,
-						Error:    fmt.Errorf("parameter \"%s\" was not provided", argName.Val),
-					}
-				} else {
-					arg.Value = &nodes.None{
-						Location: argName,
-					}
-				}
+				arg.Value = &nodes.Undefined{Location: argName}
 				macro.Kwargs = append(macro.Kwargs, arg)
 			}
 		}

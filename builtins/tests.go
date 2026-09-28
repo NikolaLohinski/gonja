@@ -59,7 +59,7 @@ func testCallable(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, 
 }
 
 func testDefined(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return !(in.IsError() || in.IsNil()), nil
+	return !in.IsUndefined(), nil
 }
 
 func testDivisibleby(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -72,6 +72,9 @@ func testDivisibleby(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (boo
 
 func testEqual(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	param := params.First()
+	if in.IsStrictUndefined() || param.IsStrictUndefined() {
+		return false, errors.New("cannot compare undefined")
+	}
 	return in.EqualValueTo(param), nil
 }
 
@@ -111,7 +114,7 @@ func testGreaterThan(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (boo
 
 func testIn(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	seq := params.First()
-	return seq.Contains(in), nil
+	return seq.ContainsChecked(in)
 }
 
 func testInteger(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -119,11 +122,14 @@ func testInteger(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, e
 }
 
 func testIterable(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return in.IsDict() || in.IsList() || in.IsString(), nil
+	if in.IsStrictUndefined() {
+		return false, errors.New("cannot iterate undefined")
+	}
+	return in.IsIterable() || in.IsUndefined(), nil
 }
 
 func testSequence(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return in.IsList(), nil
+	return in.IsIterable() || in.IsUndefined() && !in.IsStrictUndefined(), nil
 }
 
 func testLessEqual(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -155,11 +161,14 @@ func testMapping(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, e
 
 func testNotEqual(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
 	param := params.First()
+	if in.IsStrictUndefined() || param.IsStrictUndefined() {
+		return false, errors.New("cannot compare undefined")
+	}
 	return !in.EqualValueTo(param), nil
 }
 
 func testNone(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return in.IsNil(), nil
+	return in.IsNil() && !in.IsUndefined(), nil
 }
 
 func testNumber(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {

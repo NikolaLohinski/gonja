@@ -170,8 +170,15 @@ func isLoopControlError[T error](err error) bool {
 // recursive callable can invoke it again with a new iterable while
 // writing to the same outer renderer.
 func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value) error {
+	if obj.IsStrictUndefined() {
+		return fmt.Errorf("for-loop iterable is undefined")
+	}
+	if obj.IsNil() {
+		return fmt.Errorf("None is not iterable")
+	}
 	// First pass: materialise items, applying any {% if cond %} filter.
 	items := exec.NewDict()
+	var iterationErr error
 	obj.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		sub := r.Inherit()
 		ctx := sub.Environment.Context
@@ -199,13 +206,26 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 		}
 
 		if fcs.IfCondition != nil {
-			if !sub.Eval(fcs.IfCondition).IsTrue() {
+			condition := sub.Eval(fcs.IfCondition)
+			if condition.IsError() {
+				iterationErr = condition
+				return false
+			}
+			if condition.IsStrictUndefined() {
+				iterationErr = fmt.Errorf("for-loop condition is undefined")
+				return false
+			}
+			if !condition.IsTrue() {
 				return true
 			}
 		}
 		items.Pairs = append(items.Pairs, pair)
 		return true
 	}, func() {})
+
+	if iterationErr != nil {
+		return iterationErr
+	}
 
 	// Empty case.
 	length := len(items.Pairs)
@@ -285,7 +305,7 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 		loop.revindex0 = length - (idx + 1)
 
 		if idx == 0 {
-			loop.PrevItem = exec.AsValue(nil)
+			loop.PrevItem = exec.UndefinedValue(r.Config.StrictUndefined, "loop.previtem")
 		} else {
 			pp := items.Pairs[idx-1]
 			if pp.Value != nil {
@@ -296,7 +316,7 @@ func (fcs *ForControlStructure) renderIterable(r *exec.Renderer, obj *exec.Value
 		}
 
 		if idx == length-1 {
-			loop.NextItem = exec.AsValue(nil)
+			loop.NextItem = exec.UndefinedValue(r.Config.StrictUndefined, "loop.nextitem")
 		} else {
 			np := items.Pairs[idx+1]
 			if np.Value != nil {

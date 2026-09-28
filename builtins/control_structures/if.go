@@ -32,6 +32,9 @@ func (ics *IfControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStruc
 		if result.IsError() {
 			return result
 		}
+		if result.IsStrictUndefined() {
+			return fmt.Errorf("if condition is undefined")
+		}
 
 		if result.IsTrue() {
 			return r.ExecuteIfWrapper(ics.Wrappers[i])

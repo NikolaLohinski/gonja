@@ -83,6 +83,33 @@ func TestSequenceIterationOrder(t *testing.T) {
 	}
 }
 
+func TestSequenceMembershipWithMissingValues(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		items []*exec.Value
+		other *exec.Value
+		want  bool
+		err   bool
+	}{
+		{"None equals None", []*exec.Value{exec.AsValue(nil)}, exec.AsValue(nil), true, false},
+		{"None differs from undefined", []*exec.Value{exec.AsValue(nil)}, exec.UndefinedValue(false, "missing"), false, false},
+		{"undefined equals undefined", []*exec.Value{exec.UndefinedValue(false, "missing")}, exec.UndefinedValue(false, "other"), true, false},
+		{"empty sequence tolerates strict operand", nil, exec.UndefinedValue(true, "missing"), false, false},
+		{"strict operand", []*exec.Value{exec.AsValue(1)}, exec.UndefinedValue(true, "missing"), false, true},
+		{"strict item", []*exec.Value{exec.UndefinedValue(true, "missing")}, exec.AsValue(1), false, true},
+		{"named string", []*exec.Value{exec.AsValue(namedSequenceString("alice"))}, exec.AsValue("alice"), true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := exec.AsValue(valueSequence{items: tc.items}).ContainsChecked(tc.other)
+			if got != tc.want || (err != nil) != tc.err {
+				t.Fatalf("got (%v, %v), want (%v, error=%v)", got, err, tc.want, tc.err)
+			}
+		})
+	}
+}
+
+type namedSequenceString string
+
 func TestIterationEmptyCallback(t *testing.T) {
 	var nilSequence *valueSequence
 	for _, tc := range []struct {

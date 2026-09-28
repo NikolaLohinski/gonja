@@ -359,6 +359,13 @@ Return a titlecased version of the value. I.e. words will start with uppercase l
 
 Serialize an object to a string of JSON. It takes an `indent` parameter to do pretty printing.
 
+For Hugging Face chat templates, opt into Python-style JSON serialization by setting
+`config.Config.HuggingFaceToJSON = true` **before compiling the template** with `exec.NewTemplate`.
+The default is `false`, so normal `tojson` behavior is unchanged. In this mode, decode
+JSON input with `gonja.DecodeOrdered` and pass the returned value directly to the context;
+Go maps do not retain input order and are rejected. The mode supports only no-argument
+`tojson`, emits non-HTML-safe output, and is intended for model prompts rather than HTML.
+
 ## The `trim` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.trim) |
 | -------------------------------------------------------------------------------------- |

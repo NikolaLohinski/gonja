@@ -105,13 +105,19 @@ func filterAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	if in.IsError() {
 		return in
 	}
+	if in.IsUndefined() {
+		return exec.AsValue(errors.New("cannot access an attribute on undefined"))
+	}
 	var name string
 	if err := params.Take(
 		exec.PositionalArgument("name", nil, takeStringArgument(&name)),
 	); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	value, _ := in.GetAttribute(name)
+	value, found := in.GetAttribute(name)
+	if !found {
+		return exec.UndefinedValue(e.Config.StrictUndefined, name)
+	}
 	return value
 }
 
@@ -332,12 +338,15 @@ func filterFirst(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 			return first
 		}
 	}
-	return exec.AsValue("")
+	return exec.UndefinedValue(e.Config.StrictUndefined, "first item")
 }
 
 func filterFloat(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
 	if in.IsError() {
 		return in
+	}
+	if in.IsUndefined() {
+		return exec.AsValue(errors.New("cannot convert undefined to float"))
 	}
 	var defaultValue *exec.Value
 	if err := params.Take(
@@ -488,6 +497,9 @@ func filterInteger(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	if in.IsError() {
 		return in
 	}
+	if in.IsUndefined() {
+		return exec.AsValue(errors.New("cannot convert undefined to integer"))
+	}
 	var (
 		defaultValue *exec.Value
 		base         int
@@ -617,7 +629,7 @@ func filterLast(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 			return last
 		}
 	}
-	return exec.AsValue("")
+	return exec.UndefinedValue(e.Config.StrictUndefined, "last item")
 }
 
 func filterLength(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Value {
@@ -626,6 +638,9 @@ func filterLength(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 	}
 	if err := params.Take(); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	if in.IsNil() {
+		return exec.AsValue(errors.New("object of type None has no length"))
 	}
 	return exec.AsValue(in.Len())
 }
@@ -637,8 +652,11 @@ func filterItems(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.
 	if err := params.Take(); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	if in.IsNil() {
+	if in.IsUndefined() {
 		return exec.AsValue([]tupleValue{})
+	}
+	if in.IsNil() {
+		return exec.AsValue(errors.New("items requires a mapping"))
 	}
 	if in.IsList() {
 		return in
@@ -660,6 +678,9 @@ func filterList(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.V
 	}
 	if err := params.Take(); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
+	}
+	if in.IsNil() {
+		return exec.AsValue(errors.New("None is not iterable"))
 	}
 	if in.IsString() {
 		out := []string{}
@@ -697,7 +718,7 @@ func filterMap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	filterName := ""
 	filterArgs := exec.NewVarArgs()
 	attribute := exec.AsValue(nil)
-	defaultVal := exec.AsValue(nil)
+	var defaultVal *exec.Value
 
 	if len(params.Args) > 0 {
 		filterName = params.Args[0].String()
@@ -719,12 +740,8 @@ func filterMap(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec.Va
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		val := key
 		if !attribute.IsNil() {
-			attr, found := resolveAttributeValue(val, attribute, defaultVal)
-			if found {
-				val = attr
-			} else {
-				return true
-			}
+			attr, _ := resolveAttributeValue(val, attribute, defaultVal, e.Config.StrictUndefined)
+			val = attr
 		}
 		if filterName != "" {
 			val = e.ExecuteFilterByName(filterName, val, filterArgs)
@@ -1274,6 +1291,10 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 
+	if e.Config.HuggingFaceToJSON {
+		return filterHFToJSON(e, in, params)
+	}
+
 	var (
 		indent      *exec.Value
 		ensureASCII bool
@@ -1535,7 +1556,11 @@ func filterUrlize(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		relValue = strings.Join(parts, " ")
 	}
 
-	s, err := filterUrlizeHelper(in.String(), trimURLLimit, relValue, target.String(), extraSchemes)
+	targetValue := ""
+	if !target.IsNil() {
+		targetValue = target.String()
+	}
+	s, err := filterUrlizeHelper(in.String(), trimURLLimit, relValue, targetValue, extraSchemes)
 	if err != nil {
 		return exec.AsValue(err)
 	}
@@ -1626,7 +1651,7 @@ func filterDefault(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	); err != nil {
 		return exec.AsValue(exec.ErrInvalidCall(err))
 	}
-	if in.IsError() || in.IsNil() {
+	if in.IsUndefined() {
 		return defaultValue
 	}
 	if boolean && !in.IsTrue() {
@@ -1654,18 +1679,28 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 	}
 
 	out := make([]any, 0)
+	var testErr *exec.Value
 
 	in.Iterate(func(idx, count int, key, value *exec.Value) bool {
 		item := key
 		if value != nil {
 			item = value
 		}
-		attr, _ := resolveAttributeValue(item, attribute, nil)
+		attr, _ := resolveAttributeValue(item, attribute, nil, e.Config.StrictUndefined)
 		matched := false
 		if name == "" {
+			if attr.IsStrictUndefined() {
+				testErr = exec.AsValue(errors.New("undefined attribute used as a boolean"))
+				return false
+			}
 			matched = attr.IsTrue()
 		} else {
-			matched = e.ExecuteTestByName(name, attr, testParams).IsTrue()
+			result := e.ExecuteTestByName(name, attr, testParams)
+			if result.IsError() {
+				testErr = result
+				return false
+			}
+			matched = result.IsTrue()
 		}
 		if matched {
 			out = append(out, item.Interface())
@@ -1673,5 +1708,8 @@ func filterSelectAttr(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *
 		return true
 	}, func() {})
 
+	if testErr != nil {
+		return testErr
+	}
 	return exec.AsValue(out)
 }

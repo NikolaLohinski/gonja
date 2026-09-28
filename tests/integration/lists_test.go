@@ -167,14 +167,14 @@ var _ = Context("lists", func() {
 			shouldFail("{{ [].copy('nope') }}", "received 1 unexpected positional argument")
 		})
 		Context("append", func() {
-			shouldRender("{{ ['one','two'].append('three') }}", "")
-			shouldRender("{% set l = ['one','two'] %}{{ l.append('three') }}{{ l }}", "['one', 'two', 'three']")
-			shouldRender("{% set d = {'nested': ['one','two']} %}{{ d.nested.append('three') }}{{ d.nested }}", "['one', 'two', 'three']")
+			shouldRender("{{ ['one','two'].append('three') }}", "None")
+			shouldRender("{% set l = ['one','two'] %}{{ l.append('three') }}{{ l }}", "None['one', 'two', 'three']")
+			shouldRender("{% set d = {'nested': ['one','two']} %}{{ d.nested.append('three') }}{{ d.nested }}", "None['one', 'two', 'three']")
 			shouldFail("{{ [].append('yolo', foo='bar') }}", "received 1 unexpected keyword argument: 'foo'")
 		})
 		Context("reverse", func() {
-			shouldRender("{{ ['one','two'].reverse() }}", "")
-			shouldRender("{% set l = ['one','two','three'] %}{{ l.reverse() }}{{ l }}", "['three', 'two', 'one']")
+			shouldRender("{{ ['one','two'].reverse() }}", "None")
+			shouldRender("{% set l = ['one','two','three'] %}{{ l.reverse() }}{{ l }}", "None['three', 'two', 'one']")
 			shouldFail("{{ [].reverse('yolo') }}", "received 1 unexpected positional argument")
 		})
 	})
@@ -208,9 +208,9 @@ var _ = Context("lists", func() {
 			*loader = loaders.MustNewMemoryLoader(map[string]string{
 				*identifier: heredoc.Doc(`
 					from context: {{ value }}
-					list:         {{ [none, 1]|list }}
-					unique:       {{ [none, 1]|unique }}
-					literal:      {{ [none, 1] }}
+					list:         {{ [None, 1]|list }}
+					unique:       {{ [None, 1]|unique }}
+					literal:      {{ [None, 1] }}
 					without nil:  {{ [1, 'a'] }}
 				`),
 			})
@@ -222,10 +222,10 @@ var _ = Context("lists", func() {
 			Expect(*returnedErr).To(BeNil())
 			By("returning the expected result")
 			expected := heredoc.Doc(`
-					from context: [, 1]
-					list:         [, 1]
-					unique:       [, 1]
-					literal:      [, 1]
+					from context: [None, 1]
+					list:         [None, 1]
+					unique:       [None, 1]
+					literal:      [None, 1]
 					without nil:  [1, 'a']`)
 			AssertPrettyDiff(expected, *returnedResult)
 		})

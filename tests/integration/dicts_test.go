@@ -131,6 +131,7 @@ var _ = Context("dicts", func() {
 		Context("dictsort and items filters", func() {
 			shouldRender("{{ {'a': 5}|dictsort }}", "[('a', 5)]")
 			shouldRender("{{ {'a': 5}|items|list }}", "[('a', 5)]")
+			shouldRender("{{ {'b': None, 'a': 1}|items|list }}", "[('b', None), ('a', 1)]")
 			shouldRender("{% for k, v in {'a': 5}|items %}{{ k }}={{ v }}{% else %}nothing{% endfor %}", "a=5")
 			shouldRender("{% set m = {'a': 5} %}{{ m|dictsort }}", "[('a', 5)]")
 			shouldRender("{{ dict(a=5)|dictsort }}", "[('a', 5)]")
