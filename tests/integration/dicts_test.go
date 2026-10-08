@@ -128,6 +128,13 @@ var _ = Context("dicts", func() {
 			shouldRender("{{ {'foo': 'bar', 'yolo': 1}.keys() }}", "['foo', 'yolo']")
 			shouldFail("{{ {}.keys('nope') }}", "received 1 unexpected positional argument")
 		})
+		Context("dictsort and items filters", func() {
+			shouldRender("{{ {'a': 5}|dictsort }}", "[('a', 5)]")
+			shouldRender("{{ {'a': 5}|items|list }}", "[('a', 5)]")
+			shouldRender("{% for k, v in {'a': 5}|items %}{{ k }}={{ v }}{% else %}nothing{% endfor %}", "a=5")
+			shouldRender("{% set m = {'a': 5} %}{{ m|dictsort }}", "[('a', 5)]")
+			shouldRender("{{ dict(a=5)|dictsort }}", "[('a', 5)]")
+		})
 	})
 
 })

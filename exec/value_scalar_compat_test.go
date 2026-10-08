@@ -41,6 +41,18 @@ var _ = Context("value scalar compatibility helpers", func() {
 		Expect(items[0].Value.IsInteger()).To(BeTrue())
 	})
 
+	It("returns items from exec.Dict", func() {
+		dict := exec.NewDict()
+		dict.Pairs = append(dict.Pairs, &exec.Pair{
+			Key:   exec.AsValue("a"),
+			Value: exec.AsValue(1),
+		})
+		items := exec.AsValue(dict).Items()
+		Expect(items).To(HaveLen(1))
+		Expect(items[0].Key.String()).To(Equal("a"))
+		Expect(items[0].Value.Integer()).To(Equal(1))
+	})
+
 	It("uses custom item getters", func() {
 		value, ok := exec.AsValue(testItemGetter{items: []string{"foo", "bar"}}).GetItem(1)
 		Expect(ok).To(BeTrue())
