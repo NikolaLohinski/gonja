@@ -960,8 +960,19 @@ func (v *Value) Keys() ValuesList {
 
 func (v *Value) Items() []*Pair {
 	out := []*Pair{}
+	if v.IsNil() {
+		return out
+	}
 	resolved := v.getResolvedValue()
-	if resolved.Kind() != reflect.Map {
+	if !resolved.IsValid() {
+		return out
+	}
+	if resolved.Type() == TypeDict {
+		for _, pair := range resolved.Interface().(Dict).Pairs {
+			out = append(out, pair)
+		}
+		return out
+	} else if resolved.Kind() != reflect.Map {
 		return out
 	}
 	iter := resolved.MapRange()
