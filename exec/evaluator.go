@@ -103,12 +103,14 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 
 			v := &Value{Val: reflect.ValueOf([]any{})}
 
-			for ix := 0; ix < left.getResolvedValue().Len(); ix++ {
-				v.Val = reflect.Append(v.Val, left.getResolvedValue().Index(ix))
-			}
-
-			for ix := 0; ix < right.getResolvedValue().Len(); ix++ {
-				v.Val = reflect.Append(v.Val, right.getResolvedValue().Index(ix))
+			for _, list := range []*Value{left, right} {
+				if _, ok := list.sequence(); ok {
+					list = list.Slice(0, list.Len())
+				}
+				resolved := list.getResolvedValue()
+				for ix := 0; ix < resolved.Len(); ix++ {
+					v.Val = reflect.Append(v.Val, resolved.Index(ix))
+				}
 			}
 
 			return v

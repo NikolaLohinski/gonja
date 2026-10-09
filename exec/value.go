@@ -30,6 +30,23 @@ type ItemGetter interface {
 	GetItem(key any) (*Value, bool)
 }
 
+// Sequence exposes an ordered collection, such as a table or row, to templates.
+// Len must be non-negative and GetItem must accept integer indices in [0, Len()).
+// GetItem may also support named items, such as column names. Gonja normalizes
+// negative indices and checks bounds before calling GetItem for sequence access.
+type Sequence interface {
+	ItemGetter
+	Len() int
+}
+
+func (v *Value) sequence() (Sequence, bool) {
+	if v.IsNil() {
+		return nil, false
+	}
+	sequence, ok := v.Interface().(Sequence)
+	return sequence, ok
+}
+
 // AsValue converts any given Value to a gonja.Value.
 // Usually being used within functions passed to a template
 // through a Context or within filter functions.
@@ -98,6 +115,9 @@ func (v *Value) IsCallable() bool {
 }
 
 func (v *Value) IsList() bool {
+	if _, ok := v.sequence(); ok {
+		return true
+	}
 	kind := v.getResolvedValue().Kind()
 	return kind == reflect.Array || kind == reflect.Slice
 }
@@ -235,6 +255,10 @@ func (v *Value) String() string {
 		if stringer, ok := resolved.Interface().(fmt.Stringer); ok {
 			return stringer.String()
 		}
+	}
+
+	if _, ok := v.sequence(); ok {
+		return v.Slice(0, v.Len()).String()
 	}
 
 	switch resolved.Kind() {
@@ -486,6 +510,9 @@ func (v *Value) IsTrue() bool {
 	if v.IsNil() || v.IsError() {
 		return false
 	}
+	if sequence, ok := v.sequence(); ok {
+		return sequence.Len() > 0
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.getResolvedValue().Int() != 0
@@ -518,6 +545,9 @@ func (v *Value) Negate() *Value {
 	if v.IsNil() || v.IsError() {
 		return AsValue(true)
 	}
+	if sequence, ok := v.sequence(); ok {
+		return AsValue(sequence.Len() == 0)
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -544,9 +574,12 @@ func (v *Value) Negate() *Value {
 	}
 }
 
-// Len returns the length for an array, chan, map, slice or string.
+// Len returns the length for a Sequence, array, chan, map, slice or string.
 // Otherwise it will return 0.
 func (v *Value) Len() int {
+	if sequence, ok := v.sequence(); ok {
+		return sequence.Len()
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Chan, reflect.Slice:
 		return v.getResolvedValue().Len()
@@ -568,12 +601,19 @@ func (v *Value) Len() int {
 	}
 }
 
-// Slice slices an array, slice or string. Otherwise it will
+// Slice slices a Sequence, array, slice or string. Otherwise it will
 // return an empty []int.
 func (v *Value) Slice(i, j int) *Value {
 	n := v.Len()
 	i = max(0, min(i, n))
 	j = max(i, min(j, n))
+	if _, ok := v.sequence(); ok {
+		items := make(ValuesList, 0, j-i)
+		for index := i; index < j; index++ {
+			items = append(items, v.Index(index))
+		}
+		return AsValue(items)
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Slice:
 		return AsValue(v.getResolvedValue().Slice(i, j).Interface())
@@ -588,9 +628,19 @@ func (v *Value) Slice(i, j int) *Value {
 	}
 }
 
-// Index gets the i-th item of an array, slice or string. Otherwise
+// Index gets the i-th item of a Sequence, array, slice or string. Otherwise
 // it will return nil.
 func (v *Value) Index(i int) *Value {
+	if sequence, ok := v.sequence(); ok {
+		if i < 0 || i >= sequence.Len() {
+			return AsValue(nil)
+		}
+		item, found := sequence.GetItem(i)
+		if !found {
+			return AsValue(nil)
+		}
+		return item
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Slice:
 		if i >= v.Len() {
@@ -620,6 +670,15 @@ func (v *Value) Index(i int) *Value {
 //
 //	AsValue("Hello, World!").Contains(AsValue("World")) == true
 func (v *Value) Contains(other *Value) bool {
+	if sequence, ok := v.sequence(); ok {
+		length := sequence.Len()
+		for i := 0; i < length; i++ {
+			if v.Index(i).EqualValueTo(other) {
+				return true
+			}
+		}
+		return false
+	}
 	resolved := v.getResolvedValue()
 	switch resolved.Kind() {
 	case reflect.Struct:
@@ -666,9 +725,12 @@ func (v *Value) Contains(other *Value) bool {
 	}
 }
 
-// CanSlice checks whether the underlying value is of type array, slice or string.
+// CanSlice checks whether the underlying value is a Sequence, array, slice or string.
 // You normally would use CanSlice() before using the Slice() operation.
 func (v *Value) CanSlice() bool {
+	if _, ok := v.sequence(); ok {
+		return true
+	}
 	switch v.getResolvedValue().Kind() {
 	case reflect.Array, reflect.Slice, reflect.String:
 		return true
@@ -676,7 +738,7 @@ func (v *Value) CanSlice() bool {
 	return false
 }
 
-// Iterate iterates over a map, array, slice or a string. It calls the
+// Iterate iterates over a Sequence, map, array, slice or string. It calls the
 // function's first argument for every value with the following arguments:
 //
 //	idx      current 0-index
@@ -694,6 +756,52 @@ func (v *Value) Iterate(fn func(idx, count int, key, value *Value) bool, empty f
 // not affect the iteration through a map because maps don't have any particular order.
 // However, you can force an order using the `sorted` keyword (and even use `reversed sorted`).
 func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, empty func(), reverse bool, sorted bool, caseSensitive bool) {
+	if v.IsList() {
+		var items ValuesList
+
+		itemCount := v.Len()
+		for i := range itemCount {
+			items = append(items, v.Index(i))
+		}
+
+		if sorted && itemCount > 0 {
+			if reverse {
+				if !caseSensitive && items[0].IsString() {
+					sort.Slice(items, func(i, j int) bool {
+						return strings.ToLower(items[i].String()) > strings.ToLower(items[j].String())
+					})
+				} else {
+					sort.Sort(sort.Reverse(items))
+				}
+			} else {
+				if !caseSensitive && items[0].IsString() {
+					sort.Slice(items, func(i, j int) bool {
+						return strings.ToLower(items[i].String()) < strings.ToLower(items[j].String())
+					})
+				} else {
+					sort.Sort(items)
+				}
+			}
+		} else if itemCount > 1 {
+			if reverse {
+				for i := 0; i < itemCount/2; i++ {
+					items[i], items[itemCount-1-i] = items[itemCount-1-i], items[i]
+				}
+			}
+		}
+
+		if len(items) > 0 {
+			for idx, item := range items {
+				if !fn(idx, itemCount, item, nil) {
+					return
+				}
+			}
+		} else {
+			empty()
+		}
+		return // done
+	}
+
 	resolved := v.getResolvedValue()
 	switch resolved.Kind() {
 	case reflect.Map:
@@ -721,52 +829,6 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 			}
 		}
 		if keyLen == 0 {
-			empty()
-		}
-		return // done
-	case reflect.Array, reflect.Slice:
-		var items ValuesList
-
-		itemCount := resolved.Len()
-		for i := range itemCount {
-			// value := resolved.Index(i)
-
-			items = append(items, ToValue(resolved.Index(i)))
-		}
-
-		if sorted && itemCount > 0 {
-			if reverse {
-				if !caseSensitive && items[0].IsString() {
-					sort.Slice(items, func(i, j int) bool {
-						return strings.ToLower(items[i].String()) > strings.ToLower(items[j].String())
-					})
-				} else {
-					sort.Sort(sort.Reverse(items))
-				}
-			} else {
-				if !caseSensitive && items[0].IsString() {
-					sort.Slice(items, func(i, j int) bool {
-						return strings.ToLower(items[i].String()) < strings.ToLower(items[j].String())
-					})
-				} else {
-					sort.Sort(items)
-				}
-			}
-		} else if itemCount > 2 {
-			if reverse {
-				for i := 0; i < itemCount/2; i++ {
-					items[i], items[itemCount-1-i] = items[itemCount-1-i], items[i]
-				}
-			}
-		}
-
-		if len(items) > 0 {
-			for idx, item := range items {
-				if !fn(idx, itemCount, item, nil) {
-					return
-				}
-			}
-		} else {
 			empty()
 		}
 		return // done
@@ -824,6 +886,8 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 			if logging.Enabled() {
 				log.Errorf("Value.Iterate() not available for type: %s\n", resolved.Kind().String())
 			}
+			empty()
+			return
 		}
 		dict := resolved.Interface().(Dict)
 		keys := dict.Keys()
@@ -852,6 +916,7 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		} else {
 			empty()
 		}
+		return
 
 	default:
 		if logging.Enabled() {
@@ -1093,6 +1158,18 @@ func (v *Value) GetAttribute(name string) (*Value, bool) {
 func (v *Value) GetItem(key any) (*Value, bool) {
 	if v.IsNil() {
 		return AsValue(errors.New(`Can't use Getitem on None`)), false
+	}
+	if sequence, ok := v.sequence(); ok {
+		if index, ok := key.(int); ok {
+			length := sequence.Len()
+			if index < 0 {
+				index += length
+			}
+			if index < 0 || index >= length {
+				return AsValue(nil), false
+			}
+			return sequence.GetItem(index)
+		}
 	}
 	if getter, ok := v.Interface().(ItemGetter); ok {
 		return getter.GetItem(key)
