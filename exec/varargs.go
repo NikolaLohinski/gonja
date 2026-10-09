@@ -280,7 +280,7 @@ func StringListArgument(output *[]string) func(*Value) error {
 		}
 		*output = []string{}
 		for i := 0; i < v.Len(); i++ {
-			item := ToValue(v.Val.Index(i))
+			item := v.Index(i)
 			if !item.IsString() {
 				return fmt.Errorf("%s item '%s' of the argument list is not a string: %s", humanize.Ordinal(i+1), item.String(), v.String())
 			}
