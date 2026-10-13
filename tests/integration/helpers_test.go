@@ -2,13 +2,27 @@ package integration_test
 
 import (
 	"os"
+	"testing"
 
 	"github.com/nikolalohinski/gonja/v2"
+	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
+	"github.com/nikolalohinski/gonja/v2/loaders"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+func render(t *testing.T, cfg *config.Config, source string, data map[string]any) (string, error) {
+	t.Helper()
+	const identifier = "/test"
+	loader := loaders.MustNewMemoryLoader(map[string]string{identifier: source})
+	tpl, err := exec.NewTemplate(identifier, cfg, loader, gonja.DefaultEnvironment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tpl.ExecuteToString(exec.NewContext(data))
+}
 
 var _ = Context("helpers", func() {
 	var (

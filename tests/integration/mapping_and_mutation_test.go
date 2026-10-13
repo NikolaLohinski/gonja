@@ -25,12 +25,6 @@ func decodeOrderedContext(t *testing.T, fixture string) map[string]any {
 	return context
 }
 
-func orderedJSONConfig() *config.Config {
-	cfg := config.New()
-	cfg.HuggingFaceToJSON = true
-	return cfg
-}
-
 func renderDictItemKeys(t *testing.T, value any) string {
 	t.Helper()
 	out, err := render(t, config.New(),
@@ -59,15 +53,15 @@ func TestDictItemsPreservesNativeDictInsertionOrder(t *testing.T) {
 	}
 }
 
-func TestItemsPreserveOrderedNestedValues(t *testing.T) {
+func TestItemsRetainOrderedNestedValues(t *testing.T) {
 	data := decodeOrderedContext(t, `{"arguments":{"city":"Paris","opts":{"z":1,"a":2}}}`)
-	out, err := render(t, orderedJSONConfig(),
-		`{% for k, v in arguments.items() %}{% if v is mapping %}{{ k }}={{ v|tojson }}{% endif %}{% endfor %}`,
+	out, err := render(t, config.New(),
+		`{% for k, v in arguments.items() %}{% if v is mapping %}{{ k }}={% for key, value in v.items() %}{{ key }}:{{ value }};{% endfor %}{% endif %}{% endfor %}`,
 		data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `opts={"z": 1, "a": 2}`; out != want {
+	if want := `opts=z:1;a:2;`; out != want {
 		t.Fatalf("got %q want %q", out, want)
 	}
 }
@@ -78,7 +72,7 @@ func TestSplitStringsMatchDictionaryKeys(t *testing.T) {
 		"tool_namespace_descriptions":{"weather":"Weather tools","math":"Math tools"}
 	}`)
 	const source = `{% macro metadata(tools) %}{% set ns = namespace(seen=[]) %}{% for tool in tools %}{% set fn = tool.function if tool.function is defined else tool %}{% set name = fn.name.split('.')[0] %}{% if name not in ns.seen %}{% set ns.seen = ns.seen + [name] %}{% endif %}{% endfor %}{% set descriptions = tool_namespace_descriptions %}{% for name in ns.seen %}{{ name }}={{ descriptions[name] if name in descriptions else '' }};{% endfor %}{% endmacro %}{{ metadata(tools) }}`
-	out, err := render(t, orderedJSONConfig(), source, data)
+	out, err := render(t, config.New(), source, data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +82,7 @@ func TestSplitStringsMatchDictionaryKeys(t *testing.T) {
 }
 
 func TestListAppendMutationPersists(t *testing.T) {
-	out, err := render(t, orderedJSONConfig(), `{% set values = [] %}{{ values.append('kept') }}{{ values|join }}`, nil)
+	out, err := render(t, config.New(), `{% set values = [] %}{{ values.append('kept') }}{{ values|join }}`, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

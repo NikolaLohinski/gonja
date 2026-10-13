@@ -228,19 +228,22 @@ func normalizeJSONValue(value any) any {
 	case stdjson.Marshaler:
 		return typed
 	case *exec.Dict:
-		object := make(map[string]any, len(typed.Pairs))
-		for _, pair := range typed.Pairs {
-			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		if typed == nil {
+			return nil
 		}
-		return object
-	case exec.Dict:
-		object := make(map[string]any, len(typed.Pairs))
-		for _, pair := range typed.Pairs {
-			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
-		}
-		return object
+		value = *typed
 	case *exec.Value:
+		if typed == nil {
+			return nil
+		}
 		return normalizeJSONValue(typed.Interface())
+	}
+	if dict, ok := value.(exec.Dict); ok {
+		object := make(map[string]any, len(dict.Pairs))
+		for _, pair := range dict.Pairs {
+			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		}
+		return object
 	}
 
 	resolved := reflect.ValueOf(value)

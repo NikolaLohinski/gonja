@@ -34,9 +34,6 @@ type Config struct {
 	LineStatementPrefix string
 	// Prefix that turns the remainder of a line into a comment when set.
 	LineCommentPrefix string
-
-	// HuggingFaceToJSON enables ordered, non-HTML-safe JSON for no-argument tojson.
-	HuggingFaceToJSON bool
 }
 
 func New() *Config {
@@ -74,6 +71,5 @@ func (c *Config) Inherit() *Config {
 		NewlineSequence:     c.NewlineSequence,
 		LineStatementPrefix: c.LineStatementPrefix,
 		LineCommentPrefix:   c.LineCommentPrefix,
-		HuggingFaceToJSON:   c.HuggingFaceToJSON,
 	}
 }

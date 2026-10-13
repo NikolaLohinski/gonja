@@ -1291,10 +1291,6 @@ func filterToJSON(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exec
 		return in
 	}
 
-	if e.Config.HuggingFaceToJSON {
-		return filterHFToJSON(e, in, params)
-	}
-
 	var (
 		indent      *exec.Value
 		ensureASCII bool
