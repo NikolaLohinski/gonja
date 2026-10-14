@@ -41,6 +41,16 @@ var dictMethods = exec.NewMethodSet[map[string]any](map[string]exec.Method[map[s
 		if err := arguments.Take(); err != nil {
 			return nil, exec.ErrInvalidCall(err)
 		}
+		switch selfValue.Interface().(type) {
+		case exec.Dict, *exec.Dict:
+			pairs := selfValue.Items()
+			items := make([]any, len(pairs))
+			for i, pair := range pairs {
+				items[i] = []any{pair.Key, pair.Value}
+			}
+			return items, nil
+		}
+
 		keys := make([]string, 0, len(self))
 		for key := range self {
 			keys = append(keys, key)

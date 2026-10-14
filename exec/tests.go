@@ -18,7 +18,9 @@ type TestFunction any
 
 func (e *Evaluator) EvalTest(expr *nodes.TestExpression) *Value {
 	value := e.Eval(expr.Expression)
-
+	if value.IsError() {
+		return value
+	}
 	return e.ExecuteTest(expr.Test, value)
 }
 

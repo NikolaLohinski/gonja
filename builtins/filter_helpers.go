@@ -58,6 +58,9 @@ func pythonRepr(value any) string {
 	if rendered.IsNil() {
 		return "None"
 	}
+	if rendered.IsUndefined() {
+		return "Undefined"
+	}
 	if rendered.IsString() {
 		return fmt.Sprintf(`'%s'`, rendered.String())
 	}
@@ -78,17 +81,25 @@ func escapeFilterValue(value *exec.Value) string {
 	return utils.Escape(value.String())
 }
 
-func resolveAttributeValue(value *exec.Value, attribute *exec.Value, defaultValue *exec.Value) (*exec.Value, bool) {
+func resolveAttributeValue(value *exec.Value, attribute *exec.Value, defaultValue *exec.Value, strict ...bool) (*exec.Value, bool) {
 	if attribute == nil || attribute.IsNil() {
 		return value, true
 	}
 	if attribute.IsInteger() {
-		return resolveAttributeIndex(value, attribute.Integer(), defaultValue)
+		return resolveAttributeIndex(value, attribute.Integer(), defaultValue, strict...)
 	}
-	return resolveAttributePath(value, attribute.String(), defaultValue)
+	return resolveAttributePath(value, attribute.String(), defaultValue, strict...)
 }
 
-func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Value) (*exec.Value, bool) {
+func missingAttributeValue(path string, defaultValue *exec.Value, strict []bool) (*exec.Value, bool) {
+	if defaultValue != nil {
+		return defaultValue, true
+	}
+	isStrict := len(strict) > 0 && strict[0]
+	return exec.UndefinedValue(isStrict, path), false
+}
+
+func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Value, strict ...bool) (*exec.Value, bool) {
 	current := value
 	if path == "" {
 		return current, true
@@ -96,19 +107,13 @@ func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Val
 
 	for _, part := range strings.Split(path, ".") {
 		if current == nil || current.IsNil() {
-			if defaultValue != nil {
-				return defaultValue, true
-			}
-			return exec.AsValue(nil), false
+			return missingAttributeValue(path, defaultValue, strict)
 		}
 
 		if index, err := strconv.Atoi(part); err == nil {
 			next, found := current.GetItem(index)
 			if !found {
-				if defaultValue != nil {
-					return defaultValue, true
-				}
-				return exec.AsValue(nil), false
+				return missingAttributeValue(path, defaultValue, strict)
 			}
 			current = next
 			continue
@@ -116,10 +121,7 @@ func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Val
 
 		next, found := current.Get(part)
 		if !found {
-			if defaultValue != nil {
-				return defaultValue, true
-			}
-			return exec.AsValue(nil), false
+			return missingAttributeValue(path, defaultValue, strict)
 		}
 		current = next
 	}
@@ -127,19 +129,13 @@ func resolveAttributePath(value *exec.Value, path string, defaultValue *exec.Val
 	return current, true
 }
 
-func resolveAttributeIndex(value *exec.Value, index int, defaultValue *exec.Value) (*exec.Value, bool) {
+func resolveAttributeIndex(value *exec.Value, index int, defaultValue *exec.Value, strict ...bool) (*exec.Value, bool) {
 	if value == nil || value.IsNil() {
-		if defaultValue != nil {
-			return defaultValue, true
-		}
-		return exec.AsValue(nil), false
+		return missingAttributeValue(strconv.Itoa(index), defaultValue, strict)
 	}
 	next, found := value.GetItem(index)
 	if !found {
-		if defaultValue != nil {
-			return defaultValue, true
-		}
-		return exec.AsValue(nil), false
+		return missingAttributeValue(strconv.Itoa(index), defaultValue, strict)
 	}
 	return next, true
 }
@@ -232,19 +228,22 @@ func normalizeJSONValue(value any) any {
 	case stdjson.Marshaler:
 		return typed
 	case *exec.Dict:
-		object := make(map[string]any, len(typed.Pairs))
-		for _, pair := range typed.Pairs {
-			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		if typed == nil {
+			return nil
 		}
-		return object
-	case exec.Dict:
-		object := make(map[string]any, len(typed.Pairs))
-		for _, pair := range typed.Pairs {
-			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
-		}
-		return object
+		value = *typed
 	case *exec.Value:
+		if typed == nil {
+			return nil
+		}
 		return normalizeJSONValue(typed.Interface())
+	}
+	if dict, ok := value.(exec.Dict); ok {
+		object := make(map[string]any, len(dict.Pairs))
+		for _, pair := range dict.Pairs {
+			object[pair.Key.String()] = normalizeJSONValue(pair.Value.Interface())
+		}
+		return object
 	}
 
 	resolved := reflect.ValueOf(value)

@@ -359,6 +359,8 @@ Return a titlecased version of the value. I.e. words will start with uppercase l
 
 Serialize an object to a string of JSON. It takes an `indent` parameter to do pretty printing.
 
+Dictionary keys are sorted in `tojson` output by default, including template dictionaries, `gonja.DecodeOrdered` values, and Go maps. Custom JSON marshalers control their own output.
+
 ## The `trim` filter
 | [🐍 `python`](https://jinja.palletsprojects.com/en/3.0.x/templates/#jinja-filters.trim) |
 | -------------------------------------------------------------------------------------- |

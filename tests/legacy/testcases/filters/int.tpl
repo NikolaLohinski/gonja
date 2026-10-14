@@ -1,5 +1,5 @@
 {{ "foobar"|int }}
-{{ nothing|int }}
+{{ None|int }}
 {{ "5.4"|float|int }}
 {{ "5.5"|float|int }}
 {{ "5.6"|float|int }}

@@ -27,6 +27,8 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 	switch n := node.(type) {
 	case *nodes.None:
 		return AsValue(nil)
+	case *nodes.Undefined:
+		return UndefinedValue(e.Config.StrictUndefined, "value")
 	case *nodes.String:
 		return AsValue(n.Val)
 	case *nodes.Integer:
@@ -60,7 +62,25 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 		if result.IsError() {
 			return result
 		}
+		if result.IsStrictUndefined() {
+			return AsValue(result.undefinedError())
+		}
 		return result.Negate()
+	case *nodes.ConditionalExpression:
+		condition := e.Eval(n.Condition)
+		if condition.IsError() {
+			return condition
+		}
+		if condition.IsStrictUndefined() {
+			return AsValue(condition.undefinedError())
+		}
+		if condition.IsTrue() {
+			return e.Eval(n.Expression)
+		}
+		if n.Alternative != nil {
+			return e.Eval(n.Alternative)
+		}
+		return UndefinedValue(false, "conditional expression")
 	case *nodes.BinaryExpression:
 		return e.evalBinaryExpression(n)
 	case *nodes.UnaryExpression:
@@ -94,7 +114,26 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		}
 	}
 
-	switch node.Operator.Token.Type {
+	op := node.Operator.Token.Type
+	if op != tokens.In && (left.IsStrictUndefined() || right != nil && right.IsStrictUndefined()) {
+		if left.IsStrictUndefined() {
+			return AsValue(left.undefinedError())
+		}
+		return AsValue(right.undefinedError())
+	}
+	if (left.IsUndefined() || right != nil && right.IsUndefined()) &&
+		op != tokens.Tilde && op != tokens.Equals && op != tokens.Ne &&
+		op != tokens.And && op != tokens.Or && op != tokens.In {
+		return AsValue(errors.Errorf(`Unable to use undefined operand at %s`, node.Position()))
+	}
+
+	if (left.IsNil() || right != nil && right.IsNil()) &&
+		op != tokens.Tilde && op != tokens.Equals && op != tokens.Ne &&
+		op != tokens.And && op != tokens.Or && op != tokens.In {
+		return AsValue(errors.Errorf(`Unable to use None operand at %s`, node.Position()))
+	}
+
+	switch op {
 	case tokens.Addition:
 		if left.IsList() {
 			if !right.IsList() {
@@ -220,7 +259,11 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 	case tokens.Ne:
 		return AsValue(!left.EqualValueTo(right))
 	case tokens.In:
-		return AsValue(right.Contains(left))
+		contained, err := right.ContainsChecked(left)
+		if err != nil {
+			return AsValue(err)
+		}
+		return AsValue(contained)
 	default:
 		return AsValue(errors.Errorf(`Unknown operator "%s"`, node.Operator.Token))
 	}
@@ -228,6 +271,9 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 
 func (e *Evaluator) evalUnaryExpression(expr *nodes.UnaryExpression) *Value {
 	result := e.Eval(expr.Term)
+	if result.IsUndefined() {
+		return AsValue(result.undefinedError())
+	}
 	if result.IsError() {
 		return AsValue(errors.Wrapf(result, `Unable to evaluate term %s`, expr.Term))
 	}
@@ -244,6 +290,9 @@ func (e *Evaluator) evalUnaryExpression(expr *nodes.UnaryExpression) *Value {
 		} else {
 			return AsValue(errors.Errorf("Negative sign on a non-number expression %s", expr.Position()))
 		}
+	}
+	if !result.IsNumber() {
+		return AsValue(errors.Errorf("Positive sign on a non-number expression %s", expr.Position()))
 	}
 	return result
 }
@@ -292,8 +341,8 @@ func (e *Evaluator) evalPair(node *nodes.Pair) *Value {
 
 func (e *Evaluator) evalName(node *nodes.Name) *Value {
 	val, ok := e.Environment.Context.Get(node.Name.Val)
-	if !ok && e.Config.StrictUndefined {
-		return AsValue(errors.Errorf(`Unable to evaluate name "%s"`, node.Name.Val))
+	if !ok {
+		return UndefinedValue(e.Config.StrictUndefined, node.Name.Val)
 	}
 	return ToValue(val)
 }
@@ -303,12 +352,14 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 	if value.IsError() {
 		return AsValue(errors.Wrapf(value, `unable to evaluate target %s`, node.Node))
 	}
+	if value.IsUndefined() {
+		return AsValue(value.undefinedError())
+	}
+	if value.IsNil() {
+		return UndefinedValue(e.Config.StrictUndefined, node.String())
+	}
 	if node.Arg == nil {
-		if e.Config.StrictUndefined {
-			return AsValue(errors.Wrapf(value, `argument is undefined to access: %s`, node.Node))
-		} else {
-			return AsValue(nil)
-		}
+		return UndefinedValue(e.Config.StrictUndefined, node.String())
 	}
 
 	argument := e.Eval(node.Arg)
@@ -318,8 +369,11 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 		key = argument.String()
 	case argument != nil && argument.IsInteger():
 		key = argument.Integer()
-	case argument.IsNil() && e.Config.StrictUndefined:
-		return AsValue(errors.Wrapf(value, `argument is undefined to access: %s`, node.Node))
+	case argument.IsUndefined():
+		if argument.IsStrictUndefined() {
+			return AsValue(argument.undefinedError())
+		}
+		return UndefinedValue(false, node.String())
 	default:
 		return AsValue(errors.Wrapf(value, `argument %s does not evaluate to string or integer in: %s`, node.Arg, node.Node))
 	}
@@ -332,10 +386,7 @@ func (e *Evaluator) evalGetItem(node *nodes.GetItem) *Value {
 		if item.IsError() {
 			return AsValue(errors.Wrapf(item, `unable to evaluate %s`, node))
 		}
-		if e.Config.StrictUndefined {
-			return AsValue(errors.Errorf(`unable to evaluate %s: item '%s' not found`, node, node.Arg))
-		}
-		return AsValue(nil)
+		return UndefinedValue(e.Config.StrictUndefined, node.String())
 	}
 	return item
 }
@@ -541,6 +592,13 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 		return AsValue(errors.Wrapf(value, `Unable to evaluate target %s`, node.Node))
 	}
 
+	if value.IsUndefined() {
+		return AsValue(value.undefinedError())
+	}
+	if value.IsNil() {
+		return UndefinedValue(e.Config.StrictUndefined, node.String())
+	}
+
 	if node.Attribute != "" {
 		attr, found := value.GetAttribute(node.Attribute)
 		if !found {
@@ -550,10 +608,7 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 			if attr.IsError() {
 				return AsValue(errors.Wrapf(attr, `Unable to evaluate %s`, node))
 			}
-			if e.Config.StrictUndefined {
-				return AsValue(errors.Errorf(`Unable to evaluate %s: attribute '%s' not found`, node, node.Attribute))
-			}
-			return AsValue(nil)
+			return UndefinedValue(e.Config.StrictUndefined, node.String())
 		}
 		return attr
 	} else {
@@ -562,10 +617,7 @@ func (e *Evaluator) evalGetAttribute(node *nodes.GetAttribute) *Value {
 			if item.IsError() {
 				return AsValue(errors.Wrapf(item, `Unable to evaluate %s`, node))
 			}
-			if e.Config.StrictUndefined {
-				return AsValue(errors.Errorf(`Unable to evaluate %s: item %d not found`, node, node.Index))
-			}
-			return AsValue(nil)
+			return UndefinedValue(e.Config.StrictUndefined, node.String())
 		}
 		return item
 	}

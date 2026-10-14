@@ -222,6 +222,14 @@ func (n *None) String() string {
 	return n.Location.Val
 }
 
+// Undefined represents an omitted value synthesized by the parser.
+type Undefined struct {
+	Location *tokens.Token
+}
+
+func (n *Undefined) Position() *tokens.Token { return n.Location }
+func (n *Undefined) String() string          { return "undefined" }
+
 type List struct {
 	Location *tokens.Token
 	Val      []Expression
@@ -443,4 +451,19 @@ type Error struct {
 func (c *Error) Position() *tokens.Token { return c.Location }
 func (c *Error) String() string {
 	return c.Error.Error()
+}
+
+// ConditionalExpression evaluates only the branch selected by Condition.
+type ConditionalExpression struct {
+	Expression  Expression
+	Condition   Expression
+	Alternative Expression
+}
+
+func (expr *ConditionalExpression) Position() *tokens.Token { return expr.Expression.Position() }
+func (expr *ConditionalExpression) String() string {
+	if expr.Alternative == nil {
+		return fmt.Sprintf("(%s if %s)", expr.Expression, expr.Condition)
+	}
+	return fmt.Sprintf("(%s if %s else %s)", expr.Expression, expr.Condition, expr.Alternative)
 }

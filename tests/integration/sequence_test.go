@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nikolalohinski/gonja/v2"
+	"github.com/nikolalohinski/gonja/v2/config"
 	"github.com/nikolalohinski/gonja/v2/exec"
 )
 
@@ -33,7 +34,7 @@ func (s *tableSequence) GetItem(key any) (*exec.Value, bool) {
 func TestTableSequence(t *testing.T) {
 	row := &tableSequence{items: []any{"alice", 42}, names: []string{"name", "age"}}
 	table := &tableSequence{items: []any{row, &tableSequence{items: []any{"bob", 17}, names: row.names}}}
-	data := exec.NewContext(map[string]any{"table": table, "empty": &tableSequence{}})
+	data := exec.NewContext(map[string]any{"table": table, "empty": &tableSequence{}, "mixed": &tableSequence{items: []any{nil, "alice"}}})
 	for _, tc := range []struct{ name, source, want string }{
 		{"iterate", `{% for row in table %}{{ loop.index }}/{{ loop.length }}:{{ row.name }}={{ row[1] }};{% endfor %}`, "1/2:alice=42;2/2:bob=17;"},
 		{"row iteration", `{% for row in table %}{% for cell in row %}{{ cell }};{% endfor %}{% endfor %}`, "alice;42;bob;17;"},
@@ -46,6 +47,8 @@ func TestTableSequence(t *testing.T) {
 		{"slice", `{% for row in table[1:] %}{{ row.name }}{% endfor %}|{{ table[0][::-1]|join(',') }}`, "bob|42,alice"},
 		{"filters", `{{ (table|first).name }}|{{ (table|last).name }}|{{ table|map(attribute='name')|join(',') }}|{{ table|reverse|map(attribute='name')|join(',') }}`, "alice|bob|alice,bob|bob,alice"},
 		{"membership", `{{ 'alice' in table[0] }}|{{ 'name' in table[0] }}|{{ ['alice', 42] in table }}`, "True|False|True"},
+		{"None and undefined membership", `{{ None in mixed }}|{{ missing in mixed }}|{{ None in empty }}|{{ missing in empty }}`, "True|False|False|False"},
+		{"None concatenation", `{{ mixed + [None] }}|{{ [None] + mixed }}`, "[None, 'alice', None]|[None, None, 'alice']"},
 		{"list conversion", `{{ table|list }}|{{ table[0] }}`, "[['alice', 42], ['bob', 17]]|['alice', 42]"},
 		{"concatenate", `{{ table[0] + [9] }}|{{ [9] + table[0] }}`, "['alice', 42, 9]|[9, 'alice', 42]"},
 	} {
@@ -62,6 +65,20 @@ func TestTableSequence(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestSequenceStrictUndefinedMembership(t *testing.T) {
+	cfg := config.New()
+	cfg.StrictUndefined = true
+	ctx := map[string]any{"empty": &tableSequence{}, "full": &tableSequence{items: []any{1}}}
+	if got, err := render(t, cfg, `{{ missing in empty }}`, ctx); err != nil || got != "False" {
+		t.Fatalf("empty strict membership: got %q, error %v", got, err)
+	}
+	for _, source := range []string{`{{ missing in full }}`, `{{ 1 in missing }}`} {
+		if got, err := render(t, cfg, source, ctx); err == nil {
+			t.Fatalf("%s rendered %q; want an error", source, got)
+		}
 	}
 }
 

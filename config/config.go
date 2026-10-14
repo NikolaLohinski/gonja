@@ -20,8 +20,7 @@ type Config struct {
 	// This can also be a callable that is passed the template name
 	// and has to return True or False depending on autoescape should be enabled by default.
 	AutoEscape bool
-	// Whether to be strict about undefined attribute or item in an object and return error
-	// or return a nil value on missing data and ignore it entirely
+	// Fail on use of undefined values instead of rendering them empty.
 	StrictUndefined bool
 	// If is set to true, the first newline after a block is removed (block, not variable !tag)
 	TrimBlocks bool

@@ -52,6 +52,9 @@ func (scs *SetControlStructure) Execute(r *exec.Renderer, tag *nodes.ControlStru
 			if condition.IsError() {
 				return condition
 			}
+			if condition.IsStrictUndefined() {
+				return errors.New("set condition is undefined")
+			}
 			if !condition.IsNil() && condition.IsTrue() {
 				value = r.Eval(scs.expression)
 			} else {

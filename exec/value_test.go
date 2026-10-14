@@ -47,7 +47,7 @@ var _ = Context("value", func() {
 				nil,
 				"a nil value",
 				[]func(){
-					func() { Expect((*returnedValue).String()).To(Equal("")) },
+					func() { Expect((*returnedValue).String()).To(Equal("None")) },
 					func() { Expect((*returnedValue).IsNil()).To(BeTrue()) },
 				},
 			},

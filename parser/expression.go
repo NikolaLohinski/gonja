@@ -149,3 +149,26 @@ func (p *Parser) ParseExpressionNode() (nodes.Node, error) {
 	}
 	return node, nil
 }
+
+// Parse grouped conditionals separately: statements also use "if" as a delimiter.
+func (p *Parser) parseConditionalExpression() (nodes.Expression, error) {
+	expression, err := p.ParseExpression()
+	if err != nil {
+		return nil, err
+	}
+	for p.MatchName("if") != nil {
+		condition, err := p.ParseExpression()
+		if err != nil {
+			return nil, err
+		}
+		var alternative nodes.Expression
+		if p.MatchName("else") != nil {
+			alternative, err = p.parseConditionalExpression()
+			if err != nil {
+				return nil, err
+			}
+		}
+		expression = &nodes.ConditionalExpression{Expression: expression, Condition: condition, Alternative: alternative}
+	}
+	return expression, nil
+}

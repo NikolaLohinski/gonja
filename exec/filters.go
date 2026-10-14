@@ -49,6 +49,9 @@ func (e *Evaluator) ExecuteFilter(fc *nodes.FilterCall, v *Value) *Value {
 
 // ExecuteFilterByName executes a filter given its name
 func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs) *Value {
+	if in.IsStrictUndefined() && name != "default" && name != "d" && name != "items" {
+		return AsValue(in.undefinedError())
+	}
 	filter, ok := e.Environment.Filters.Get(name)
 	if !e.Environment.Filters.Exists(name) || !ok {
 		return AsValue(errors.Errorf("filter '%s' not found", name))
