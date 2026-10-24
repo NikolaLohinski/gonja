@@ -994,7 +994,7 @@ func filterReverse(e *exec.Evaluator, in *exec.Value, params *exec.VarArgs) *exe
 	in.IterateOrder(func(idx, count int, key, value *exec.Value) bool {
 		out = append(out, key.Interface())
 		return true
-	}, func() {}, true, true, false)
+	}, func() {}, true, !in.IsList(), false)
 	return exec.AsValue(out)
 }
 

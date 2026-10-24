@@ -168,6 +168,14 @@ var _ = Context("collection filter compatibility", func() {
 			template: `{{ "32.32"|float }}|{{ "abc"|float(default=1.5) }}`,
 			want:     "32.32|1.5",
 		},
+		{
+			name:     "reverse keeps the original order of list items",
+			template: `{{ values|reverse|join(",") }}|{% for v in ["b", "c", "a"]|reverse %}{{ v }}{% endfor %}`,
+			context: map[string]any{
+				"values": []any{3, 1, 2},
+			},
+			want: "2,1,3|acb",
+		},
 	}
 
 	for _, tc := range testCases {
