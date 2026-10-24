@@ -67,6 +67,34 @@ var _ = Context("strings", func() {
 			})
 		})
 	})
+	Context("when getting a character of a multi-byte string by index", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: `{{ value[1] }}|{{ value[-4] }}`,
+			})
+			(*environment).Context.Set("value", "héllo")
+		})
+		It("indexes by character rather than by byte", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			AssertPrettyDiff("é|é", *returnedResult)
+		})
+	})
+	Context("when iterating over a string with multi-byte characters", func() {
+		BeforeEach(func() {
+			*loader = loaders.MustNewMemoryLoader(map[string]string{
+				*identifier: `{% for c in value %}{{ loop.index }}/{{ loop.length }}={{ c }};{% endfor %}|{{ value|reverse }}`,
+			})
+			(*environment).Context.Set("value", "héllo")
+		})
+		It("iterates by character rather than by byte", func() {
+			By("not returning any error")
+			Expect(*returnedErr).To(BeNil())
+			By("returning the expected result")
+			AssertPrettyDiff("1/5=h;2/5=é;3/5=l;4/5=l;5/5=o;|olléh", *returnedResult)
+		})
+	})
 	Context("when getting a substring with '[...]' notation", func() {
 		Context("default", func() {
 			BeforeEach(func() {

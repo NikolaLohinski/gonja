@@ -833,28 +833,26 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 		}
 		return // done
 	case reflect.String:
+		r := []rune(resolved.String())
 		if sorted {
-			r := []rune(resolved.String())
 			if caseSensitive {
 				sort.Sort(sortRunes(r))
 			} else {
 				sort.Sort(CaseInsensitive(sortRunes(r)))
 			}
-			resolved = reflect.ValueOf(string(r))
 		}
 
-		// TODO(flosch): Not utf8-compatible (utf8-decoding necessary)
-		charCount := resolved.Len()
+		charCount := len(r)
 		if charCount > 0 {
 			if reverse {
 				for i := charCount - 1; i >= 0; i-- {
-					if !fn(i, charCount, &Value{Val: resolved.Slice(i, i+1)}, nil) {
+					if !fn(i, charCount, AsValue(string(r[i])), nil) {
 						return
 					}
 				}
 			} else {
 				for i := range charCount {
-					if !fn(i, charCount, &Value{Val: resolved.Slice(i, i+1)}, nil) {
+					if !fn(i, charCount, AsValue(string(r[i])), nil) {
 						return
 					}
 				}
@@ -1203,10 +1201,11 @@ func (v *Value) GetItem(key any) (*Value, bool) {
 	case int:
 		switch val.Kind() {
 		case reflect.String:
-			if t >= 0 && val.Len() > t {
-				return ToValue(string(val.String()[t])), true
-			} else if t < 0 && val.Len() > -t {
-				return ToValue(string(val.String()[val.Len()+t])), true
+			runes := []rune(val.String())
+			if t >= 0 && len(runes) > t {
+				return ToValue(string(runes[t])), true
+			} else if t < 0 && len(runes) > -t {
+				return ToValue(string(runes[len(runes)+t])), true
 			}
 		case reflect.Array, reflect.Slice:
 			if t >= 0 && val.Len() > t {
