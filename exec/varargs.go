@@ -344,7 +344,7 @@ func (va *VarArgs) Take(arguments ...*argument) error {
 		}
 		for _, transmute := range argument.transmuters {
 			if err := transmute(value); err != nil {
-				return errors.Errorf("failed to validate argument '%s': %s", argument.name, err.Error())
+				return errors.Wrapf(err, "failed to validate argument '%s'", argument.name)
 			}
 		}
 	}

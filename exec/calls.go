@@ -56,7 +56,7 @@ func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 				return AsValue(fmt.Errorf("second return value of function '%s' is not an error", functionName))
 			}
 			if err, ok := err.(ErrInvalidCall); ok && err != nil {
-				return AsValue(fmt.Errorf("invalid call to function '%s': %s", functionName, err.Error()))
+				return AsValue(fmt.Errorf("invalid call to function '%s': %w", functionName, err))
 			} else if err != nil {
 				return AsValue(err)
 			}
@@ -78,7 +78,7 @@ func (e *Evaluator) evalCall(node *nodes.Call) *Value {
 	value := &Value{Val: current, Safe: isSafe}
 	if value.IsError() {
 		if err, ok := value.Interface().(ErrInvalidCall); ok {
-			return AsValue(fmt.Errorf("invalid call to function '%s': %s", functionName, err.Error()))
+			return AsValue(fmt.Errorf("invalid call to function '%s': %w", functionName, err))
 		}
 	}
 	return value
@@ -153,7 +153,7 @@ func (e *Evaluator) evalMethod(parentNode nodes.Node, method string, args []node
 	}
 	if err != nil {
 		if callErr, ok := err.(ErrInvalidCall); ok {
-			return AsValue(fmt.Errorf("invalid call to method '%s' of %s: %s", method, parent.String(), callErr.Error()))
+			return AsValue(fmt.Errorf("invalid call to method '%s' of %s: %w", method, parent.String(), callErr))
 		}
 		return AsValue(err)
 	}

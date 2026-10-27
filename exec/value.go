@@ -151,6 +151,16 @@ func (v *Value) Error() string {
 	return ""
 }
 
+// Unwrap returns the error held by the value, or nil. Errors returned by functions,
+// filters and tests travel through the evaluator as values; Unwrap lets errors.Is and
+// errors.As find the original error.
+func (v *Value) Unwrap() error {
+	if !v.IsError() {
+		return nil
+	}
+	return v.Interface().(error)
+}
+
 func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) any {
 	switch {
 	case v.IsError():

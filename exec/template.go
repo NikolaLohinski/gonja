@@ -29,12 +29,12 @@ type Template struct {
 func NewTemplate(identifier string, config *config.Config, loader loaders.Loader, environment *Environment) (*Template, error) {
 	input, err := loader.Read(identifier)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reader template '%s': %s", identifier, err)
+		return nil, fmt.Errorf("failed to reader template '%s': %w", identifier, err)
 	}
 
 	source := new(strings.Builder)
 	if _, err := io.Copy(source, input); err != nil {
-		return nil, fmt.Errorf("failed to copy '%s' to string buffer: %s", source, err)
+		return nil, fmt.Errorf("failed to copy '%s' to string buffer: %w", source, err)
 	}
 
 	t := &Template{

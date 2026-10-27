@@ -74,9 +74,9 @@ func (e *Evaluator) ExecuteTestByName(name string, in *Value, params *VarArgs) *
 		err = results[1].Interface().(error)
 	}
 	if callErr, ok := err.(ErrInvalidCall); ok && err != nil {
-		return AsValue(fmt.Errorf("invalid call to test '%s': %s", name, callErr.Error()))
+		return AsValue(fmt.Errorf("invalid call to test '%s': %w", name, callErr))
 	} else if err != nil {
-		return AsValue(fmt.Errorf("unable to execute test '%s': %s", name, err.Error()))
+		return AsValue(fmt.Errorf("unable to execute test '%s': %w", name, err))
 	} else {
 		return AsValue(result)
 	}

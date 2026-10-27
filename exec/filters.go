@@ -57,7 +57,7 @@ func (e *Evaluator) ExecuteFilterByName(name string, in *Value, params *VarArgs)
 	if returnedValue.IsError() {
 		err, ok := returnedValue.Interface().(ErrInvalidCall)
 		if ok {
-			return AsValue(fmt.Errorf("invalid call to filter '%s': %s", name, err.Error()))
+			return AsValue(fmt.Errorf("invalid call to filter '%s': %w", name, err))
 		}
 	}
 

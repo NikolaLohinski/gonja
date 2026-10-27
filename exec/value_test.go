@@ -1,6 +1,7 @@
 package exec_test
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/nikolalohinski/gonja/v2/exec"
@@ -707,5 +708,17 @@ var _ = Context("value", func() {
 				Expect((*returnedKeys).String()).To(Equal("['c', 'A', 'b']"))
 			})
 		})
+	})
+})
+
+var _ = Context("Unwrap", func() {
+	It("should return the error held by the value", func() {
+		cause := errors.New("cause")
+		Expect(exec.AsValue(cause).Unwrap()).To(BeIdenticalTo(cause))
+		Expect(errors.Is(exec.AsValue(cause), cause)).To(BeTrue())
+	})
+	It("should return nil for values that are not errors", func() {
+		Expect(exec.AsValue(42).Unwrap()).To(BeNil())
+		Expect(exec.AsValue(nil).Unwrap()).To(BeNil())
 	})
 })
