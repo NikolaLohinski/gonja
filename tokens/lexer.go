@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"fmt"
+	"sync"
 
 	// "encoding/json"
 	"regexp"
@@ -56,6 +57,29 @@ type Lexer struct {
 // TODO: set from env
 type rawControlStructure map[string]*regexp.Regexp
 
+// rawEndPatterns caches the end patterns of raw and comment blocks for each block
+// start delimiter, so each new lexer reuses them instead of compiling two regular
+// expressions. Compiled patterns are safe for concurrent use. Delimiters come from
+// configuration, so the cache stays small.
+var rawEndPatterns sync.Map
+
+type rawEndPattern struct {
+	raw, comment *regexp.Regexp
+}
+
+func endPatterns(blockStart string) rawEndPattern {
+	if cached, ok := rawEndPatterns.Load(blockStart); ok {
+		return cached.(rawEndPattern)
+	}
+	delimiter := regexp.QuoteMeta(blockStart)
+	patterns := rawEndPattern{
+		raw:     regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endraw`, delimiter)),
+		comment: regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endcomment`, delimiter)),
+	}
+	stored, _ := rawEndPatterns.LoadOrStore(blockStart, patterns)
+	return stored.(rawEndPattern)
+}
+
 func normalizeInput(input string, cfg *config.Config) string {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 	input = strings.ReplaceAll(input, "\r", "\n")
@@ -85,14 +109,16 @@ func trimLeadingWhitespaceFromLastLine(input string) string {
 // NewLexer creates a new scanner for the input string.
 func NewLexer(input string, config *config.Config) *Lexer {
 	normalizedInput := normalizeInput(input, config)
+	patterns := endPatterns(config.BlockStartString)
 	return &Lexer{
 		Input:       normalizedInput,
 		Tokens:      make(chan *Token),
 		Config:      config,
 		lineOffsets: PrecomputeLineOffsets(normalizedInput),
+		// Each lexer owns its map; only the compiled patterns are shared.
 		RawControlStructures: rawControlStructure{
-			"raw":     regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endraw`, regexp.QuoteMeta(config.BlockStartString))),
-			"comment": regexp.MustCompile(fmt.Sprintf(`%s[-+]?\s*endcomment`, regexp.QuoteMeta(config.BlockStartString))),
+			"raw":     patterns.raw,
+			"comment": patterns.comment,
 		},
 	}
 }

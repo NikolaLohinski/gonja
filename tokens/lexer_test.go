@@ -596,3 +596,39 @@ var _ = Context("lexer", func() {
 		})
 	})
 })
+
+var _ = Context("raw block end patterns", func() {
+	It("should share compiled patterns between lexers with the same block delimiter", func() {
+		first := tokens.NewLexer("", config.New())
+		second := tokens.NewLexer("", config.New())
+		Expect(first.RawControlStructures["raw"]).To(BeIdenticalTo(second.RawControlStructures["raw"]))
+		Expect(first.RawControlStructures["comment"]).To(BeIdenticalTo(second.RawControlStructures["comment"]))
+	})
+	It("should keep each lexer's raw control structures independent", func() {
+		first := tokens.NewLexer("", config.New())
+		second := tokens.NewLexer("", config.New())
+		delete(first.RawControlStructures, "raw")
+		Expect(second.RawControlStructures).To(HaveKey("raw"))
+	})
+	It("should compile separate patterns for each block delimiter", func() {
+		custom := config.New()
+		custom.BlockStartString = "<@"
+		Expect(tokens.NewLexer("", custom).RawControlStructures["raw"].String()).To(Equal(`<@[-+]?\s*endraw`))
+		Expect(tokens.NewLexer("", config.New()).RawControlStructures["raw"].String()).To(Equal(`\{%[-+]?\s*endraw`))
+	})
+	It("should keep raw block contents as data with overridden delimiters", func() {
+		custom := config.New()
+		custom.BlockStartString = "<@"
+		custom.BlockEndString = "@>"
+		custom.VariableStartString = "{$"
+		custom.VariableEndString = "$}"
+		stream := tokens.Lex(`<@ raw @>{$ kept $}<@ endraw @>`, custom)
+		var data []string
+		for !stream.End() {
+			if token := stream.Next(); token.Type == tokens.Data {
+				data = append(data, token.Val)
+			}
+		}
+		Expect(data).To(Equal([]string{"{$ kept $}"}))
+	})
+})
