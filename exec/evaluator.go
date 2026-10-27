@@ -23,6 +23,15 @@ type Evaluator struct {
 	Loader      loaders.Loader
 }
 
+// Evaluable is an expression node that evaluates itself. Extensions can place
+// their own expression types in a parsed template, for example by rewriting its
+// syntax tree before execution, without changes to the evaluator. Built-in node
+// types are always evaluated by the evaluator.
+type Evaluable interface {
+	nodes.Expression
+	Evaluate(*Evaluator) *Value
+}
+
 func (e *Evaluator) Eval(node nodes.Expression) *Value {
 	switch n := node.(type) {
 	case *nodes.None:
@@ -69,6 +78,8 @@ func (e *Evaluator) Eval(node nodes.Expression) *Value {
 		return e.EvaluateFiltered(n)
 	case *nodes.TestExpression:
 		return e.EvalTest(n)
+	case Evaluable:
+		return n.Evaluate(e)
 	default:
 		return AsValue(errors.Errorf(`Unknown expression type "%T"`, n))
 	}
