@@ -83,7 +83,10 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		if n.Condition != nil {
 			condition := r.Eval(n.Condition)
 			if condition.IsError() {
-				return nil, errors.Wrapf(condition, `Unable to render condition at line %d: %s`, n.Condition.Position().Line, n.Condition)
+				return nil, newRuntimeError(
+					errors.Wrapf(condition, `Unable to render condition at line %d: %s`, n.Condition.Position().Line, n.Condition),
+					n.Condition,
+				)
 			}
 			if !condition.IsNil() && condition.IsTrue() {
 				value = r.Eval(n.Expression)
@@ -94,13 +97,19 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 					return nil, nil
 				}
 			} else {
-				return nil, errors.Wrapf(condition, `Unable to evaluation condition as boolean at line %d: %s`, n.Condition.Position().Line, n.Condition)
+				return nil, newRuntimeError(
+					errors.Wrapf(condition, `Unable to evaluation condition as boolean at line %d: %s`, n.Condition.Position().Line, n.Condition),
+					n.Condition,
+				)
 			}
 		} else {
 			value = r.Eval(n.Expression)
 		}
 		if value.IsError() {
-			return nil, errors.Wrapf(value, `Unable to render expression at line %d: %s`, n.Expression.Position().Line, n.Expression)
+			return nil, newRuntimeError(
+				errors.Wrapf(value, `Unable to render expression at line %d: %s`, n.Expression.Position().Line, n.Expression),
+				n.Expression,
+			)
 		}
 		var err error
 		if r.Config.AutoEscape && value.IsString() && !value.Safe {
@@ -113,7 +122,7 @@ func (r *Renderer) Visit(node nodes.Node) (nodes.Visitor, error) {
 		controlStructure, ok := n.ControlStructure.(ControlStructure)
 		if ok {
 			if err := controlStructure.Execute(r, n); err != nil {
-				return nil, errors.Wrapf(err, `Unable to execute controlStructure at line %d: %s`, n.ControlStructure.Position().Line, n.ControlStructure)
+				return nil, newRuntimeError(err, n.ControlStructure)
 			}
 		}
 		return nil, nil

@@ -151,6 +151,13 @@ func (v *Value) Error() string {
 	return ""
 }
 
+func (v *Value) Unwrap() error {
+	if v.IsError() {
+		return v.Interface().(error)
+	}
+	return nil
+}
+
 func (v *Value) ToGoSimpleType(allowInterfaceKeys bool) any {
 	switch {
 	case v.IsError():
