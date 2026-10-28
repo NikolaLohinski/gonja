@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"strings"
 
@@ -75,15 +76,30 @@ func testEqual(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, err
 	return in.EqualValueTo(param), nil
 }
 
-func testEven(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	if !in.IsInteger() {
-		return false, nil
+// remainderOfTwo returns the value modulo 2 with the sign of the divisor, like
+// Python's `%` that Jinja uses for the odd and even tests, so -3 gives 1.
+func remainderOfTwo(in *exec.Value) (float64, bool) {
+	switch {
+	case in.IsInteger():
+		return float64((in.Integer()%2 + 2) % 2), true
+	case in.IsFloat():
+		r := math.Mod(in.Float(), 2)
+		if r < 0 {
+			r += 2
+		}
+		return r, true
 	}
-	return in.Integer()%2 == 0, nil
+	return 0, false
+}
+
+func testEven(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
+	r, ok := remainderOfTwo(in)
+	return ok && r == 0, nil
 }
 
 func testFalse(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return !in.Bool(), nil
+	// Like `value is false` in Jinja, only the boolean false matches, not other falsy values
+	return in.IsBool() && !in.Bool(), nil
 }
 
 func testFloat(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -167,10 +183,8 @@ func testNumber(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, er
 }
 
 func testOdd(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	if !in.IsInteger() {
-		return false, nil
-	}
-	return in.Integer()%2 == 1, nil
+	r, ok := remainderOfTwo(in)
+	return ok && r == 1, nil
 }
 
 func testSameas(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
@@ -188,7 +202,7 @@ func testString(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, er
 }
 
 func testTrue(_ *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
-	return in.Bool(), nil
+	return in.IsBool() && in.Bool(), nil
 }
 
 func testUndefined(ctx *exec.Context, in *exec.Value, params *exec.VarArgs) (bool, error) {
