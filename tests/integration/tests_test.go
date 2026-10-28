@@ -157,6 +157,29 @@ var _ = Context("tests", func() {
 		shouldRender(`{{ var2 is false }}`, "True")
 		shouldRender(`{{ var1 is true }}`, "True")
 		shouldRender(`{{ var2 is true }}`, "False")
+		shouldRender(`{{ 1 is true }}`, "False")
+		shouldRender(`{{ 0 is false }}`, "False")
+		shouldRender(`{{ 5 is false }}`, "False")
+		shouldRender(`{{ "" is false }}`, "False")
+		shouldRender(`{{ "hello" is false }}`, "False")
+		shouldRender(`{{ none is false }}`, "False")
+	})
+	Context("odd and even", func() {
+		BeforeEach(func() {
+			*context = exec.NewContext(map[string]any{
+				"var1": -3,
+				"var2": -4,
+				"var3": 3.0,
+			})
+		})
+		shouldRender(`{{ var1 is odd }}`, "True")
+		shouldRender(`{{ var1 is even }}`, "False")
+		shouldRender(`{{ var2 is odd }}`, "False")
+		shouldRender(`{{ var2 is even }}`, "True")
+		shouldRender(`{{ var3 is odd }}`, "True")
+		shouldRender(`{{ 4.0 is even }}`, "True")
+		shouldRender(`{{ 2.5 is odd }}`, "False")
+		shouldRender(`{{ 2.5 is even }}`, "False")
 	})
 	Context("numbers", func() {
 		BeforeEach(func() {
