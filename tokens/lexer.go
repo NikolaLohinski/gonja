@@ -1080,7 +1080,7 @@ func (l *Lexer) lexString() lexFn {
 
 // isSpace reports whether r is a space character.
 func isSpace(r rune) bool {
-	return r == ' ' || r == '\t'
+	return r == ' ' || r == '\t' || r == '\n' || r == '\r'
 }
 
 func isLinePrefixSpace(r rune) bool {
