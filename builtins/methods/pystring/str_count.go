@@ -6,7 +6,15 @@ import "strings"
 //
 // If sub is empty, returns the number of empty strings between characters which is the length of the string plus one.
 func Count(s, subStr string, start, end *int) int {
-	s, _ = Idx(s, start, end)
+	s, err := Idx(s, start, end)
+	if err != nil {
+		return 0
+	}
+	// strings.Count reports -1 for an empty separator while python counts the
+	// empty strings between characters, which is the length of the slice plus one.
+	if subStr == "" {
+		return len(s) + 1
+	}
 	return strings.Count(s, subStr)
 }
 
