@@ -54,7 +54,7 @@ var strMethods = exec.NewMethodSet[string](map[string]exec.Method[string]{
 		); err != nil {
 			return nil, exec.ErrInvalidCall(err)
 		}
-		return pystring.PyString(self).Count(pystring.New(self), &start, &end), nil
+		return pystring.PyString(self).Count(pystring.New(sub), &start, &end), nil
 	},
 	"encode": func(self string, _ *exec.Value, arguments *exec.VarArgs) (any, error) {
 		var (
