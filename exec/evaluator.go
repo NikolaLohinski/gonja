@@ -147,11 +147,34 @@ func (e *Evaluator) evalBinaryExpression(node *nodes.BinaryExpression) *Value {
 		// Float division
 		return AsValue(left.Float() / right.Float())
 	case tokens.FloorDivision:
-		// Int division
-		return AsValue(int(left.Float() / right.Float()))
+		// Python/Jinja2 floor division rounds toward negative infinity and
+		// returns a float when either operand is a float.
+		if left.IsFloat() || right.IsFloat() {
+			return AsValue(math.Floor(left.Float() / right.Float()))
+		}
+		l, r := left.Integer(), right.Integer()
+		quotient := l / r
+		if l%r != 0 && (l < 0) != (r < 0) {
+			quotient--
+		}
+		return AsValue(quotient)
 	case tokens.Modulo:
-		// Result will be int
-		return AsValue(left.Integer() % right.Integer())
+		// Python/Jinja2 modulo takes the sign of the divisor, so it is not
+		// the same as Go's truncated remainder for negative operands.
+		if left.IsFloat() || right.IsFloat() {
+			l, r := left.Float(), right.Float()
+			result := math.Mod(l, r)
+			if result != 0 && (result < 0) != (r < 0) {
+				result += r
+			}
+			return AsValue(result)
+		}
+		l, r := left.Integer(), right.Integer()
+		result := l % r
+		if result != 0 && (result < 0) != (r < 0) {
+			result += r
+		}
+		return AsValue(result)
 	case tokens.Power:
 		return AsValue(math.Pow(left.Float(), right.Float()))
 	case tokens.Tilde:
